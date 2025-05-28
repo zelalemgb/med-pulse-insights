@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Save, Plus, Trash2, Download, ChevronDown, ChevronRight, Lock, Upload, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ProductData, DataFrequency, PeriodData, getPeriodsForFrequency, createEmptyPeriods } from '@/types/dataEntry';
-import DataMappingDialog from '@/components/DataMappingDialog';
 import * as XLSX from 'xlsx';
 
 const DataEntry = () => {
@@ -17,13 +16,6 @@ const DataEntry = () => {
   const [selectedFrequency, setSelectedFrequency] = useState<DataFrequency | ''>('');
   const [openPeriods, setOpenPeriods] = useState<{[key: number]: boolean}>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Data mapping dialog state
-  const [showMappingDialog, setShowMappingDialog] = useState(false);
-  const [pendingImportData, setPendingImportData] = useState<{
-    columns: string[];
-    data: any[];
-  } | null>(null);
 
   // Initialize open periods when frequency changes
   useEffect(() => {
@@ -31,7 +23,7 @@ const DataEntry = () => {
       const { count } = getPeriodsForFrequency(selectedFrequency);
       const initialOpenPeriods: {[key: number]: boolean} = {};
       for (let i = 0; i < count; i++) {
-        initialOpenPeriods[i] = i === 0;
+        initialOpenPeriods[i] = i === 0; // Only first period open by default
       }
       setOpenPeriods(initialOpenPeriods);
     }
@@ -227,6 +219,7 @@ const DataEntry = () => {
 
   const changeFrequency = (newFrequency: DataFrequency) => {
     setSelectedFrequency(newFrequency);
+    // Update existing products to new frequency
     setProducts(prev => prev.map(product => {
       const { names } = getPeriodsForFrequency(newFrequency);
       const seasonality: {[key: string]: number; total: number} = { total: 0 };
@@ -269,38 +262,48 @@ const DataEntry = () => {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        if (jsonData.length === 0) {
-          toast({
-            title: "Import Failed",
-            description: "The Excel file appears to be empty",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        // Get column names from the first row
-        const columns = Object.keys(jsonData[0] as object);
+        console.log('Imported data:', jsonData);
         
-        // Check if columns match expected format
-        const expectedColumns = ['productName', 'unit', 'unitPrice', 'venClassification', 'facilitySpecific', 'procurementSource'];
-        const hasStandardFormat = expectedColumns.some(col => 
-          columns.some(excelCol => 
-            excelCol.toLowerCase().includes(col.toLowerCase()) ||
-            col.toLowerCase().includes(excelCol.toLowerCase())
-          )
-        );
-
-        if (!hasStandardFormat) {
-          // Show mapping dialog for non-standard format
-          setPendingImportData({
-            columns,
-            data: jsonData
+        const importedProducts: ProductData[] = jsonData.map((row: any, index: number) => {
+          const { names } = getPeriodsForFrequency(selectedFrequency as DataFrequency);
+          const seasonality: {[key: string]: number; total: number} = { total: 0 };
+          names.forEach((name, pIndex) => {
+            seasonality[`p${pIndex + 1}`] = 0;
           });
-          setShowMappingDialog(true);
-        } else {
-          // Process with standard format
-          processImportData(jsonData, {});
-        }
+
+          return {
+            id: `imported-${Date.now()}-${index}`,
+            productName: row['Product Name'] || row['productName'] || '',
+            unit: row['Unit'] || row['unit'] || '',
+            unitPrice: parseFloat(row['Unit Price'] || row['unitPrice']) || 0,
+            venClassification: (row['VEN Classification'] || row['venClassification'] || 'V') as 'V' | 'E' | 'N',
+            facilitySpecific: Boolean(row['Facility Specific'] || row['facilitySpecific']),
+            procurementSource: row['Procurement Source'] || row['procurementSource'] || '',
+            frequency: selectedFrequency as DataFrequency,
+            periods: createEmptyPeriods(selectedFrequency as DataFrequency),
+            annualAverages: {
+              annualConsumption: 0,
+              aamc: 0,
+              wastageRate: 0,
+              awamc: 0
+            },
+            forecast: {
+              aamcApplied: 0,
+              wastageRateApplied: 0,
+              programExpansionContraction: 0,
+              projectedAmcAdjusted: 0,
+              projectedAnnualConsumption: 0
+            },
+            seasonality
+          };
+        });
+
+        setProducts(prev => [...prev, ...importedProducts]);
+        
+        toast({
+          title: "Import Successful",
+          description: `${importedProducts.length} products imported successfully`,
+        });
       } catch (error) {
         console.error('Import error:', error);
         toast({
@@ -316,68 +319,6 @@ const DataEntry = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
-
-  const handleMappingConfirm = (mapping: Record<string, string>) => {
-    if (pendingImportData) {
-      processImportData(pendingImportData.data, mapping);
-      setPendingImportData(null);
-    }
-  };
-
-  const processImportData = (jsonData: any[], mapping: Record<string, string>) => {
-    const importedProducts: ProductData[] = jsonData.map((row: any, index: number) => {
-      const { names } = getPeriodsForFrequency(selectedFrequency as DataFrequency);
-      const seasonality: {[key: string]: number; total: number} = { total: 0 };
-      names.forEach((name, pIndex) => {
-        seasonality[`p${pIndex + 1}`] = 0;
-      });
-
-      // Use mapping if provided, otherwise try standard field names
-      const getFieldValue = (fieldKey: string, fallbackKeys: string[] = []) => {
-        if (mapping[fieldKey]) {
-          return row[mapping[fieldKey]];
-        }
-        // Try fallback keys for standard format
-        for (const key of [...fallbackKeys, fieldKey]) {
-          if (row[key] !== undefined) return row[key];
-        }
-        return '';
-      };
-
-      return {
-        id: `imported-${Date.now()}-${index}`,
-        productName: getFieldValue('productName', ['Product Name']) || '',
-        unit: getFieldValue('unit', ['Unit']) || '',
-        unitPrice: parseFloat(getFieldValue('unitPrice', ['Unit Price'])) || 0,
-        venClassification: (getFieldValue('venClassification', ['VEN Classification']) || 'V') as 'V' | 'E' | 'N',
-        facilitySpecific: Boolean(getFieldValue('facilitySpecific', ['Facility Specific'])),
-        procurementSource: getFieldValue('procurementSource', ['Procurement Source']) || '',
-        frequency: selectedFrequency as DataFrequency,
-        periods: createEmptyPeriods(selectedFrequency as DataFrequency),
-        annualAverages: {
-          annualConsumption: 0,
-          aamc: 0,
-          wastageRate: 0,
-          awamc: 0
-        },
-        forecast: {
-          aamcApplied: 0,
-          wastageRateApplied: 0,
-          programExpansionContraction: 0,
-          projectedAmcAdjusted: 0,
-          projectedAnnualConsumption: 0
-        },
-        seasonality
-      };
-    });
-
-    setProducts(prev => [...prev, ...importedProducts]);
-    
-    toast({
-      title: "Import Successful",
-      description: `${importedProducts.length} products imported successfully`,
-    });
   };
 
   const exportToExcel = () => {
@@ -862,18 +803,6 @@ const DataEntry = () => {
             <p className="text-gray-500 mb-4">No products added yet. Click "Add Product" or "Import from Excel" to start entering data.</p>
           </div>
         )}
-
-        {/* Data Mapping Dialog */}
-        <DataMappingDialog
-          isOpen={showMappingDialog}
-          onClose={() => {
-            setShowMappingDialog(false);
-            setPendingImportData(null);
-          }}
-          excelColumns={pendingImportData?.columns || []}
-          sampleData={pendingImportData?.data || []}
-          onConfirm={handleMappingConfirm}
-        />
       </div>
     </div>
   );
