@@ -5,10 +5,23 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useHealthFacilities } from '@/hooks/useHealthFacilities';
 import { CreateFacilityDialog } from './CreateFacilityDialog';
-import { Loader2, MapPin, Users, Building } from 'lucide-react';
+import { FacilityAssociationRequest } from './FacilityAssociationRequest';
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2, MapPin, Users, Building, Copy } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export const FacilitiesList = () => {
   const { data: facilities, isLoading, error } = useHealthFacilities();
+  const { profile } = useAuth();
+  const { toast } = useToast();
+
+  const copyFacilityId = (facilityId: string) => {
+    navigator.clipboard.writeText(facilityId);
+    toast({
+      title: 'Copied!',
+      description: 'Facility ID copied to clipboard',
+    });
+  };
 
   if (isLoading) {
     return (
@@ -46,7 +59,10 @@ export const FacilitiesList = () => {
               <p className="text-gray-600 mb-4">
                 You don't have access to any health facilities yet.
               </p>
-              <CreateFacilityDialog />
+              <div className="flex justify-center space-x-2">
+                <CreateFacilityDialog />
+                <FacilityAssociationRequest />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -66,6 +82,17 @@ export const FacilitiesList = () => {
                 {facility.code && (
                   <p className="text-sm text-gray-600">Code: {facility.code}</p>
                 )}
+                <div className="flex items-center text-xs text-gray-500">
+                  <span className="truncate mr-2">ID: {facility.id.slice(0, 8)}...</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => copyFacilityId(facility.id)}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -104,10 +131,20 @@ export const FacilitiesList = () => {
                   )}
                 </div>
                 
-                <div className="mt-4 pt-4 border-t">
-                  <Button variant="outline" size="sm" className="w-full">
+                <div className="mt-4 pt-4 border-t flex space-x-2">
+                  <Button variant="outline" size="sm" className="flex-1">
                     View Details
                   </Button>
+                  {profile?.role === 'national' || profile?.role === 'regional' || profile?.role === 'zonal' ? (
+                    <Button variant="outline" size="sm">
+                      Manage
+                    </Button>
+                  ) : (
+                    <FacilityAssociationRequest 
+                      facilityId={facility.id} 
+                      facilityName={facility.name} 
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>
