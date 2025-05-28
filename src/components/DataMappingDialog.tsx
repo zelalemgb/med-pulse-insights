@@ -53,6 +53,8 @@ const REQUIRED_FIELDS: MappingField[] = [
   { key: 'programExpansionContraction', label: 'Program Expansion/Contraction', required: true, category: 'Forecast Data', aliases: ['expansion', 'contraction', 'program change', 'growth rate', 'program expansion', 'program contraction'] }
 ];
 
+const NOT_MAPPED_VALUE = '__NOT_MAPPED__';
+
 const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
   open,
   onOpenChange,
@@ -127,7 +129,7 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
   const handleMappingChange = (fieldKey: string, columnPath: string) => {
     setMapping(prev => ({
       ...prev,
-      [fieldKey]: columnPath
+      [fieldKey]: columnPath === NOT_MAPPED_VALUE ? '' : columnPath
     }));
   };
 
@@ -238,14 +240,14 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
                           )}
                         </div>
                         <Select
-                          value={mapping[field.key] || ''}
+                          value={mapping[field.key] || NOT_MAPPED_VALUE}
                           onValueChange={(value) => handleMappingChange(field.key, value)}
                         >
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select Excel column..." />
                           </SelectTrigger>
                           <SelectContent className="bg-white border shadow-lg max-h-64 overflow-y-auto z-50">
-                            <SelectItem value="">-- Not mapped --</SelectItem>
+                            <SelectItem value={NOT_MAPPED_VALUE}>-- Not mapped --</SelectItem>
                             {availableColumns.map(col => (
                               <SelectItem key={col.fullPath} value={col.fullPath}>
                                 {col.fullPath}
