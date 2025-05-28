@@ -47,9 +47,98 @@ export class PerformanceOptimizer {
 
   private monitoring = false;
   private monitoringInterval: NodeJS.Timeout | null = null;
+  private cache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map();
 
   constructor() {
     this.initializeRules();
+  }
+
+  // Cache methods
+  setCache<T>(key: string, data: T, ttl: number = this.cacheConfig.ttl): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl
+    });
+    this.cleanupExpiredCache();
+  }
+
+  getCache<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+
+    const now = Date.now();
+    if (now - entry.timestamp > entry.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry.data as T;
+  }
+
+  private cleanupExpiredCache(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > entry.ttl) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  // Performance measurement methods
+  async measureAsyncPerformance<T>(
+    operationName: string,
+    operation: () => Promise<T>
+  ): Promise<T> {
+    const startTime = performance.now();
+    console.log(`Starting operation: ${operationName}`);
+
+    try {
+      const result = await operation();
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+      
+      console.log(`Operation ${operationName} completed in ${duration.toFixed(2)}ms`);
+      
+      // Update metrics
+      this.metrics.queryTime = duration;
+      
+      return result;
+    } catch (error) {
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+      console.error(`Operation ${operationName} failed after ${duration.toFixed(2)}ms:`, error);
+      throw error;
+    }
+  }
+
+  // Batch processing method
+  async processBatch<T, R>(
+    items: T[],
+    processor: (batch: T[]) => Promise<R[]>,
+    batchSize: number = 100
+  ): Promise<R[]> {
+    console.log(`Processing ${items.length} items in batches of ${batchSize}`);
+    
+    const results: R[] = [];
+    
+    for (let i = 0; i < items.length; i += batchSize) {
+      const batch = items.slice(i, i + batchSize);
+      const batchResults = await processor(batch);
+      results.push(...batchResults);
+      
+      // Add small delay to prevent overwhelming the system
+      if (i + batchSize < items.length) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+    }
+    
+    return results;
+  }
+
+  // Virtual scrolling data method
+  virtualizeData<T>(data: T[], startIndex: number, endIndex: number): T[] {
+    return data.slice(startIndex, endIndex);
   }
 
   private initializeRules(): void {
@@ -191,6 +280,7 @@ export class PerformanceOptimizer {
 
   private clearCache(): void {
     // Clear cache to free memory
+    this.cache.clear();
     console.log('Cache cleared to free memory');
     this.metrics.memoryUsage *= 0.7; // Simulate memory reduction
   }
