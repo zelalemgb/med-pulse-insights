@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { healthFacilitiesService } from '@/services/healthFacilitiesService';
 import { CreateFacilityRequest } from '@/types/healthFacilities';
@@ -33,6 +32,31 @@ export const useCreateFacility = () => {
       toast({
         title: 'Success',
         description: 'Health facility created successfully',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useUpdateFacility = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ facilityId, updates }: { facilityId: string; updates: Partial<CreateFacilityRequest> }) =>
+      healthFacilitiesService.updateFacility(facilityId, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['health-facilities'] });
+      queryClient.invalidateQueries({ queryKey: ['user-facility-associations'] });
+      toast({
+        title: 'Success',
+        description: 'Facility updated successfully',
       });
     },
     onError: (error: Error) => {
