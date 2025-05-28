@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +45,7 @@ export const InventoryStatus = () => {
             </TableHeader>
             <TableBody>
               {mockPharmaceuticalData.map((product) => {
-                const stockStatus = getStockStatus(product.quarters[3].endingBalance, product.aamc);
+                const stockStatus = getStockStatus(product.quarters[3].endingBalance, product.annualAverages.aamc);
                 const latestQuarter = product.quarters[3];
                 
                 return (
@@ -84,7 +85,7 @@ export const InventoryStatus = () => {
           <CardContent>
             <div className="space-y-2">
               {mockPharmaceuticalData.filter(product => 
-                getStockStatus(product.quarters[3].endingBalance, product.aamc).status === 'Critical'
+                getStockStatus(product.quarters[3].endingBalance, product.annualAverages.aamc).status === 'Critical'
               ).map(product => (
                 <div key={product.id} className="flex justify-between items-center p-2 border rounded">
                   <span className="text-sm font-medium">{product.productName}</span>
@@ -92,7 +93,7 @@ export const InventoryStatus = () => {
                 </div>
               ))}
               {mockPharmaceuticalData.filter(product => 
-                getStockStatus(product.quarters[3].endingBalance, product.aamc).status === 'Critical'
+                getStockStatus(product.quarters[3].endingBalance, product.annualAverages.aamc).status === 'Critical'
               ).length === 0 && (
                 <p className="text-muted-foreground">No critical stock items</p>
               )}
@@ -137,7 +138,7 @@ export const InventoryStatus = () => {
                 <h4 className="font-medium">Items Requiring Reorder</h4>
                 <p className="text-2xl font-bold text-red-600">
                   {mockPharmaceuticalData.filter(product => 
-                    getStockStatus(product.quarters[3].endingBalance, product.aamc).status !== 'Adequate'
+                    getStockStatus(product.quarters[3].endingBalance, product.annualAverages.aamc).status !== 'Adequate'
                   ).length}
                 </p>
               </div>
