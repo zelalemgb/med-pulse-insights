@@ -18,7 +18,7 @@ export function VirtualizedList<T>({
   data,
   itemHeight,
   height,
-  width = '100%',
+  width = 300,
   renderItem,
   onItemClick,
   className,
