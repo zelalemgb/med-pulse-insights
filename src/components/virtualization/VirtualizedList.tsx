@@ -7,6 +7,7 @@ interface VirtualizedListProps<T> {
   data: T[];
   itemHeight: number | ((index: number) => number);
   height: number;
+  width?: number;
   renderItem: (item: T, index: number) => React.ReactNode;
   onItemClick?: (item: T, index: number) => void;
   className?: string;
@@ -17,6 +18,7 @@ export function VirtualizedList<T>({
   data,
   itemHeight,
   height,
+  width = '100%',
   renderItem,
   onItemClick,
   className,
@@ -44,6 +46,7 @@ export function VirtualizedList<T>({
         {isVariableHeight ? (
           <VariableSizeList
             height={height}
+            width={width}
             itemCount={data.length}
             itemSize={itemHeight as (index: number) => number}
             overscanCount={overscan}
@@ -53,6 +56,7 @@ export function VirtualizedList<T>({
         ) : (
           <List
             height={height}
+            width={width}
             itemCount={data.length}
             itemSize={itemHeight as number}
             overscanCount={overscan}
