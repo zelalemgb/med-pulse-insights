@@ -5,13 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Save, Plus, Trash2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Save, Plus, Trash2, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProductData {
+  id: string;
   productName: string;
   unit: string;
   unitPrice: number;
@@ -19,6 +18,19 @@ interface ProductData {
   facilitySpecific: boolean;
   procurementSource: string;
   quarters: QuarterData[];
+  annualAverages: {
+    annualConsumption: number;
+    aamc: number;
+    wastageRate: number;
+    awamc: number;
+  };
+  seasonality: {
+    q1: number;
+    q2: number;
+    q3: number;
+    q4: number;
+    total: number;
+  };
 }
 
 interface QuarterData {
@@ -31,62 +43,17 @@ interface QuarterData {
   stockOutDays: number;
   expiredDamaged: number;
   consumptionIssue: number;
+  aamc: number;
+  wastageRate: number;
 }
 
 const DataEntry = () => {
   const { toast } = useToast();
   const [products, setProducts] = useState<ProductData[]>([]);
-  const [currentProduct, setCurrentProduct] = useState<ProductData>({
-    productName: '',
-    unit: '',
-    unitPrice: 0,
-    venClassification: 'V',
-    facilitySpecific: false,
-    procurementSource: '',
-    quarters: [
-      { quarter: 1, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 },
-      { quarter: 2, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 },
-      { quarter: 3, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 },
-      { quarter: 4, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 }
-    ]
-  });
 
-  const updateProductInfo = (field: string, value: any) => {
-    setCurrentProduct(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const updateQuarterData = (quarterIndex: number, field: string, value: number) => {
-    setCurrentProduct(prev => ({
-      ...prev,
-      quarters: prev.quarters.map((quarter, index) => 
-        index === quarterIndex 
-          ? { ...quarter, [field]: value }
-          : quarter
-      )
-    }));
-  };
-
-  const calculateEndingBalance = (quarterIndex: number) => {
-    const quarter = currentProduct.quarters[quarterIndex];
-    const endingBalance = quarter.beginningBalance + quarter.received + quarter.positiveAdj - quarter.negativeAdj - quarter.consumptionIssue - quarter.expiredDamaged;
-    updateQuarterData(quarterIndex, 'endingBalance', Math.max(0, endingBalance));
-  };
-
-  const addProduct = () => {
-    if (!currentProduct.productName) {
-      toast({
-        title: "Error",
-        description: "Product name is required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setProducts(prev => [...prev, { ...currentProduct }]);
-    setCurrentProduct({
+  const addNewProduct = () => {
+    const newProduct: ProductData = {
+      id: Date.now().toString(),
       productName: '',
       unit: '',
       unitPrice: 0,
@@ -94,28 +61,80 @@ const DataEntry = () => {
       facilitySpecific: false,
       procurementSource: '',
       quarters: [
-        { quarter: 1, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 },
-        { quarter: 2, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 },
-        { quarter: 3, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 },
-        { quarter: 4, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 }
-      ]
-    });
-
-    toast({
-      title: "Success",
-      description: "Product added successfully",
-    });
+        { quarter: 1, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0, aamc: 0, wastageRate: 0 },
+        { quarter: 2, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0, aamc: 0, wastageRate: 0 },
+        { quarter: 3, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0, aamc: 0, wastageRate: 0 },
+        { quarter: 4, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0, aamc: 0, wastageRate: 0 }
+      ],
+      annualAverages: {
+        annualConsumption: 0,
+        aamc: 0,
+        wastageRate: 0,
+        awamc: 0
+      },
+      seasonality: {
+        q1: 0,
+        q2: 0,
+        q3: 0,
+        q4: 0,
+        total: 0
+      }
+    };
+    
+    setProducts(prev => [...prev, newProduct]);
   };
 
-  const removeProduct = (index: number) => {
-    setProducts(prev => prev.filter((_, i) => i !== index));
+  const updateProductField = (productId: string, field: keyof ProductData, value: any) => {
+    setProducts(prev => prev.map(product => 
+      product.id === productId ? { ...product, [field]: value } : product
+    ));
+  };
+
+  const updateQuarterData = (productId: string, quarterIndex: number, field: keyof QuarterData, value: number) => {
+    setProducts(prev => prev.map(product => {
+      if (product.id === productId) {
+        const updatedQuarters = [...product.quarters];
+        updatedQuarters[quarterIndex] = { ...updatedQuarters[quarterIndex], [field]: value };
+        
+        // Auto-calculate ending balance
+        if (['beginningBalance', 'received', 'positiveAdj', 'negativeAdj', 'consumptionIssue', 'expiredDamaged'].includes(field)) {
+          const quarter = updatedQuarters[quarterIndex];
+          const endingBalance = quarter.beginningBalance + quarter.received + quarter.positiveAdj - quarter.negativeAdj - quarter.consumptionIssue - quarter.expiredDamaged;
+          updatedQuarters[quarterIndex].endingBalance = Math.max(0, endingBalance);
+        }
+        
+        // Auto-calculate aamc
+        if (['stockOutDays', 'consumptionIssue'].includes(field)) {
+          const quarter = updatedQuarters[quarterIndex];
+          if (quarter.stockOutDays < 90) {
+            quarter.aamc = quarter.consumptionIssue / (3 - (quarter.stockOutDays / 30.5));
+          }
+        }
+        
+        // Auto-calculate wastage rate
+        if (['expiredDamaged', 'beginningBalance', 'received', 'positiveAdj'].includes(field)) {
+          const quarter = updatedQuarters[quarterIndex];
+          const totalAvailable = quarter.beginningBalance + quarter.received + quarter.positiveAdj;
+          if (totalAvailable > 0) {
+            quarter.wastageRate = (quarter.expiredDamaged / totalAvailable) * 100;
+          }
+        }
+        
+        return { ...product, quarters: updatedQuarters };
+      }
+      return product;
+    }));
+  };
+
+  const removeProduct = (productId: string) => {
+    setProducts(prev => prev.filter(p => p.id !== productId));
     toast({
       title: "Product Removed",
       description: "Product has been removed from the list",
     });
   };
 
-  const saveAllData = () => {
+  const saveData = () => {
     console.log('Saving data:', products);
     toast({
       title: "Data Saved",
@@ -124,256 +143,331 @@ const DataEntry = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Pharmaceutical Data Entry</h1>
-          <p className="text-gray-600 mt-2">Enter quarterly pharmaceutical usage data for your facility</p>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-full mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Quarterly Pharmaceutical Data Entry</h1>
+          <p className="text-gray-600 mt-2">Enter quarterly pharmaceutical usage data in Excel format</p>
         </div>
 
-        {/* Product List Summary */}
-        {products.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Added Products ({products.length})
-                <Button onClick={saveAllData} className="bg-green-600 hover:bg-green-700">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save All Data
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {products.map((product, index) => (
-                  <div key={index} className="p-4 border rounded-lg bg-white">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium text-sm">{product.productName}</h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeProduct(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="space-y-1 text-xs text-gray-600">
-                      <p>Unit: {product.unit}</p>
-                      <p>Price: ${product.unitPrice}</p>
-                      <Badge variant={product.venClassification === 'V' ? 'default' : product.venClassification === 'E' ? 'secondary' : 'outline'}>
-                        {product.venClassification}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <div className="flex gap-4 mb-6">
+          <Button onClick={addNewProduct} className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Product
+          </Button>
+          <Button onClick={saveData} className="bg-green-600 hover:bg-green-700">
+            <Save className="w-4 h-4 mr-2" />
+            Save All Data
+          </Button>
+          <Button variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Export to Excel
+          </Button>
+        </div>
 
-        {/* Data Entry Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Add New Product</CardTitle>
+            <CardTitle>Pharmaceutical Data Entry Table</CardTitle>
           </CardHeader>
-          <CardContent>
-            {/* Product Information */}
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Product Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="productName">Product Name *</Label>
-                    <Input
-                      id="productName"
-                      value={currentProduct.productName}
-                      onChange={(e) => updateProductInfo('productName', e.target.value)}
-                      placeholder="e.g., Amoxicillin 500mg"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="unit">Unit</Label>
-                    <Input
-                      id="unit"
-                      value={currentProduct.unit}
-                      onChange={(e) => updateProductInfo('unit', e.target.value)}
-                      placeholder="e.g., 10x10, 125ml"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="unitPrice">Unit Price ($)</Label>
-                    <Input
-                      id="unitPrice"
-                      type="number"
-                      step="0.01"
-                      value={currentProduct.unitPrice}
-                      onChange={(e) => updateProductInfo('unitPrice', parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="venClassification">VEN Classification</Label>
-                    <Select value={currentProduct.venClassification} onValueChange={(value) => updateProductInfo('venClassification', value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="V">V - Vital</SelectItem>
-                        <SelectItem value="E">E - Essential</SelectItem>
-                        <SelectItem value="N">N - Non-essential</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="procurementSource">Procurement Source</Label>
-                    <Input
-                      id="procurementSource"
-                      value={currentProduct.procurementSource}
-                      onChange={(e) => updateProductInfo('procurementSource', e.target.value)}
-                      placeholder="e.g., EPSS, Local Supplier"
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="facilitySpecific"
-                      checked={currentProduct.facilitySpecific}
-                      onChange={(e) => updateProductInfo('facilitySpecific', e.target.checked)}
-                      className="rounded"
-                    />
-                    <Label htmlFor="facilitySpecific">Facility Specific</Label>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Quarterly Data */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Quarterly Data</h3>
-                <Tabs defaultValue="quarter1" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="quarter1">Quarter 1</TabsTrigger>
-                    <TabsTrigger value="quarter2">Quarter 2</TabsTrigger>
-                    <TabsTrigger value="quarter3">Quarter 3</TabsTrigger>
-                    <TabsTrigger value="quarter4">Quarter 4</TabsTrigger>
-                  </TabsList>
-
-                  {[0, 1, 2, 3].map((quarterIndex) => (
-                    <TabsContent key={quarterIndex} value={`quarter${quarterIndex + 1}`}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border rounded-lg">
-                        <div>
-                          <Label>Beginning Balance</Label>
-                          <Input
-                            type="number"
-                            value={currentProduct.quarters[quarterIndex].beginningBalance}
-                            onChange={(e) => updateQuarterData(quarterIndex, 'beginningBalance', parseInt(e.target.value) || 0)}
-                          />
-                        </div>
-                        <div>
-                          <Label>Received</Label>
-                          <Input
-                            type="number"
-                            value={currentProduct.quarters[quarterIndex].received}
-                            onChange={(e) => {
-                              updateQuarterData(quarterIndex, 'received', parseInt(e.target.value) || 0);
-                              setTimeout(() => calculateEndingBalance(quarterIndex), 100);
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <Label>Positive Adjustment</Label>
-                          <Input
-                            type="number"
-                            value={currentProduct.quarters[quarterIndex].positiveAdj}
-                            onChange={(e) => {
-                              updateQuarterData(quarterIndex, 'positiveAdj', parseInt(e.target.value) || 0);
-                              setTimeout(() => calculateEndingBalance(quarterIndex), 100);
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <Label>Negative Adjustment</Label>
-                          <Input
-                            type="number"
-                            value={currentProduct.quarters[quarterIndex].negativeAdj}
-                            onChange={(e) => {
-                              updateQuarterData(quarterIndex, 'negativeAdj', parseInt(e.target.value) || 0);
-                              setTimeout(() => calculateEndingBalance(quarterIndex), 100);
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <Label>Consumption/Issue</Label>
-                          <Input
-                            type="number"
-                            value={currentProduct.quarters[quarterIndex].consumptionIssue}
-                            onChange={(e) => {
-                              updateQuarterData(quarterIndex, 'consumptionIssue', parseInt(e.target.value) || 0);
-                              setTimeout(() => calculateEndingBalance(quarterIndex), 100);
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <Label>Expired/Damaged</Label>
-                          <Input
-                            type="number"
-                            value={currentProduct.quarters[quarterIndex].expiredDamaged}
-                            onChange={(e) => {
-                              updateQuarterData(quarterIndex, 'expiredDamaged', parseInt(e.target.value) || 0);
-                              setTimeout(() => calculateEndingBalance(quarterIndex), 100);
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <Label>Stock Out Days</Label>
-                          <Input
-                            type="number"
-                            max="90"
-                            value={currentProduct.quarters[quarterIndex].stockOutDays}
-                            onChange={(e) => updateQuarterData(quarterIndex, 'stockOutDays', parseInt(e.target.value) || 0)}
-                          />
-                        </div>
-                        <div>
-                          <Label>Ending Balance (Calculated)</Label>
-                          <Input
-                            type="number"
-                            value={currentProduct.quarters[quarterIndex].endingBalance}
-                            readOnly
-                            className="bg-gray-100"
-                          />
-                        </div>
-                      </div>
-                    </TabsContent>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-100">
+                    <TableHead className="sticky left-0 bg-gray-100 font-bold border-r min-w-[200px]">Product List</TableHead>
+                    <TableHead className="font-bold border-r min-w-[100px]">Unit</TableHead>
+                    <TableHead className="font-bold border-r min-w-[100px]">Unit Price</TableHead>
+                    <TableHead className="font-bold border-r min-w-[120px]">VEN Classification</TableHead>
+                    <TableHead className="font-bold border-r min-w-[150px]">Facility Specific</TableHead>
+                    <TableHead className="font-bold border-r min-w-[150px]">Procurement Source</TableHead>
+                    
+                    {/* Quarter 1 */}
+                    <TableHead colSpan={10} className="text-center font-bold border-r bg-blue-50">Quarter 1</TableHead>
+                    {/* Quarter 2 */}
+                    <TableHead colSpan={10} className="text-center font-bold border-r bg-green-50">Quarter 2</TableHead>
+                    {/* Quarter 3 */}
+                    <TableHead colSpan={10} className="text-center font-bold border-r bg-yellow-50">Quarter 3</TableHead>
+                    {/* Quarter 4 */}
+                    <TableHead colSpan={10} className="text-center font-bold border-r bg-red-50">Quarter 4</TableHead>
+                    
+                    {/* Annual Averages */}
+                    <TableHead colSpan={4} className="text-center font-bold border-r bg-purple-50">Annual Averages</TableHead>
+                    {/* Seasonality */}
+                    <TableHead colSpan={5} className="text-center font-bold bg-orange-50">Seasonality</TableHead>
+                    <TableHead className="font-bold">Actions</TableHead>
+                  </TableRow>
+                  <TableRow className="bg-gray-50 text-xs">
+                    <TableHead className="sticky left-0 bg-gray-50"></TableHead>
+                    <TableHead></TableHead>
+                    <TableHead></TableHead>
+                    <TableHead></TableHead>
+                    <TableHead></TableHead>
+                    <TableHead></TableHead>
+                    
+                    {/* Quarter 1 Subheadings */}
+                    <TableHead className="bg-blue-50 min-w-[100px]">Beginning Balance</TableHead>
+                    <TableHead className="bg-blue-50 min-w-[100px]">Received</TableHead>
+                    <TableHead className="bg-blue-50 min-w-[100px]">Positive Adj</TableHead>
+                    <TableHead className="bg-blue-50 min-w-[100px]">Negative Adj</TableHead>
+                    <TableHead className="bg-blue-50 min-w-[100px]">Ending Balance</TableHead>
+                    <TableHead className="bg-blue-50 min-w-[100px]">Stock Out Days</TableHead>
+                    <TableHead className="bg-blue-50 min-w-[100px]">Expired/Damaged</TableHead>
+                    <TableHead className="bg-blue-50 min-w-[100px]">Consumption/Issue</TableHead>
+                    <TableHead className="bg-blue-50 min-w-[100px]">aAMC</TableHead>
+                    <TableHead className="bg-blue-50 min-w-[100px] border-r">Wastage Rate</TableHead>
+                    
+                    {/* Quarter 2 Subheadings */}
+                    <TableHead className="bg-green-50 min-w-[100px]">Beginning Balance</TableHead>
+                    <TableHead className="bg-green-50 min-w-[100px]">Received</TableHead>
+                    <TableHead className="bg-green-50 min-w-[100px]">Positive Adj</TableHead>
+                    <TableHead className="bg-green-50 min-w-[100px]">Negative Adj</TableHead>
+                    <TableHead className="bg-green-50 min-w-[100px]">Ending Balance</TableHead>
+                    <TableHead className="bg-green-50 min-w-[100px]">Stock Out Days</TableHead>
+                    <TableHead className="bg-green-50 min-w-[100px]">Expired/Damaged</TableHead>
+                    <TableHead className="bg-green-50 min-w-[100px]">Consumption/Issue</TableHead>
+                    <TableHead className="bg-green-50 min-w-[100px]">aAMC</TableHead>
+                    <TableHead className="bg-green-50 min-w-[100px] border-r">Wastage Rate</TableHead>
+                    
+                    {/* Quarter 3 Subheadings */}
+                    <TableHead className="bg-yellow-50 min-w-[100px]">Beginning Balance</TableHead>
+                    <TableHead className="bg-yellow-50 min-w-[100px]">Received</TableHead>
+                    <TableHead className="bg-yellow-50 min-w-[100px]">Positive Adj</TableHead>
+                    <TableHead className="bg-yellow-50 min-w-[100px]">Negative Adj</TableHead>
+                    <TableHead className="bg-yellow-50 min-w-[100px]">Ending Balance</TableHead>
+                    <TableHead className="bg-yellow-50 min-w-[100px]">Stock Out Days</TableHead>
+                    <TableHead className="bg-yellow-50 min-w-[100px]">Expired/Damaged</TableHead>
+                    <TableHead className="bg-yellow-50 min-w-[100px]">Consumption/Issue</TableHead>
+                    <TableHead className="bg-yellow-50 min-w-[100px]">aAMC</TableHead>
+                    <TableHead className="bg-yellow-50 min-w-[100px] border-r">Wastage Rate</TableHead>
+                    
+                    {/* Quarter 4 Subheadings */}
+                    <TableHead className="bg-red-50 min-w-[100px]">Beginning Balance</TableHead>
+                    <TableHead className="bg-red-50 min-w-[100px]">Received</TableHead>
+                    <TableHead className="bg-red-50 min-w-[100px]">Positive Adj</TableHead>
+                    <TableHead className="bg-red-50 min-w-[100px]">Negative Adj</TableHead>
+                    <TableHead className="bg-red-50 min-w-[100px]">Ending Balance</TableHead>
+                    <TableHead className="bg-red-50 min-w-[100px]">Stock Out Days</TableHead>
+                    <TableHead className="bg-red-50 min-w-[100px]">Expired/Damaged</TableHead>
+                    <TableHead className="bg-red-50 min-w-[100px]">Consumption/Issue</TableHead>
+                    <TableHead className="bg-red-50 min-w-[100px]">aAMC</TableHead>
+                    <TableHead className="bg-red-50 min-w-[100px] border-r">Wastage Rate</TableHead>
+                    
+                    {/* Annual Averages Subheadings */}
+                    <TableHead className="bg-purple-50 min-w-[120px]">Annual Consumption</TableHead>
+                    <TableHead className="bg-purple-50 min-w-[100px]">aAMC</TableHead>
+                    <TableHead className="bg-purple-50 min-w-[100px]">Wastage Rate</TableHead>
+                    <TableHead className="bg-purple-50 min-w-[100px] border-r">awAMC</TableHead>
+                    
+                    {/* Seasonality Subheadings */}
+                    <TableHead className="bg-orange-50 min-w-[60px]">Q1</TableHead>
+                    <TableHead className="bg-orange-50 min-w-[60px]">Q2</TableHead>
+                    <TableHead className="bg-orange-50 min-w-[60px]">Q3</TableHead>
+                    <TableHead className="bg-orange-50 min-w-[60px]">Q4</TableHead>
+                    <TableHead className="bg-orange-50 min-w-[80px]">Total</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {products.map((product) => (
+                    <TableRow key={product.id} className="hover:bg-gray-50">
+                      {/* Product Information */}
+                      <TableCell className="sticky left-0 bg-white border-r">
+                        <Input
+                          value={product.productName}
+                          onChange={(e) => updateProductField(product.id, 'productName', e.target.value)}
+                          placeholder="Product name"
+                          className="h-8 text-xs"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={product.unit}
+                          onChange={(e) => updateProductField(product.id, 'unit', e.target.value)}
+                          placeholder="Unit"
+                          className="h-8 text-xs w-20"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={product.unitPrice}
+                          onChange={(e) => updateProductField(product.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                          className="h-8 text-xs w-20"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Select value={product.venClassification} onValueChange={(value) => updateProductField(product.id, 'venClassification', value)}>
+                          <SelectTrigger className="h-8 text-xs w-16">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="V">V</SelectItem>
+                            <SelectItem value="E">E</SelectItem>
+                            <SelectItem value="N">N</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={product.facilitySpecific}
+                          onChange={(e) => updateProductField(product.id, 'facilitySpecific', e.target.checked)}
+                          className="h-4 w-4"
+                        />
+                      </TableCell>
+                      <TableCell className="border-r">
+                        <Input
+                          value={product.procurementSource}
+                          onChange={(e) => updateProductField(product.id, 'procurementSource', e.target.value)}
+                          placeholder="Source"
+                          className="h-8 text-xs w-24"
+                        />
+                      </TableCell>
+                      
+                      {/* Quarter Data */}
+                      {product.quarters.map((quarter, qIndex) => {
+                        const bgColor = qIndex === 0 ? 'bg-blue-25' : qIndex === 1 ? 'bg-green-25' : qIndex === 2 ? 'bg-yellow-25' : 'bg-red-25';
+                        return (
+                          <React.Fragment key={qIndex}>
+                            <TableCell className={bgColor}>
+                              <Input
+                                type="number"
+                                value={quarter.beginningBalance}
+                                onChange={(e) => updateQuarterData(product.id, qIndex, 'beginningBalance', parseInt(e.target.value) || 0)}
+                                className="h-8 text-xs w-20"
+                              />
+                            </TableCell>
+                            <TableCell className={bgColor}>
+                              <Input
+                                type="number"
+                                value={quarter.received}
+                                onChange={(e) => updateQuarterData(product.id, qIndex, 'received', parseInt(e.target.value) || 0)}
+                                className="h-8 text-xs w-20"
+                              />
+                            </TableCell>
+                            <TableCell className={bgColor}>
+                              <Input
+                                type="number"
+                                value={quarter.positiveAdj}
+                                onChange={(e) => updateQuarterData(product.id, qIndex, 'positiveAdj', parseInt(e.target.value) || 0)}
+                                className="h-8 text-xs w-20"
+                              />
+                            </TableCell>
+                            <TableCell className={bgColor}>
+                              <Input
+                                type="number"
+                                value={quarter.negativeAdj}
+                                onChange={(e) => updateQuarterData(product.id, qIndex, 'negativeAdj', parseInt(e.target.value) || 0)}
+                                className="h-8 text-xs w-20"
+                              />
+                            </TableCell>
+                            <TableCell className={bgColor}>
+                              <Input
+                                type="number"
+                                value={quarter.endingBalance}
+                                readOnly
+                                className="h-8 text-xs w-20 bg-gray-100"
+                              />
+                            </TableCell>
+                            <TableCell className={bgColor}>
+                              <Input
+                                type="number"
+                                value={quarter.stockOutDays}
+                                onChange={(e) => updateQuarterData(product.id, qIndex, 'stockOutDays', parseInt(e.target.value) || 0)}
+                                className="h-8 text-xs w-20"
+                                max="90"
+                              />
+                            </TableCell>
+                            <TableCell className={bgColor}>
+                              <Input
+                                type="number"
+                                value={quarter.expiredDamaged}
+                                onChange={(e) => updateQuarterData(product.id, qIndex, 'expiredDamaged', parseInt(e.target.value) || 0)}
+                                className="h-8 text-xs w-20"
+                              />
+                            </TableCell>
+                            <TableCell className={bgColor}>
+                              <Input
+                                type="number"
+                                value={quarter.consumptionIssue}
+                                onChange={(e) => updateQuarterData(product.id, qIndex, 'consumptionIssue', parseInt(e.target.value) || 0)}
+                                className="h-8 text-xs w-20"
+                              />
+                            </TableCell>
+                            <TableCell className={bgColor}>
+                              <Input
+                                type="number"
+                                value={quarter.aamc.toFixed(2)}
+                                readOnly
+                                className="h-8 text-xs w-20 bg-gray-100"
+                              />
+                            </TableCell>
+                            <TableCell className={`${bgColor} ${qIndex === 3 ? 'border-r' : ''}`}>
+                              <Input
+                                value={`${quarter.wastageRate.toFixed(1)}%`}
+                                readOnly
+                                className="h-8 text-xs w-20 bg-gray-100"
+                              />
+                            </TableCell>
+                          </React.Fragment>
+                        );
+                      })}
+                      
+                      {/* Annual Averages */}
+                      <TableCell className="bg-purple-25">
+                        <span className="text-xs">{product.annualAverages.annualConsumption}</span>
+                      </TableCell>
+                      <TableCell className="bg-purple-25">
+                        <span className="text-xs">{product.annualAverages.aamc.toFixed(2)}</span>
+                      </TableCell>
+                      <TableCell className="bg-purple-25">
+                        <span className="text-xs">{product.annualAverages.wastageRate.toFixed(1)}%</span>
+                      </TableCell>
+                      <TableCell className="bg-purple-25 border-r">
+                        <span className="text-xs">{product.annualAverages.awamc.toFixed(2)}</span>
+                      </TableCell>
+                      
+                      {/* Seasonality */}
+                      <TableCell className="bg-orange-25">
+                        <span className="text-xs">{product.seasonality.q1}%</span>
+                      </TableCell>
+                      <TableCell className="bg-orange-25">
+                        <span className="text-xs">{product.seasonality.q2}%</span>
+                      </TableCell>
+                      <TableCell className="bg-orange-25">
+                        <span className="text-xs">{product.seasonality.q3}%</span>
+                      </TableCell>
+                      <TableCell className="bg-orange-25">
+                        <span className="text-xs">{product.seasonality.q4}%</span>
+                      </TableCell>
+                      <TableCell className="bg-orange-25">
+                        <span className="text-xs">{product.seasonality.total}%</span>
+                      </TableCell>
+                      
+                      {/* Actions */}
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeProduct(product.id)}
+                          className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </Tabs>
-              </div>
-
-              <div className="flex justify-end space-x-4">
-                <Button variant="outline" onClick={() => setCurrentProduct({
-                  productName: '',
-                  unit: '',
-                  unitPrice: 0,
-                  venClassification: 'V',
-                  facilitySpecific: false,
-                  procurementSource: '',
-                  quarters: [
-                    { quarter: 1, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 },
-                    { quarter: 2, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 },
-                    { quarter: 3, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 },
-                    { quarter: 4, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0 }
-                  ]
-                })}>
-                  Clear Form
-                </Button>
-                <Button onClick={addProduct} className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Product
-                </Button>
-              </div>
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
+
+        {products.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500 mb-4">No products added yet. Click "Add Product" to start entering data.</p>
+          </div>
+        )}
       </div>
     </div>
   );
