@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,13 @@ import { FacilityAssociationRequest } from './FacilityAssociationRequest';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, MapPin, Users, Building, Copy, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { HealthFacility } from '@/types/healthFacilities';
 
 export const FacilitiesList = () => {
-  const { data: facilities, isLoading, error } = useHealthFacilities();
+  const { data: facilities, isLoading, error, refetch } = useHealthFacilities();
   const { profile } = useAuth();
   const { toast } = useToast();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const copyFacilityId = (facilityId: string) => {
     navigator.clipboard.writeText(facilityId);
@@ -21,6 +23,15 @@ export const FacilitiesList = () => {
       title: 'Copied!',
       description: 'Facility ID copied to clipboard',
     });
+  };
+
+  const handleFacilityCreated = (facility: HealthFacility) => {
+    setCreateDialogOpen(false);
+    toast({
+      title: 'Success!',
+      description: `Facility "${facility.name}" has been created successfully.`,
+    });
+    refetch(); // Refresh the facilities list
   };
 
   const canManageFacilities = profile?.role === 'national' || 
@@ -51,7 +62,10 @@ export const FacilitiesList = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Health Facilities</h3>
-        <CreateFacilityDialog />
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Facility
+        </Button>
       </div>
 
       {!facilities || facilities.length === 0 ? (
@@ -64,7 +78,10 @@ export const FacilitiesList = () => {
                 You don't have access to any health facilities yet.
               </p>
               <div className="flex justify-center space-x-2">
-                <CreateFacilityDialog />
+                <Button onClick={() => setCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Facility
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -154,6 +171,12 @@ export const FacilitiesList = () => {
           ))}
         </div>
       )}
+
+      <CreateFacilityDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={handleFacilityCreated}
+      />
     </div>
   );
 };
