@@ -38,19 +38,28 @@ export function VirtualizedList<T>({
     );
   }, [data, renderItem, onItemClick]);
 
-  const ListComponent = isVariableHeight ? VariableSizeList : List;
-
   return (
     <div className={className}>
       <ScrollArea style={{ height }}>
-        <ListComponent
-          height={height}
-          itemCount={data.length}
-          itemSize={itemHeight as any}
-          overscanCount={overscan}
-        >
-          {Row}
-        </ListComponent>
+        {isVariableHeight ? (
+          <VariableSizeList
+            height={height}
+            itemCount={data.length}
+            itemSize={itemHeight as (index: number) => number}
+            overscanCount={overscan}
+          >
+            {Row}
+          </VariableSizeList>
+        ) : (
+          <List
+            height={height}
+            itemCount={data.length}
+            itemSize={itemHeight as number}
+            overscanCount={overscan}
+          >
+            {Row}
+          </List>
+        )}
       </ScrollArea>
     </div>
   );
