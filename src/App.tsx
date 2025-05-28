@@ -36,58 +36,56 @@ const LoadingSpinner = () => (
 
 const App = () => {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AuthProvider>
-            <BrowserRouter>
-              <Suspense fallback={<LoadingSpinner />}>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route 
-                    path="/dashboard" 
-                    element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/data-entry" 
-                    element={
-                      <ProtectedRoute>
-                        <DataEntry />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/import" 
-                    element={
-                      <ProtectedRoute>
-                        <Import />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/facilities" 
-                    element={
-                      <ProtectedRoute>
-                        <Facilities />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </AuthProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/data-entry" 
+                  element={
+                    <ProtectedRoute>
+                      <DataEntry />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/import" 
+                  element={
+                    <ProtectedRoute>
+                      <Import />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/facilities" 
+                  element={
+                    <ProtectedRoute>
+                      <Facilities />
+                    </ProtectedRoute>
+                  } 
+                />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
