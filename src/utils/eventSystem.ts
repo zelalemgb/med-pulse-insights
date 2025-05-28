@@ -1,10 +1,10 @@
 
-export interface DomainEvent {
+export interface DomainEvent<T = any> {
   id: string;
   type: string;
   aggregateId: string;
   aggregateType: string;
-  data: any;
+  data: T;
   metadata: {
     timestamp: Date;
     userId?: string;
