@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -110,6 +109,66 @@ const Import = () => {
   const [step, setStep] = useState<'upload' | 'mapping' | 'preview'>('upload');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Auto-mapping function
+  const autoMapFields = (excelHeaders: string[]) => {
+    const mapping: Partial<FieldMapping> = {};
+    let matchCount = 0;
+
+    // Define field mappings with possible variations
+    const fieldMappings = {
+      productName: ['Product Name', 'ProductName', 'product_name', 'product name'],
+      unit: ['Unit', 'unit'],
+      unitPrice: ['Unit Price', 'UnitPrice', 'unit_price', 'unit price'],
+      venClassification: ['VEN Classification', 'VENClassification', 'ven_classification', 'ven classification', 'VEN'],
+      facilitySpecific: ['Facility Specific', 'FacilitySpecific', 'facility_specific', 'facility specific'],
+      procurementSource: ['Procurement Source', 'ProcurementSource', 'procurement_source', 'procurement source'],
+      q1BeginningBalance: ['Q1 Beginning Balance', 'Q1BeginningBalance', 'q1_beginning_balance', 'q1 beginning balance'],
+      q1Received: ['Q1 Received', 'Q1Received', 'q1_received', 'q1 received'],
+      q1PositiveAdj: ['Q1 Positive Adjustment', 'Q1 Positive Adj', 'Q1PositiveAdj', 'q1_positive_adj', 'q1 positive adj'],
+      q1NegativeAdj: ['Q1 Negative Adjustment', 'Q1 Negative Adj', 'Q1NegativeAdj', 'q1_negative_adj', 'q1 negative adj'],
+      q1StockOutDays: ['Q1 Stock Out Days', 'Q1StockOutDays', 'q1_stock_out_days', 'q1 stock out days'],
+      q1ExpiredDamaged: ['Q1 Expired/Damaged', 'Q1 Expired Damaged', 'Q1ExpiredDamaged', 'q1_expired_damaged', 'q1 expired damaged'],
+      q1ConsumptionIssue: ['Q1 Consumption/Issue', 'Q1 Consumption Issue', 'Q1ConsumptionIssue', 'q1_consumption_issue', 'q1 consumption issue'],
+      q2BeginningBalance: ['Q2 Beginning Balance', 'Q2BeginningBalance', 'q2_beginning_balance', 'q2 beginning balance'],
+      q2Received: ['Q2 Received', 'Q2Received', 'q2_received', 'q2 received'],
+      q2PositiveAdj: ['Q2 Positive Adjustment', 'Q2 Positive Adj', 'Q2PositiveAdj', 'q2_positive_adj', 'q2 positive adj'],
+      q2NegativeAdj: ['Q2 Negative Adjustment', 'Q2 Negative Adj', 'Q2NegativeAdj', 'q2_negative_adj', 'q2 negative adj'],
+      q2StockOutDays: ['Q2 Stock Out Days', 'Q2StockOutDays', 'q2_stock_out_days', 'q2 stock out days'],
+      q2ExpiredDamaged: ['Q2 Expired/Damaged', 'Q2 Expired Damaged', 'Q2ExpiredDamaged', 'q2_expired_damaged', 'q2 expired damaged'],
+      q2ConsumptionIssue: ['Q2 Consumption/Issue', 'Q2 Consumption Issue', 'Q2ConsumptionIssue', 'q2_consumption_issue', 'q2 consumption issue'],
+      q3BeginningBalance: ['Q3 Beginning Balance', 'Q3BeginningBalance', 'q3_beginning_balance', 'q3 beginning balance'],
+      q3Received: ['Q3 Received', 'Q3Received', 'q3_received', 'q3 received'],
+      q3PositiveAdj: ['Q3 Positive Adjustment', 'Q3 Positive Adj', 'Q3PositiveAdj', 'q3_positive_adj', 'q3 positive adj'],
+      q3NegativeAdj: ['Q3 Negative Adjustment', 'Q3 Negative Adj', 'Q3NegativeAdj', 'q3_negative_adj', 'q3 negative adj'],
+      q3StockOutDays: ['Q3 Stock Out Days', 'Q3StockOutDays', 'q3_stock_out_days', 'q3 stock out days'],
+      q3ExpiredDamaged: ['Q3 Expired/Damaged', 'Q3 Expired Damaged', 'Q3ExpiredDamaged', 'q3_expired_damaged', 'q3 expired damaged'],
+      q3ConsumptionIssue: ['Q3 Consumption/Issue', 'Q3 Consumption Issue', 'Q3ConsumptionIssue', 'q3_consumption_issue', 'q3 consumption issue'],
+      q4BeginningBalance: ['Q4 Beginning Balance', 'Q4BeginningBalance', 'q4_beginning_balance', 'q4 beginning balance'],
+      q4Received: ['Q4 Received', 'Q4Received', 'q4_received', 'q4 received'],
+      q4PositiveAdj: ['Q4 Positive Adjustment', 'Q4 Positive Adj', 'Q4PositiveAdj', 'q4_positive_adj', 'q4 positive adj'],
+      q4NegativeAdj: ['Q4 Negative Adjustment', 'Q4 Negative Adj', 'Q4NegativeAdj', 'q4_negative_adj', 'q4 negative adj'],
+      q4StockOutDays: ['Q4 Stock Out Days', 'Q4StockOutDays', 'q4_stock_out_days', 'q4 stock out days'],
+      q4ExpiredDamaged: ['Q4 Expired/Damaged', 'Q4 Expired Damaged', 'Q4ExpiredDamaged', 'q4_expired_damaged', 'q4 expired damaged'],
+      q4ConsumptionIssue: ['Q4 Consumption/Issue', 'Q4 Consumption Issue', 'Q4ConsumptionIssue', 'q4_consumption_issue', 'q4 consumption issue']
+    };
+
+    // Check each field for matches
+    Object.entries(fieldMappings).forEach(([fieldKey, possibleNames]) => {
+      const matchedHeader = excelHeaders.find(header => 
+        possibleNames.some(name => 
+          header.toLowerCase().trim() === name.toLowerCase().trim()
+        )
+      );
+      
+      if (matchedHeader) {
+        mapping[fieldKey as keyof FieldMapping] = matchedHeader;
+        matchCount++;
+      }
+    });
+
+    return { mapping, matchCount };
+  };
+
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0];
     if (!uploadedFile) return;
@@ -150,6 +209,18 @@ const Import = () => {
           });
           
           setExcelData(formattedData);
+          
+          // Auto-map fields
+          const { mapping, matchCount } = autoMapFields(headerRow);
+          setFieldMapping(mapping);
+          
+          if (matchCount > 0) {
+            toast({
+              title: "Auto-mapping Applied",
+              description: `${matchCount} fields were automatically mapped based on column names`,
+            });
+          }
+          
           setStep('mapping');
         }
       } catch (error) {
@@ -432,6 +503,11 @@ const Import = () => {
               <CardTitle>Map Excel Columns to Required Fields</CardTitle>
               <p className="text-sm text-gray-600">
                 Map your Excel columns to the required pharmaceutical data fields. Required fields are marked with an asterisk (*).
+                {Object.keys(fieldMapping).length > 0 && (
+                  <span className="block mt-1 text-green-600 font-medium">
+                    Some fields have been automatically mapped based on column names.
+                  </span>
+                )}
               </p>
             </CardHeader>
             <CardContent>
