@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,12 +9,16 @@ import { AlertTriangle, Package, TrendingDown, TrendingUp, Bell, CheckCircle, Re
 import { InventoryManager, StockAlert, InventoryMetrics } from '@/utils/inventoryManager';
 import { ConsumptionAnalyzer } from '@/utils/consumptionAnalysis';
 import { ForecastingEngine } from '@/utils/forecastingEngine';
+import { convertPharmaceuticalArrayToProductData } from '@/utils/dataAdapter';
 
 export const InventoryStatus = () => {
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
   const [metrics, setMetrics] = useState<InventoryMetrics | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAcknowledged, setShowAcknowledged] = useState(false);
+
+  // Convert pharmaceutical data to ProductData format
+  const productData = convertPharmaceuticalArrayToProductData(mockPharmaceuticalData);
 
   // Initialize inventory analysis
   useEffect(() => {
@@ -24,11 +29,11 @@ export const InventoryStatus = () => {
     setIsRefreshing(true);
     
     // Update all stock statuses
-    InventoryManager.updateMultipleStockStatuses(mockPharmaceuticalData);
+    InventoryManager.updateMultipleStockStatuses(productData);
     
     // Get current alerts and metrics
     const currentAlerts = InventoryManager.getAlerts({ acknowledged: showAcknowledged });
-    const currentMetrics = InventoryManager.getInventoryMetrics(mockPharmaceuticalData);
+    const currentMetrics = InventoryManager.getInventoryMetrics(productData);
     
     setAlerts(currentAlerts);
     setMetrics(currentMetrics);
@@ -226,11 +231,11 @@ export const InventoryStatus = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockPharmaceuticalData.map((product) => {
+              {productData.map((product) => {
                 const stockStatus = InventoryManager.getStockStatus(product.id);
                 const consumptionAnalysis = ConsumptionAnalyzer.analyzeProduct(product);
                 const forecast = ForecastingEngine.generateForecast(product);
-                const latestQuarter = product.quarters[3];
+                const latestPeriod = product.periods[product.periods.length - 1];
                 
                 return (
                   <TableRow key={product.id}>
@@ -240,7 +245,7 @@ export const InventoryStatus = () => {
                         {product.venClassification}
                       </Badge>
                     </TableCell>
-                    <TableCell>{latestQuarter.endingBalance} {product.unit}</TableCell>
+                    <TableCell>{latestPeriod.endingBalance} {product.unit}</TableCell>
                     <TableCell>
                       <div className="text-sm">
                         {stockStatus ? Math.round(stockStatus.daysOfStock) : 0} days
