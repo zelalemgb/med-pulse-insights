@@ -1,12 +1,45 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { mockPharmaceuticalData } from '@/data/pharmaceuticalData';
-import { AlertTriangle, Package, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Package, TrendingDown, TrendingUp, Bell, CheckCircle, RefreshCw } from 'lucide-react';
+import { InventoryManager, StockAlert, InventoryMetrics } from '@/utils/inventoryManager';
+import { ConsumptionAnalyzer } from '@/utils/consumptionAnalysis';
+import { ForecastingEngine } from '@/utils/forecastingEngine';
 
 export const InventoryStatus = () => {
+  const [alerts, setAlerts] = useState<StockAlert[]>([]);
+  const [metrics, setMetrics] = useState<InventoryMetrics | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showAcknowledged, setShowAcknowledged] = useState(false);
+
+  // Initialize inventory analysis
+  useEffect(() => {
+    refreshInventoryData();
+  }, []);
+
+  const refreshInventoryData = async () => {
+    setIsRefreshing(true);
+    
+    // Update all stock statuses
+    InventoryManager.updateMultipleStockStatuses(mockPharmaceuticalData);
+    
+    // Get current alerts and metrics
+    const currentAlerts = InventoryManager.getAlerts({ acknowledged: showAcknowledged });
+    const currentMetrics = InventoryManager.getInventoryMetrics(mockPharmaceuticalData);
+    
+    setAlerts(currentAlerts);
+    setMetrics(currentMetrics);
+    setIsRefreshing(false);
+  };
+
+  const acknowledgeAlert = (alertId: string) => {
+    InventoryManager.acknowledgeAlert(alertId);
+    refreshInventoryData();
+  };
+
   const getStockStatus = (endingBalance: number, aamc: number) => {
     if (aamc === 0) return { status: 'No Data', variant: 'secondary' as const };
     const monthsOfStock = endingBalance / aamc;
@@ -24,11 +57,158 @@ export const InventoryStatus = () => {
     }
   };
 
+  const getAlertBadgeColor = (level: StockAlert['level']) => {
+    switch (level) {
+      case 'critical': return 'destructive';
+      case 'warning': return 'secondary';
+      case 'info': return 'default';
+      default: return 'default';
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Enhanced Metrics Dashboard */}
+      {metrics && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Critical Stock</p>
+                  <p className="text-2xl font-bold text-red-600">{metrics.criticalStockCount}</p>
+                </div>
+                <AlertTriangle className="h-8 w-8 text-red-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Low Stock</p>
+                  <p className="text-2xl font-bold text-orange-600">{metrics.lowStockCount}</p>
+                </div>
+                <Package className="h-8 w-8 text-orange-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Adequate Stock</p>
+                  <p className="text-2xl font-bold text-green-600">{metrics.adequateStockCount}</p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Inventory Value</p>
+                  <p className="text-2xl font-bold">${metrics.totalInventoryValue.toLocaleString()}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Active Alerts Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Current Inventory Status</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="w-5 h-5" />
+              Active Alerts ({alerts.filter(a => !a.acknowledged).length})
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowAcknowledged(!showAcknowledged);
+                  refreshInventoryData();
+                }}
+              >
+                {showAcknowledged ? 'Hide Acknowledged' : 'Show Acknowledged'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshInventoryData}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {alerts.length > 0 ? (
+            <div className="space-y-3">
+              {alerts.slice(0, 10).map((alert) => (
+                <div
+                  key={alert.id}
+                  className={`p-3 border rounded-lg ${
+                    alert.acknowledged ? 'bg-gray-50 opacity-60' : 'bg-white'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant={getAlertBadgeColor(alert.level)}>
+                          {alert.level.toUpperCase()}
+                        </Badge>
+                        <span className="text-sm font-medium">{alert.productName}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
+                      <p className="text-xs text-blue-600">{alert.recommendation}</p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      <div className="text-right text-xs text-gray-500">
+                        <div>Stock: {alert.currentStock}</div>
+                        <div>{alert.timestamp.toLocaleTimeString()}</div>
+                      </div>
+                      {!alert.acknowledged && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => acknowledgeAlert(alert.id)}
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {alerts.length > 10 && (
+                <p className="text-center text-sm text-gray-500">
+                  ... and {alerts.length - 10} more alerts
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500 py-4">
+              No active alerts
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Enhanced Inventory Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Enhanced Inventory Status with Analytics</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -37,15 +217,19 @@ export const InventoryStatus = () => {
                 <TableHead>Product Name</TableHead>
                 <TableHead>VEN Class</TableHead>
                 <TableHead>Current Stock</TableHead>
-                <TableHead>Unit Price</TableHead>
-                <TableHead>Stock Out Days (Q4)</TableHead>
+                <TableHead>Days of Stock</TableHead>
+                <TableHead>aAMC</TableHead>
+                <TableHead>Consumption Pattern</TableHead>
+                <TableHead>Forecast (Next Period)</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Quarterly Consumption</TableHead>
+                <TableHead>Recommendations</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {mockPharmaceuticalData.map((product) => {
-                const stockStatus = getStockStatus(product.quarters[3].endingBalance, product.annualAverages.aamc);
+                const stockStatus = InventoryManager.getStockStatus(product.id);
+                const consumptionAnalysis = ConsumptionAnalyzer.analyzeProduct(product);
+                const forecast = ForecastingEngine.generateForecast(product);
                 const latestQuarter = product.quarters[3];
                 
                 return (
@@ -57,17 +241,39 @@ export const InventoryStatus = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>{latestQuarter.endingBalance} {product.unit}</TableCell>
-                    <TableCell>${product.unitPrice.toFixed(2)}</TableCell>
-                    <TableCell>{latestQuarter.stockOutDays} days</TableCell>
                     <TableCell>
-                      <Badge variant={stockStatus.variant}>{stockStatus.status}</Badge>
+                      <div className="text-sm">
+                        {stockStatus ? Math.round(stockStatus.daysOfStock) : 0} days
+                      </div>
+                    </TableCell>
+                    <TableCell>{consumptionAnalysis.metrics.aamc.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Badge variant={
+                        consumptionAnalysis.metrics.consumptionPattern === 'stable' ? 'default' :
+                        consumptionAnalysis.metrics.consumptionPattern === 'increasing' ? 'secondary' :
+                        'outline'
+                      }>
+                        {consumptionAnalysis.metrics.consumptionPattern}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      {product.quarters.map((q, idx) => (
-                        <div key={idx} className="text-sm">
-                          Q{q.quarter}: {q.consumptionIssue}
-                        </div>
-                      ))}
+                      {forecast.predictedConsumption[0]?.toFixed(0) || 0}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={
+                        stockStatus?.status === 'critical' ? 'destructive' :
+                        stockStatus?.status === 'low' ? 'secondary' :
+                        stockStatus?.status === 'excess' ? 'outline' : 'default'
+                      }>
+                        {stockStatus?.status || 'Unknown'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-xs space-y-1">
+                        {consumptionAnalysis.recommendations.slice(0, 2).map((rec, index) => (
+                          <div key={index} className="text-blue-600">{rec}</div>
+                        ))}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -77,6 +283,7 @@ export const InventoryStatus = () => {
         </CardContent>
       </Card>
 
+      {/* ... keep existing code (other cards and sections) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
@@ -142,6 +349,22 @@ export const InventoryStatus = () => {
                   ).length}
                 </p>
               </div>
+              {metrics && (
+                <>
+                  <div>
+                    <h4 className="font-medium">Inventory Turnover Rate</h4>
+                    <p className="text-lg font-bold text-blue-600">
+                      {metrics.turnoverRate.toFixed(2)}x
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium">Stock-out Frequency</h4>
+                    <p className="text-lg font-bold text-orange-600">
+                      {metrics.stockOutFrequency.toFixed(1)}%
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
