@@ -1,8 +1,6 @@
 
 import { useAuth } from '@/contexts/AuthContext';
-import { Database } from '@/integrations/supabase/types';
-
-type UserRole = Database['public']['Enums']['user_role'];
+import { UserRole } from '@/types/pharmaceutical';
 
 export const usePermissions = () => {
   const { profile } = useAuth();
@@ -18,7 +16,20 @@ export const usePermissions = () => {
   const hasMinimumRole = (minimumRole: UserRole): boolean => {
     if (!profile) return false;
     
-    const roleHierarchy: UserRole[] = ['viewer', 'analyst', 'manager', 'admin'];
+    // Define hierarchy for pharmaceutical roles
+    const roleHierarchy: UserRole[] = [
+      'facility_officer', 
+      'facility_manager', 
+      'zonal', 
+      'regional', 
+      'national', 
+      'data_analyst',
+      'program_manager',
+      'procurement',
+      'finance',
+      'qa'
+    ];
+    
     const userRoleIndex = roleHierarchy.indexOf(profile.role);
     const minimumRoleIndex = roleHierarchy.indexOf(minimumRole);
     
@@ -26,17 +37,17 @@ export const usePermissions = () => {
   };
 
   const canAccess = {
-    // Admin only
-    userManagement: hasRole('admin'),
-    systemSettings: hasRole('admin'),
+    // National and Program Manager only
+    userManagement: hasAnyRole(['national', 'program_manager']),
+    systemSettings: hasAnyRole(['national', 'program_manager']),
     
-    // Manager and above
-    teamManagement: hasAnyRole(['admin', 'manager']),
-    advancedReports: hasAnyRole(['admin', 'manager']),
+    // Regional and above
+    teamManagement: hasAnyRole(['national', 'regional', 'program_manager']),
+    advancedReports: hasAnyRole(['national', 'regional', 'zonal', 'program_manager']),
     
-    // Analyst and above
-    dataAnalysis: hasAnyRole(['admin', 'manager', 'analyst']),
-    customReports: hasAnyRole(['admin', 'manager', 'analyst']),
+    // Data analysts and managers
+    dataAnalysis: hasAnyRole(['data_analyst', 'program_manager', 'national', 'regional', 'zonal']),
+    customReports: hasAnyRole(['data_analyst', 'program_manager', 'national', 'regional', 'zonal', 'facility_manager']),
     
     // All authenticated users
     basicDashboard: true,
