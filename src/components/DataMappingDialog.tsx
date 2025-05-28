@@ -61,8 +61,10 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
   file,
   onMappingComplete
 }) => {
-  const [availableColumns, setAvailableColumns] = useState<ExcelColumn[]>([]);
-  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [availableSheets, setAvailableSheets] = useState<string[]>([]);
+  const [sheetColumns, setSheetColumns] = useState<Record<string, string[]>>({});
+  const [sheetMapping, setSheetMapping] = useState<Record<string, string>>({});
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [excelData, setExcelData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -78,8 +80,9 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data, { type: 'array' });
       
-      const columns: ExcelColumn[] = [];
-      const sheets: Record<string, any[]> = {};
+      const sheets: string[] = [];
+      const columnsPerSheet: Record<string, string[]> = {};
+      const sheetsData: Record<string, any[]> = {};
       
       workbook.SheetNames.forEach(sheetName => {
         const worksheet = workbook.Sheets[sheetName];
@@ -87,37 +90,40 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
         
         if (jsonData.length > 0) {
           const headers = jsonData[0] as string[];
-          sheets[sheetName] = XLSX.utils.sheet_to_json(worksheet);
-          
-          headers.forEach(header => {
-            if (header && typeof header === 'string') {
-              columns.push({
-                sheet: sheetName,
-                column: header,
-                fullPath: `${sheetName} → ${header}`
-              });
-            }
-          });
+          sheets.push(sheetName);
+          columnsPerSheet[sheetName] = headers.filter(header => header && typeof header === 'string');
+          sheetsData[sheetName] = XLSX.utils.sheet_to_json(worksheet);
         }
       });
       
-      setAvailableColumns(columns);
-      setExcelData(sheets);
+      setAvailableSheets(sheets);
+      setSheetColumns(columnsPerSheet);
+      setExcelData(sheetsData);
       
       // Auto-map obvious matches
-      const autoMapping: Record<string, string> = {};
+      const autoSheetMapping: Record<string, string> = {};
+      const autoColumnMapping: Record<string, string> = {};
+      
       REQUIRED_FIELDS.forEach(field => {
-        const match = columns.find(col => 
-          field.aliases.some(alias => 
-            col.column.toLowerCase().includes(alias.toLowerCase()) ||
-            alias.toLowerCase().includes(col.column.toLowerCase())
-          )
-        );
-        if (match) {
-          autoMapping[field.key] = match.fullPath;
+        // Try to find matches across all sheets
+        for (const sheetName of sheets) {
+          const columns = columnsPerSheet[sheetName];
+          const match = columns.find(col => 
+            field.aliases.some(alias => 
+              col.toLowerCase().includes(alias.toLowerCase()) ||
+              alias.toLowerCase().includes(col.toLowerCase())
+            )
+          );
+          if (match) {
+            autoSheetMapping[field.key] = sheetName;
+            autoColumnMapping[field.key] = match;
+            break;
+          }
         }
       });
-      setMapping(autoMapping);
+      
+      setSheetMapping(autoSheetMapping);
+      setColumnMapping(autoColumnMapping);
       
     } catch (error) {
       console.error('Error parsing Excel file:', error);
@@ -126,20 +132,40 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
     }
   };
 
-  const handleMappingChange = (fieldKey: string, columnPath: string) => {
-    setMapping(prev => ({
+  const handleSheetChange = (fieldKey: string, sheetName: string) => {
+    setSheetMapping(prev => ({
       ...prev,
-      [fieldKey]: columnPath === NOT_MAPPED_VALUE ? '' : columnPath
+      [fieldKey]: sheetName === NOT_MAPPED_VALUE ? '' : sheetName
     }));
+    
+    // Clear column mapping when sheet changes
+    if (sheetName === NOT_MAPPED_VALUE) {
+      setColumnMapping(prev => ({
+        ...prev,
+        [fieldKey]: ''
+      }));
+    }
+  };
+
+  const handleColumnChange = (fieldKey: string, columnName: string) => {
+    setColumnMapping(prev => ({
+      ...prev,
+      [fieldKey]: columnName === NOT_MAPPED_VALUE ? '' : columnName
+    }));
+  };
+
+  const getAvailableColumns = (fieldKey: string): string[] => {
+    const selectedSheet = sheetMapping[fieldKey];
+    return selectedSheet ? sheetColumns[selectedSheet] || [] : [];
   };
 
   const getRequiredFieldsCount = () => REQUIRED_FIELDS.filter(f => f.required).length;
   const getMappedRequiredFieldsCount = () => 
-    REQUIRED_FIELDS.filter(f => f.required && mapping[f.key]).length;
+    REQUIRED_FIELDS.filter(f => f.required && sheetMapping[f.key] && columnMapping[f.key]).length;
 
   const canProceed = () => {
     const requiredFields = REQUIRED_FIELDS.filter(f => f.required);
-    return requiredFields.every(field => mapping[field.key]);
+    return requiredFields.every(field => sheetMapping[field.key] && columnMapping[field.key]);
   };
 
   const handleImport = () => {
@@ -147,30 +173,40 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
     
     try {
       const mappedData: any[] = [];
+      const finalMapping: Record<string, string> = {};
       
-      // Process each sheet and extract mapped data
-      Object.entries(excelData).forEach(([sheetName, data]) => {
-        // Type check: ensure data is an array before using forEach
-        if (Array.isArray(data)) {
-          data.forEach((row: any) => {
-            const mappedRow: any = {};
-            
-            Object.entries(mapping).forEach(([fieldKey, columnPath]) => {
-              const [targetSheet, targetColumn] = columnPath.split(' → ');
-              if (targetSheet === sheetName && row[targetColumn] !== undefined) {
-                mappedRow[fieldKey] = row[targetColumn];
-              }
-            });
-            
-            // Only add rows that have at least the product name
-            if (mappedRow.productName) {
-              mappedData.push(mappedRow);
-            }
-          });
+      // Create final mapping for compatibility
+      Object.keys(sheetMapping).forEach(fieldKey => {
+        const sheet = sheetMapping[fieldKey];
+        const column = columnMapping[fieldKey];
+        if (sheet && column) {
+          finalMapping[fieldKey] = `${sheet} → ${column}`;
         }
       });
       
-      onMappingComplete(mappedData, mapping);
+      // Process each mapped field's data
+      Object.entries(sheetMapping).forEach(([fieldKey, sheetName]) => {
+        const columnName = columnMapping[fieldKey];
+        if (sheetName && columnName && excelData[sheetName]) {
+          const data = excelData[sheetName];
+          // Type check: ensure data is an array before using forEach
+          if (Array.isArray(data)) {
+            data.forEach((row: any, index: number) => {
+              if (!mappedData[index]) {
+                mappedData[index] = {};
+              }
+              if (row[columnName] !== undefined) {
+                mappedData[index][fieldKey] = row[columnName];
+              }
+            });
+          }
+        }
+      });
+      
+      // Filter out rows that don't have the required product name
+      const validData = mappedData.filter(row => row.productName);
+      
+      onMappingComplete(validData, finalMapping);
       onOpenChange(false);
       
     } catch (error) {
@@ -188,7 +224,7 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5" />
@@ -217,7 +253,7 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
                 </span>
               </div>
               <p className="text-sm text-gray-600">
-                Map your Excel columns to the required fields below. All fields are required for forecast calculation.
+                First select the Excel sheet, then choose the corresponding column for each required field.
               </p>
             </div>
 
@@ -229,32 +265,64 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {fields.map(field => (
-                      <div key={field.key} className="grid grid-cols-2 gap-4 items-center">
+                      <div key={field.key} className="grid grid-cols-4 gap-4 items-center">
                         <div className="flex items-center gap-2">
                           <Label className="font-medium">
                             {field.label}
                             {field.required && <span className="text-red-500 ml-1">*</span>}
                           </Label>
-                          {mapping[field.key] && (
+                          {sheetMapping[field.key] && columnMapping[field.key] && (
                             <CheckCircle className="w-4 h-4 text-green-600" />
                           )}
                         </div>
+                        
+                        {/* Sheet Selection */}
                         <Select
-                          value={mapping[field.key] || NOT_MAPPED_VALUE}
-                          onValueChange={(value) => handleMappingChange(field.key, value)}
+                          value={sheetMapping[field.key] || NOT_MAPPED_VALUE}
+                          onValueChange={(value) => handleSheetChange(field.key, value)}
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Excel column..." />
+                            <SelectValue placeholder="Select sheet..." />
                           </SelectTrigger>
                           <SelectContent className="bg-white border shadow-lg max-h-64 overflow-y-auto z-50">
-                            <SelectItem value={NOT_MAPPED_VALUE}>-- Not mapped --</SelectItem>
-                            {availableColumns.map(col => (
-                              <SelectItem key={col.fullPath} value={col.fullPath}>
-                                {col.fullPath}
+                            <SelectItem value={NOT_MAPPED_VALUE}>-- Select sheet --</SelectItem>
+                            {availableSheets.map(sheet => (
+                              <SelectItem key={sheet} value={sheet}>
+                                {sheet}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+
+                        {/* Column Selection */}
+                        <Select
+                          value={columnMapping[field.key] || NOT_MAPPED_VALUE}
+                          onValueChange={(value) => handleColumnChange(field.key, value)}
+                          disabled={!sheetMapping[field.key]}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select column..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white border shadow-lg max-h-64 overflow-y-auto z-50">
+                            <SelectItem value={NOT_MAPPED_VALUE}>-- Select column --</SelectItem>
+                            {getAvailableColumns(field.key).map(column => (
+                              <SelectItem key={column} value={column}>
+                                {column}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {/* Preview */}
+                        <div className="text-sm text-gray-500">
+                          {sheetMapping[field.key] && columnMapping[field.key] ? (
+                            <span className="text-green-600 font-medium">
+                              {sheetMapping[field.key]} → {columnMapping[field.key]}
+                            </span>
+                          ) : (
+                            <span>Not mapped</span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </CardContent>
