@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,12 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, Search, Download, Shield, User, Database, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, Search, Download, Shield, User, Database, AlertTriangle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { auditTrail, AuditEntry, AuditFilter, AuditReport } from '@/utils/auditTrail';
+import { useToast } from '@/hooks/use-toast';
 import type { DateRange } from 'react-day-picker';
 
 const AuditTrail = () => {
+  const { toast } = useToast();
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [auditReport, setAuditReport] = useState<AuditReport | null>(null);
   const [filter, setFilter] = useState<AuditFilter>({
@@ -22,25 +25,69 @@ const AuditTrail = () => {
     limit: 50,
   });
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Load initial audit entries
     loadAuditEntries();
     generateAuditReport();
+    
+    // Simulate some audit entries for demonstration
+    simulateAuditEntries();
   }, [filter]);
 
-  const loadAuditEntries = () => {
-    const entries = auditTrail.getAuditEntries({
-      ...filter,
-      startDate: dateRange?.from,
-      endDate: dateRange?.to,
+  const simulateAuditEntries = () => {
+    // Add some sample audit entries for demonstration
+    const sampleEntries = [
+      { action: 'LOGIN', entity: 'user', entityId: 'user-001', userName: 'John Doe' },
+      { action: 'CREATE', entity: 'product', entityId: 'prod-123', userName: 'Jane Smith' },
+      { action: 'UPDATE', entity: 'facility', entityId: 'fac-456', userName: 'Mike Johnson' },
+      { action: 'DELETE', entity: 'report', entityId: 'rep-789', userName: 'Sarah Wilson' },
+      { action: 'SECURITY_EVENT', entity: 'system', entityId: 'security', userName: 'System' },
+    ];
+
+    sampleEntries.forEach((entry, index) => {
+      auditTrail.log({
+        userId: `user-${index + 1}`,
+        userName: entry.userName,
+        action: entry.action,
+        entityType: entry.entity as any,
+        entityId: entry.entityId,
+        changes: entry.action === 'UPDATE' ? [
+          { field: 'status', oldValue: 'inactive', newValue: 'active' },
+          { field: 'quantity', oldValue: 100, newValue: 150 }
+        ] : undefined,
+      });
     });
-    setAuditEntries(entries);
+  };
+
+  const loadAuditEntries = () => {
+    setIsLoading(true);
+    try {
+      const entries = auditTrail.getAuditEntries({
+        ...filter,
+        startDate: dateRange?.from,
+        endDate: dateRange?.to,
+      });
+      setAuditEntries(entries);
+    } catch (error) {
+      console.error('Failed to load audit entries:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load audit entries.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const generateAuditReport = () => {
-    const report = auditTrail.generateAuditReport(dateRange?.from, dateRange?.to);
-    setAuditReport(report);
+    try {
+      const report = auditTrail.generateAuditReport(dateRange?.from, dateRange?.to);
+      setAuditReport(report);
+    } catch (error) {
+      console.error('Failed to generate audit report:', error);
+    }
   };
 
   const handleFilterChange = (field: keyof AuditFilter, value: any) => {
@@ -49,30 +96,44 @@ const AuditTrail = () => {
 
   const handleSearch = () => {
     loadAuditEntries();
+    generateAuditReport();
   };
 
   const handleExportAudit = () => {
-    const csvContent = [
-      ['Timestamp', 'User', 'Action', 'Entity Type', 'Entity ID', 'IP Address'].join(','),
-      ...auditEntries.map(entry => [
-        entry.timestamp.toISOString(),
-        entry.userName,
-        entry.action,
-        entry.entityType,
-        entry.entityId,
-        entry.ipAddress || 'Unknown'
-      ].join(','))
-    ].join('\n');
+    try {
+      const csvContent = [
+        ['Timestamp', 'User', 'Action', 'Entity Type', 'Entity ID', 'IP Address'].join(','),
+        ...auditEntries.map(entry => [
+          entry.timestamp.toISOString(),
+          entry.userName,
+          entry.action,
+          entry.entityType,
+          entry.entityId,
+          entry.ipAddress || 'Unknown'
+        ].join(','))
+      ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `audit-trail-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-trail-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export Successful",
+        description: "Audit trail has been exported successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export audit trail.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getActionIcon = (action: string) => {
@@ -119,10 +180,16 @@ const AuditTrail = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Audit Trail</h2>
-        <Button onClick={handleExportAudit}>
-          <Download className="h-4 w-4 mr-2" />
-          Export Audit Log
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={loadAuditEntries} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button onClick={handleExportAudit} disabled={auditEntries.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Export Audit Log
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="entries" className="space-y-4">
@@ -211,7 +278,7 @@ const AuditTrail = () => {
                         selected={dateRange}
                         onSelect={setDateRange}
                         numberOfMonths={2}
-                        className="p-3 pointer-events-auto"
+                        className="p-3"
                       />
                     </PopoverContent>
                   </Popover>
@@ -219,7 +286,7 @@ const AuditTrail = () => {
               </div>
               
               <div className="flex gap-2 mt-4">
-                <Button onClick={handleSearch}>
+                <Button onClick={handleSearch} disabled={isLoading}>
                   <Search className="h-4 w-4 mr-2" />
                   Search
                 </Button>
@@ -238,68 +305,75 @@ const AuditTrail = () => {
               <CardTitle>Audit Entries ({auditEntries.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Timestamp</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Entity</TableHead>
-                    <TableHead>Changes</TableHead>
-                    <TableHead>IP Address</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {auditEntries.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell>
-                        {format(entry.timestamp, 'MMM dd, yyyy HH:mm:ss')}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{entry.userName}</p>
-                          <p className="text-xs text-muted-foreground">{entry.userId}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getActionColor(entry.action)}>
-                          <div className="flex items-center gap-1">
-                            {getActionIcon(entry.action)}
-                            {entry.action}
-                          </div>
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{entry.entityType}</p>
-                          <p className="text-xs text-muted-foreground">{entry.entityId}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {entry.changes && entry.changes.length > 0 ? (
-                          <div className="text-xs">
-                            {entry.changes.slice(0, 2).map((change, index) => (
-                              <div key={index}>
-                                <span className="font-medium">{change.field}:</span>{' '}
-                                <span className="text-red-600">{String(change.oldValue)}</span> →{' '}
-                                <span className="text-green-600">{String(change.newValue)}</span>
-                              </div>
-                            ))}
-                            {entry.changes.length > 2 && (
-                              <p className="text-muted-foreground">+{entry.changes.length - 2} more</p>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">No changes</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs font-mono">{entry.ipAddress || 'Unknown'}</span>
-                      </TableCell>
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">Loading audit entries...</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Timestamp</TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Entity</TableHead>
+                      <TableHead>Changes</TableHead>
+                      <TableHead>IP Address</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {auditEntries.map((entry) => (
+                      <TableRow key={entry.id}>
+                        <TableCell>
+                          {format(entry.timestamp, 'MMM dd, yyyy HH:mm:ss')}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{entry.userName}</p>
+                            <p className="text-xs text-muted-foreground">{entry.userId}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getActionColor(entry.action)}>
+                            <div className="flex items-center gap-1">
+                              {getActionIcon(entry.action)}
+                              {entry.action}
+                            </div>
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{entry.entityType}</p>
+                            <p className="text-xs text-muted-foreground">{entry.entityId}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {entry.changes && entry.changes.length > 0 ? (
+                            <div className="text-xs">
+                              {entry.changes.slice(0, 2).map((change, index) => (
+                                <div key={index}>
+                                  <span className="font-medium">{change.field}:</span>{' '}
+                                  <span className="text-red-600">{String(change.oldValue)}</span> →{' '}
+                                  <span className="text-green-600">{String(change.newValue)}</span>
+                                </div>
+                              ))}
+                              {entry.changes.length > 2 && (
+                                <p className="text-muted-foreground">+{entry.changes.length - 2} more</p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">No changes</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs font-mono">{entry.ipAddress || 'Unknown'}</span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

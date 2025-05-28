@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MultiLevelAggregation from '@/components/analytics/MultiLevelAggregation';
 import AdvancedAnalytics from '@/components/analytics/AdvancedAnalytics';
@@ -7,9 +7,38 @@ import SystemIntegration from '@/components/integration/SystemIntegration';
 import ScenarioPlanning from '@/components/analytics/ScenarioPlanning';
 import AuditTrail from '@/components/analytics/AuditTrail';
 import { usePermissions } from '@/hooks/usePermissions';
+import { performanceOptimizer } from '@/utils/performanceOptimizer';
+import { auditTrail } from '@/utils/auditTrail';
+import { useToast } from '@/hooks/use-toast';
 
 const AnalyticsDashboard = () => {
-  const { canAccess } = usePermissions();
+  const { canAccess, userRole } = usePermissions();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Start performance monitoring
+    performanceOptimizer.startMonitoring(30000);
+
+    // Log dashboard access
+    auditTrail.logUserAction(
+      'current-user-id',
+      'Current User',
+      'ACCESS',
+      'system',
+      'analytics-dashboard',
+      { role: userRole }
+    );
+
+    // Show welcome toast
+    toast({
+      title: "Analytics Dashboard",
+      description: "Advanced analytics features loaded successfully.",
+    });
+
+    return () => {
+      performanceOptimizer.stopMonitoring();
+    };
+  }, [userRole, toast]);
 
   return (
     <div className="space-y-6">
@@ -38,7 +67,13 @@ const AnalyticsDashboard = () => {
         </TabsContent>
 
         <TabsContent value="scenarios">
-          <ScenarioPlanning />
+          {canAccess.scenarioPlanning ? (
+            <ScenarioPlanning />
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">You don't have permission to access scenario planning features.</p>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="integration">

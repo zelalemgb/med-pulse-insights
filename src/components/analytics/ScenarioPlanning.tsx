@@ -7,16 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { TrendingUp, Target, AlertTriangle, CheckCircle, Plus, Play } from 'lucide-react';
+import { TrendingUp, Target, AlertTriangle, CheckCircle, Plus, Play, Download } from 'lucide-react';
 import { scenarioPlanningEngine, Scenario, ScenarioResult, ScenarioParameter } from '@/utils/scenarioPlanning';
+import { useToast } from '@/hooks/use-toast';
 
 const ScenarioPlanning = () => {
+  const { toast } = useToast();
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [parameters, setParameters] = useState<ScenarioParameter[]>([]);
-  const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
   const [scenarioResults, setScenarioResults] = useState<Map<string, ScenarioResult>>(new Map());
   const [newScenario, setNewScenario] = useState({
     name: '',
@@ -24,6 +24,7 @@ const ScenarioPlanning = () => {
     parameters: {} as Record<string, number>,
   });
   const [isCreating, setIsCreating] = useState(false);
+  const [isRunning, setIsRunning] = useState<string | null>(null);
 
   useEffect(() => {
     // Load available parameters
@@ -57,10 +58,17 @@ const ScenarioPlanning = () => {
         parameters: { ...newScenario.parameters },
       });
       setIsCreating(false);
+      
+      toast({
+        title: "Scenario Created",
+        description: `${scenario.name} has been created successfully.`,
+      });
     }
   };
 
-  const handleRunScenario = (scenarioId: string) => {
+  const handleRunScenario = async (scenarioId: string) => {
+    setIsRunning(scenarioId);
+    
     // Mock baseline data - this would come from actual data in production
     const baselineData = {
       annualConsumption: 10000,
@@ -68,8 +76,27 @@ const ScenarioPlanning = () => {
       annualStockOuts: 12,
     };
     
-    const result = scenarioPlanningEngine.runScenario(scenarioId, baselineData);
-    setScenarioResults(prev => new Map(prev.set(scenarioId, result)));
+    try {
+      // Simulate async processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const result = scenarioPlanningEngine.runScenario(scenarioId, baselineData);
+      setScenarioResults(prev => new Map(prev.set(scenarioId, result)));
+      
+      const scenario = scenarios.find(s => s.id === scenarioId);
+      toast({
+        title: "Scenario Completed",
+        description: `${scenario?.name} analysis completed with ${result.confidence}% confidence.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Scenario Failed",
+        description: "Failed to run scenario analysis. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRunning(null);
+    }
   };
 
   const handleParameterChange = (paramId: string, value: number) => {
@@ -80,6 +107,33 @@ const ScenarioPlanning = () => {
         [paramId]: value,
       },
     }));
+  };
+
+  const handleExportResults = () => {
+    const csvContent = [
+      ['Scenario', 'Consumption', 'Wastage', 'Stock Outs', 'Budget Impact', 'Confidence'].join(','),
+      ...Array.from(scenarioResults.entries()).map(([id, result]) => {
+        const scenario = scenarios.find(s => s.id === id);
+        return [
+          scenario?.name || id,
+          result.projectedConsumption,
+          result.projectedWastage,
+          result.projectedStockOuts,
+          result.budgetImpact,
+          result.confidence
+        ].join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'scenario-results.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const getConfidenceColor = (confidence: number) => {
@@ -98,10 +152,18 @@ const ScenarioPlanning = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Scenario Planning</h2>
-        <Button onClick={() => setIsCreating(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Scenario
-        </Button>
+        <div className="flex gap-2">
+          {scenarioResults.size > 0 && (
+            <Button variant="outline" onClick={handleExportResults}>
+              <Download className="h-4 w-4 mr-2" />
+              Export Results
+            </Button>
+          )}
+          <Button onClick={() => setIsCreating(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Scenario
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="scenarios" className="space-y-4">
@@ -182,10 +244,11 @@ const ScenarioPlanning = () => {
                     <Button
                       size="sm"
                       onClick={() => handleRunScenario(scenario.id)}
+                      disabled={isRunning === scenario.id}
                       className="flex items-center gap-2"
                     >
                       <Play className="h-4 w-4" />
-                      Run
+                      {isRunning === scenario.id ? 'Running...' : 'Run'}
                     </Button>
                   </div>
                 </CardHeader>
@@ -299,6 +362,14 @@ const ScenarioPlanning = () => {
               </Card>
             );
           })}
+
+          {scenarioResults.size === 0 && (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-muted-foreground">No scenario results yet. Run some scenarios to see results here.</p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="compare" className="space-y-4">
@@ -314,14 +385,14 @@ const ScenarioPlanning = () => {
                       name: scenarios.find(s => s.id === id)?.name || id,
                       consumption: result.projectedConsumption,
                       wastage: result.projectedWastage,
-                      budget: result.budgetImpact,
+                      budget: result.budgetImpact / 1000, // Convert to thousands for better visualization
                     }))}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip />
-                      <Bar dataKey="consumption" fill="#2563eb" />
-                      <Bar dataKey="wastage" fill="#dc2626" />
+                      <Bar dataKey="consumption" fill="#2563eb" name="Consumption" />
+                      <Bar dataKey="wastage" fill="#dc2626" name="Wastage" />
                     </BarChart>
                   </ResponsiveContainer>
                   

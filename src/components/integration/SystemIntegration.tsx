@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,8 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle, CheckCircle, Clock, ExternalLink, Settings, RefreshCw } from 'lucide-react';
 import { ExternalSystem } from '@/utils/apiClient';
 import { syncManager, SyncStatus } from '@/utils/realTimeSync';
+import { useToast } from '@/hooks/use-toast';
 
 const SystemIntegration = () => {
+  const { toast } = useToast();
   const [systems, setSystems] = useState<ExternalSystem[]>([
     {
       id: 'erp-001',
@@ -64,8 +67,17 @@ const SystemIntegration = () => {
     // Get initial status
     setSyncStatus(syncManager.getStatus());
 
+    // Set up status update callback
+    const updateStatus = () => {
+      setSyncStatus(syncManager.getStatus());
+    };
+
+    // Update status every 10 seconds
+    const interval = setInterval(updateStatus, 10000);
+
     return () => {
       syncManager.stopRealTimeSync();
+      clearInterval(interval);
     };
   }, [systems]);
 
@@ -82,8 +94,16 @@ const SystemIntegration = () => {
     if (system) {
       if (isActive) {
         syncManager.addSystem({ ...system, isActive });
+        toast({
+          title: "System Activated",
+          description: `${system.name} has been activated for sync.`,
+        });
       } else {
         syncManager.removeSystem(systemId);
+        toast({
+          title: "System Deactivated",
+          description: `${system.name} has been deactivated.`,
+        });
       }
     }
   };
@@ -105,6 +125,11 @@ const SystemIntegration = () => {
             : sys
         )
       );
+
+      toast({
+        title: "Sync Initiated",
+        description: `Manual sync started for ${system.name}.`,
+      });
     }
   };
 
@@ -121,6 +146,11 @@ const SystemIntegration = () => {
 
       setSystems(prev => [...prev, system]);
       setNewSystem({ name: '', type: 'ERP', endpoint: '', apiKey: '' });
+      
+      toast({
+        title: "System Added",
+        description: `${system.name} has been added successfully.`,
+      });
     }
   };
 
