@@ -8,7 +8,8 @@ import { usePendingAssociations, useHealthFacilities } from '@/hooks/useHealthFa
 import { PendingAssociations } from './PendingAssociations';
 import { FacilitiesList } from './FacilitiesList';
 import { FacilityTestHelper } from './FacilityTestHelper';
-import { Shield, Users, Building, Clock, CheckCircle, TestTube } from 'lucide-react';
+import { CrossFacilityAnalytics } from './CrossFacilityAnalytics';
+import { Shield, Users, Building, Clock, CheckCircle, TestTube, BarChart3, TrendingUp } from 'lucide-react';
 
 export const SuperAdminDashboard = () => {
   const { profile } = useAuth();
@@ -103,15 +104,19 @@ export const SuperAdminDashboard = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="testing" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="analytics" className="w-full">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="analytics" className="flex items-center">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Analytics
+          </TabsTrigger>
           <TabsTrigger value="testing" className="flex items-center">
             <TestTube className="h-4 w-4 mr-2" />
-            Phase 3 Testing
+            Testing
           </TabsTrigger>
           <TabsTrigger value="pending" className="flex items-center">
             <Clock className="h-4 w-4 mr-2" />
-            Pending Approvals
+            Pending
             {pendingCount > 0 && (
               <Badge variant="destructive" className="ml-2 text-xs">
                 {pendingCount}
@@ -120,13 +125,21 @@ export const SuperAdminDashboard = () => {
           </TabsTrigger>
           <TabsTrigger value="facilities" className="flex items-center">
             <Building className="h-4 w-4 mr-2" />
-            Facility Management
+            Facilities
           </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center">
             <Users className="h-4 w-4 mr-2" />
-            User Management
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="optimization" className="flex items-center">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Optimization
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="analytics">
+          <CrossFacilityAnalytics />
+        </TabsContent>
 
         <TabsContent value="testing">
           <FacilityTestHelper />
@@ -163,6 +176,20 @@ export const SuperAdminDashboard = () => {
               <p className="text-gray-600">
                 User management features will be implemented in a future update.
               </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="optimization">
+          <Card>
+            <CardHeader>
+              <CardTitle>Supply Chain Optimization</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">
+                Advanced supply chain optimization tools and recommendations.
+              </p>
+              <CrossFacilityAnalytics />
             </CardContent>
           </Card>
         </TabsContent>
