@@ -3,6 +3,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
+import { Database } from '@/integrations/supabase/types';
+
+type SupabaseUserRole = Database['public']['Enums']['user_role'];
 
 interface UserProfile {
   id: string;
@@ -26,6 +29,18 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Map Supabase roles to pharmaceutical roles
+const mapSupabaseRoleToPharmaceutical = (supabaseRole: SupabaseUserRole): UserRole => {
+  const roleMapping: Record<SupabaseUserRole, UserRole> = {
+    'admin': 'national',
+    'manager': 'facility_manager',
+    'analyst': 'data_analyst',
+    'viewer': 'facility_officer'
+  };
+  
+  return roleMapping[supabaseRole] || 'facility_officer';
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -78,7 +93,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      setProfile(data);
+      // Convert the Supabase role to pharmaceutical role
+      const pharmaceuticalProfile: UserProfile = {
+        id: data.id,
+        email: data.email,
+        full_name: data.full_name,
+        role: mapSupabaseRoleToPharmaceutical(data.role),
+        facility_id: data.facility_id,
+        department: data.department,
+        is_active: data.is_active
+      };
+
+      setProfile(pharmaceuticalProfile);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
