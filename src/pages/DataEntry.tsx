@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Save, Plus, Trash2, Download } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Save, Plus, Trash2, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProductData {
@@ -50,6 +50,19 @@ interface QuarterData {
 const DataEntry = () => {
   const { toast } = useToast();
   const [products, setProducts] = useState<ProductData[]>([]);
+  const [openQuarters, setOpenQuarters] = useState<{[key: number]: boolean}>({
+    0: true, // Quarter 1 open by default
+    1: false,
+    2: false,
+    3: false
+  });
+
+  const toggleQuarter = (quarterIndex: number) => {
+    setOpenQuarters(prev => ({
+      ...prev,
+      [quarterIndex]: !prev[quarterIndex]
+    }));
+  };
 
   const addNewProduct = () => {
     const newProduct: ProductData = {
@@ -142,12 +155,15 @@ const DataEntry = () => {
     });
   };
 
+  const quarterColors = ['bg-blue-50', 'bg-green-50', 'bg-yellow-50', 'bg-red-50'];
+  const quarterNames = ['Quarter 1', 'Quarter 2', 'Quarter 3', 'Quarter 4'];
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-full mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Quarterly Pharmaceutical Data Entry</h1>
-          <p className="text-gray-600 mt-2">Enter quarterly pharmaceutical usage data in Excel format</p>
+          <p className="text-gray-600 mt-2">Enter quarterly pharmaceutical usage data with collapsible quarters</p>
         </div>
 
         <div className="flex gap-4 mb-6">
@@ -163,6 +179,22 @@ const DataEntry = () => {
             <Download className="w-4 h-4 mr-2" />
             Export to Excel
           </Button>
+        </div>
+
+        {/* Quarter Toggle Buttons */}
+        <div className="mb-4 flex gap-2 flex-wrap">
+          {quarterNames.map((name, index) => (
+            <Button
+              key={index}
+              variant={openQuarters[index] ? "default" : "outline"}
+              size="sm"
+              onClick={() => toggleQuarter(index)}
+              className={`${quarterColors[index]} border`}
+            >
+              {openQuarters[index] ? <ChevronDown className="w-4 h-4 mr-2" /> : <ChevronRight className="w-4 h-4 mr-2" />}
+              {name}
+            </Button>
+          ))}
         </div>
 
         <Card>
@@ -181,14 +213,14 @@ const DataEntry = () => {
                     <TableHead className="font-bold border-r min-w-[150px]">Facility Specific</TableHead>
                     <TableHead className="font-bold border-r min-w-[150px]">Procurement Source</TableHead>
                     
-                    {/* Quarter 1 */}
-                    <TableHead colSpan={10} className="text-center font-bold border-r bg-blue-50">Quarter 1</TableHead>
-                    {/* Quarter 2 */}
-                    <TableHead colSpan={10} className="text-center font-bold border-r bg-green-50">Quarter 2</TableHead>
-                    {/* Quarter 3 */}
-                    <TableHead colSpan={10} className="text-center font-bold border-r bg-yellow-50">Quarter 3</TableHead>
-                    {/* Quarter 4 */}
-                    <TableHead colSpan={10} className="text-center font-bold border-r bg-red-50">Quarter 4</TableHead>
+                    {/* Quarterly Data Headers - Only show if quarter is open */}
+                    {quarterNames.map((name, qIndex) => (
+                      openQuarters[qIndex] && (
+                        <TableHead key={qIndex} colSpan={10} className={`text-center font-bold border-r ${quarterColors[qIndex]}`}>
+                          {name}
+                        </TableHead>
+                      )
+                    ))}
                     
                     {/* Annual Averages */}
                     <TableHead colSpan={4} className="text-center font-bold border-r bg-purple-50">Annual Averages</TableHead>
@@ -204,53 +236,23 @@ const DataEntry = () => {
                     <TableHead></TableHead>
                     <TableHead></TableHead>
                     
-                    {/* Quarter 1 Subheadings */}
-                    <TableHead className="bg-blue-50 min-w-[100px]">Beginning Balance</TableHead>
-                    <TableHead className="bg-blue-50 min-w-[100px]">Received</TableHead>
-                    <TableHead className="bg-blue-50 min-w-[100px]">Positive Adj</TableHead>
-                    <TableHead className="bg-blue-50 min-w-[100px]">Negative Adj</TableHead>
-                    <TableHead className="bg-blue-50 min-w-[100px]">Ending Balance</TableHead>
-                    <TableHead className="bg-blue-50 min-w-[100px]">Stock Out Days</TableHead>
-                    <TableHead className="bg-blue-50 min-w-[100px]">Expired/Damaged</TableHead>
-                    <TableHead className="bg-blue-50 min-w-[100px]">Consumption/Issue</TableHead>
-                    <TableHead className="bg-blue-50 min-w-[100px]">aAMC</TableHead>
-                    <TableHead className="bg-blue-50 min-w-[100px] border-r">Wastage Rate</TableHead>
-                    
-                    {/* Quarter 2 Subheadings */}
-                    <TableHead className="bg-green-50 min-w-[100px]">Beginning Balance</TableHead>
-                    <TableHead className="bg-green-50 min-w-[100px]">Received</TableHead>
-                    <TableHead className="bg-green-50 min-w-[100px]">Positive Adj</TableHead>
-                    <TableHead className="bg-green-50 min-w-[100px]">Negative Adj</TableHead>
-                    <TableHead className="bg-green-50 min-w-[100px]">Ending Balance</TableHead>
-                    <TableHead className="bg-green-50 min-w-[100px]">Stock Out Days</TableHead>
-                    <TableHead className="bg-green-50 min-w-[100px]">Expired/Damaged</TableHead>
-                    <TableHead className="bg-green-50 min-w-[100px]">Consumption/Issue</TableHead>
-                    <TableHead className="bg-green-50 min-w-[100px]">aAMC</TableHead>
-                    <TableHead className="bg-green-50 min-w-[100px] border-r">Wastage Rate</TableHead>
-                    
-                    {/* Quarter 3 Subheadings */}
-                    <TableHead className="bg-yellow-50 min-w-[100px]">Beginning Balance</TableHead>
-                    <TableHead className="bg-yellow-50 min-w-[100px]">Received</TableHead>
-                    <TableHead className="bg-yellow-50 min-w-[100px]">Positive Adj</TableHead>
-                    <TableHead className="bg-yellow-50 min-w-[100px]">Negative Adj</TableHead>
-                    <TableHead className="bg-yellow-50 min-w-[100px]">Ending Balance</TableHead>
-                    <TableHead className="bg-yellow-50 min-w-[100px]">Stock Out Days</TableHead>
-                    <TableHead className="bg-yellow-50 min-w-[100px]">Expired/Damaged</TableHead>
-                    <TableHead className="bg-yellow-50 min-w-[100px]">Consumption/Issue</TableHead>
-                    <TableHead className="bg-yellow-50 min-w-[100px]">aAMC</TableHead>
-                    <TableHead className="bg-yellow-50 min-w-[100px] border-r">Wastage Rate</TableHead>
-                    
-                    {/* Quarter 4 Subheadings */}
-                    <TableHead className="bg-red-50 min-w-[100px]">Beginning Balance</TableHead>
-                    <TableHead className="bg-red-50 min-w-[100px]">Received</TableHead>
-                    <TableHead className="bg-red-50 min-w-[100px]">Positive Adj</TableHead>
-                    <TableHead className="bg-red-50 min-w-[100px]">Negative Adj</TableHead>
-                    <TableHead className="bg-red-50 min-w-[100px]">Ending Balance</TableHead>
-                    <TableHead className="bg-red-50 min-w-[100px]">Stock Out Days</TableHead>
-                    <TableHead className="bg-red-50 min-w-[100px]">Expired/Damaged</TableHead>
-                    <TableHead className="bg-red-50 min-w-[100px]">Consumption/Issue</TableHead>
-                    <TableHead className="bg-red-50 min-w-[100px]">aAMC</TableHead>
-                    <TableHead className="bg-red-50 min-w-[100px] border-r">Wastage Rate</TableHead>
+                    {/* Quarter Subheadings - Only show if quarter is open */}
+                    {[0, 1, 2, 3].map((qIndex) => (
+                      openQuarters[qIndex] && (
+                        <React.Fragment key={qIndex}>
+                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Beginning Balance</TableHead>
+                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Received</TableHead>
+                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Positive Adj</TableHead>
+                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Negative Adj</TableHead>
+                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Ending Balance</TableHead>
+                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Stock Out Days</TableHead>
+                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Expired/Damaged</TableHead>
+                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Consumption/Issue</TableHead>
+                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>aAMC</TableHead>
+                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px] border-r`}>Wastage Rate</TableHead>
+                        </React.Fragment>
+                      )
+                    ))}
                     
                     {/* Annual Averages Subheadings */}
                     <TableHead className="bg-purple-50 min-w-[120px]">Annual Consumption</TableHead>
@@ -324,12 +326,11 @@ const DataEntry = () => {
                         />
                       </TableCell>
                       
-                      {/* Quarter Data */}
-                      {product.quarters.map((quarter, qIndex) => {
-                        const bgColor = qIndex === 0 ? 'bg-blue-25' : qIndex === 1 ? 'bg-green-25' : qIndex === 2 ? 'bg-yellow-25' : 'bg-red-25';
-                        return (
+                      {/* Quarter Data - Only show if quarter is open */}
+                      {product.quarters.map((quarter, qIndex) => (
+                        openQuarters[qIndex] && (
                           <React.Fragment key={qIndex}>
-                            <TableCell className={bgColor}>
+                            <TableCell className={quarterColors[qIndex]}>
                               <Input
                                 type="number"
                                 value={quarter.beginningBalance}
@@ -337,7 +338,7 @@ const DataEntry = () => {
                                 className="h-8 text-xs w-20"
                               />
                             </TableCell>
-                            <TableCell className={bgColor}>
+                            <TableCell className={quarterColors[qIndex]}>
                               <Input
                                 type="number"
                                 value={quarter.received}
@@ -345,7 +346,7 @@ const DataEntry = () => {
                                 className="h-8 text-xs w-20"
                               />
                             </TableCell>
-                            <TableCell className={bgColor}>
+                            <TableCell className={quarterColors[qIndex]}>
                               <Input
                                 type="number"
                                 value={quarter.positiveAdj}
@@ -353,7 +354,7 @@ const DataEntry = () => {
                                 className="h-8 text-xs w-20"
                               />
                             </TableCell>
-                            <TableCell className={bgColor}>
+                            <TableCell className={quarterColors[qIndex]}>
                               <Input
                                 type="number"
                                 value={quarter.negativeAdj}
@@ -361,7 +362,7 @@ const DataEntry = () => {
                                 className="h-8 text-xs w-20"
                               />
                             </TableCell>
-                            <TableCell className={bgColor}>
+                            <TableCell className={quarterColors[qIndex]}>
                               <Input
                                 type="number"
                                 value={quarter.endingBalance}
@@ -369,7 +370,7 @@ const DataEntry = () => {
                                 className="h-8 text-xs w-20 bg-gray-100"
                               />
                             </TableCell>
-                            <TableCell className={bgColor}>
+                            <TableCell className={quarterColors[qIndex]}>
                               <Input
                                 type="number"
                                 value={quarter.stockOutDays}
@@ -378,7 +379,7 @@ const DataEntry = () => {
                                 max="90"
                               />
                             </TableCell>
-                            <TableCell className={bgColor}>
+                            <TableCell className={quarterColors[qIndex]}>
                               <Input
                                 type="number"
                                 value={quarter.expiredDamaged}
@@ -386,7 +387,7 @@ const DataEntry = () => {
                                 className="h-8 text-xs w-20"
                               />
                             </TableCell>
-                            <TableCell className={bgColor}>
+                            <TableCell className={quarterColors[qIndex]}>
                               <Input
                                 type="number"
                                 value={quarter.consumptionIssue}
@@ -394,7 +395,7 @@ const DataEntry = () => {
                                 className="h-8 text-xs w-20"
                               />
                             </TableCell>
-                            <TableCell className={bgColor}>
+                            <TableCell className={quarterColors[qIndex]}>
                               <Input
                                 type="number"
                                 value={quarter.aamc.toFixed(2)}
@@ -402,7 +403,7 @@ const DataEntry = () => {
                                 className="h-8 text-xs w-20 bg-gray-100"
                               />
                             </TableCell>
-                            <TableCell className={`${bgColor} ${qIndex === 3 ? 'border-r' : ''}`}>
+                            <TableCell className={`${quarterColors[qIndex]} border-r`}>
                               <Input
                                 value={`${quarter.wastageRate.toFixed(1)}%`}
                                 readOnly
@@ -410,8 +411,8 @@ const DataEntry = () => {
                               />
                             </TableCell>
                           </React.Fragment>
-                        );
-                      })}
+                        )
+                      ))}
                       
                       {/* Annual Averages */}
                       <TableCell className="bg-purple-25">
