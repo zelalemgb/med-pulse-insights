@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Save, Plus, Trash2, Download, ChevronDown, ChevronRight, Lock, Upload, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { ProductData, DataFrequency, PeriodData, getPeriodsForFrequency, createEmptyPeriods } from '@/types/dataEntry';
+import { ProductData, DataFrequency, PeriodData, getPeriodsForFrequency, createEmptyPeriods, ImportMapping } from '@/types/pharmaceutical';
 import DataMappingDialog from '@/components/DataMappingDialog';
 import * as XLSX from 'xlsx';
 
@@ -265,56 +265,13 @@ const DataEntry = () => {
     }
   };
 
-  const handleMappingComplete = (mappedData: any[], mapping: Record<string, string>) => {
+  const handleMappingComplete = (mappedData: ProductData[], mapping: ImportMapping) => {
     try {
-      const importedProducts: ProductData[] = mappedData.map((row: any, index: number) => {
-        const { names } = getPeriodsForFrequency(selectedFrequency as DataFrequency);
-        const seasonality: {[key: string]: number; total: number} = { total: 0 };
-        names.forEach((name, pIndex) => {
-          seasonality[`p${pIndex + 1}`] = 0;
-        });
-
-        return {
-          id: `imported-${Date.now()}-${index}`,
-          productName: row.productName || '',
-          unit: row.unit || '',
-          unitPrice: parseFloat(row.unitPrice) || 0,
-          venClassification: (row.venClassification || 'V') as 'V' | 'E' | 'N',
-          facilitySpecific: Boolean(row.facilitySpecific),
-          procurementSource: row.procurementSource || '',
-          frequency: selectedFrequency as DataFrequency,
-          periods: createEmptyPeriods(selectedFrequency as DataFrequency).map((period, pIndex) => ({
-            ...period,
-            beginningBalance: parseFloat(row.beginningBalance) || 0,
-            received: parseFloat(row.received) || 0,
-            positiveAdj: parseFloat(row.positiveAdj) || 0,
-            negativeAdj: parseFloat(row.negativeAdj) || 0,
-            stockOutDays: parseFloat(row.stockOutDays) || 0,
-            expiredDamaged: parseFloat(row.expiredDamaged) || 0,
-            consumptionIssue: parseFloat(row.consumptionIssue) || 0
-          })),
-          annualAverages: {
-            annualConsumption: 0,
-            aamc: parseFloat(row.aamcApplied) || 0,
-            wastageRate: parseFloat(row.wastageRateApplied) || 0,
-            awamc: 0
-          },
-          forecast: {
-            aamcApplied: parseFloat(row.aamcApplied) || 0,
-            wastageRateApplied: parseFloat(row.wastageRateApplied) || 0,
-            programExpansionContraction: parseFloat(row.programExpansionContraction) || 0,
-            projectedAmcAdjusted: 0,
-            projectedAnnualConsumption: 0
-          },
-          seasonality
-        };
-      });
-
-      setProducts(prev => [...prev, ...importedProducts]);
+      setProducts(prev => [...prev, ...mappedData]);
       
       toast({
         title: "Import Successful",
-        description: `${importedProducts.length} products imported successfully`,
+        description: `${mappedData.length} products imported successfully`,
       });
     } catch (error) {
       console.error('Import error:', error);
