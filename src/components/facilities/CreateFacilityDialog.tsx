@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,6 +30,7 @@ import {
 } from '@/components/ui/select';
 import { useCreateFacility } from '@/hooks/useHealthFacilities';
 import { Plus } from 'lucide-react';
+import { CreateFacilityRequest } from '@/types/healthFacilities';
 
 const createFacilitySchema = z.object({
   name: z.string().min(1, 'Facility name is required'),
@@ -63,7 +63,24 @@ export const CreateFacilityDialog = () => {
 
   const onSubmit = async (data: CreateFacilityForm) => {
     try {
-      await createFacility.mutateAsync(data);
+      // Transform the form data to match CreateFacilityRequest type
+      const facilityData: CreateFacilityRequest = {
+        name: data.name,
+        facility_type: data.facility_type,
+        level: data.level,
+        region: data.region,
+        zone: data.zone,
+        code: data.code || undefined,
+        wereda: data.wereda || undefined,
+        latitude: data.latitude || undefined,
+        longitude: data.longitude || undefined,
+        catchment_area: data.catchment_area || undefined,
+        capacity: data.capacity || undefined,
+        staff_count: data.staff_count || undefined,
+        operational_status: data.operational_status || 'active',
+      };
+
+      await createFacility.mutateAsync(facilityData);
       setOpen(false);
       form.reset();
     } catch (error) {
