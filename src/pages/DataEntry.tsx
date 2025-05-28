@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Save, Plus, Trash2, Download, ChevronDown, ChevronRight } from 'lucide-react';
+import { Save, Plus, Trash2, Download, ChevronDown, ChevronRight, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProductData {
@@ -57,11 +58,50 @@ const DataEntry = () => {
     3: false
   });
 
+  // Check if a quarter is complete for a product
+  const isQuarterComplete = (product: ProductData, quarterIndex: number) => {
+    const quarter = product.quarters[quarterIndex];
+    return quarter.beginningBalance > 0 || quarter.received > 0 || quarter.consumptionIssue > 0;
+  };
+
+  // Check if a quarter should be available (unlocked)
+  const isQuarterAvailable = (product: ProductData, quarterIndex: number) => {
+    if (quarterIndex === 0) return true; // Q1 always available
+    
+    // Check if previous quarter is complete
+    for (let i = 0; i < quarterIndex; i++) {
+      if (!isQuarterComplete(product, i)) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Check if all products have completed a specific quarter
+  const areAllProductsCompleteForQuarter = (quarterIndex: number) => {
+    if (products.length === 0) return false;
+    return products.every(product => isQuarterComplete(product, quarterIndex));
+  };
+
+  // Auto-unlock next quarter when all products complete current quarter
+  useEffect(() => {
+    for (let q = 0; q < 3; q++) {
+      if (areAllProductsCompleteForQuarter(q) && !openQuarters[q + 1]) {
+        setOpenQuarters(prev => ({ ...prev, [q + 1]: false })); // Keep it closed but available
+      }
+    }
+  }, [products]);
+
   const toggleQuarter = (quarterIndex: number) => {
-    setOpenQuarters(prev => ({
-      ...prev,
-      [quarterIndex]: !prev[quarterIndex]
-    }));
+    // Check if at least one product has this quarter available
+    const hasAvailableQuarter = products.some(product => isQuarterAvailable(product, quarterIndex));
+    
+    if (hasAvailableQuarter || quarterIndex === 0) {
+      setOpenQuarters(prev => ({
+        ...prev,
+        [quarterIndex]: !prev[quarterIndex]
+      }));
+    }
   };
 
   const addNewProduct = () => {
@@ -158,12 +198,19 @@ const DataEntry = () => {
   const quarterColors = ['bg-blue-50', 'bg-green-50', 'bg-yellow-50', 'bg-red-50'];
   const quarterNames = ['Quarter 1', 'Quarter 2', 'Quarter 3', 'Quarter 4'];
 
+  // Check if a quarter button should be available globally
+  const isQuarterGloballyAvailable = (quarterIndex: number) => {
+    if (quarterIndex === 0) return true;
+    if (products.length === 0) return false;
+    return products.some(product => isQuarterAvailable(product, quarterIndex));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-full mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Quarterly Pharmaceutical Data Entry</h1>
-          <p className="text-gray-600 mt-2">Enter quarterly pharmaceutical usage data with collapsible quarters</p>
+          <p className="text-gray-600 mt-2">Enter quarterly pharmaceutical usage data with progressive quarter unlocking</p>
         </div>
 
         <div className="flex gap-4 mb-6">
@@ -183,18 +230,24 @@ const DataEntry = () => {
 
         {/* Quarter Toggle Buttons */}
         <div className="mb-4 flex gap-2 flex-wrap">
-          {quarterNames.map((name, index) => (
-            <Button
-              key={index}
-              variant={openQuarters[index] ? "default" : "outline"}
-              size="sm"
-              onClick={() => toggleQuarter(index)}
-              className={`${quarterColors[index]} border`}
-            >
-              {openQuarters[index] ? <ChevronDown className="w-4 h-4 mr-2" /> : <ChevronRight className="w-4 h-4 mr-2" />}
-              {name}
-            </Button>
-          ))}
+          {quarterNames.map((name, index) => {
+            const isAvailable = isQuarterGloballyAvailable(index);
+            return (
+              <Button
+                key={index}
+                variant={openQuarters[index] ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleQuarter(index)}
+                disabled={!isAvailable}
+                className={`${quarterColors[index]} border ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {!isAvailable && <Lock className="w-4 h-4 mr-2" />}
+                {isAvailable && (openQuarters[index] ? <ChevronDown className="w-4 h-4 mr-2" /> : <ChevronRight className="w-4 h-4 mr-2" />)}
+                {name}
+                {!isAvailable && <span className="ml-2 text-xs">(Complete Q{index} first)</span>}
+              </Button>
+            );
+          })}
         </div>
 
         <Card>
@@ -326,7 +379,7 @@ const DataEntry = () => {
                         />
                       </TableCell>
                       
-                      {/* Quarter Data - Only show if quarter is open */}
+                      {/* Quarter Data - Only show if quarter is open and available for this product */}
                       {product.quarters.map((quarter, qIndex) => (
                         openQuarters[qIndex] && (
                           <React.Fragment key={qIndex}>
@@ -335,7 +388,8 @@ const DataEntry = () => {
                                 type="number"
                                 value={quarter.beginningBalance}
                                 onChange={(e) => updateQuarterData(product.id, qIndex, 'beginningBalance', parseInt(e.target.value) || 0)}
-                                className="h-8 text-xs w-20"
+                                disabled={!isQuarterAvailable(product, qIndex)}
+                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
                             <TableCell className={quarterColors[qIndex]}>
@@ -343,7 +397,8 @@ const DataEntry = () => {
                                 type="number"
                                 value={quarter.received}
                                 onChange={(e) => updateQuarterData(product.id, qIndex, 'received', parseInt(e.target.value) || 0)}
-                                className="h-8 text-xs w-20"
+                                disabled={!isQuarterAvailable(product, qIndex)}
+                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
                             <TableCell className={quarterColors[qIndex]}>
@@ -351,7 +406,8 @@ const DataEntry = () => {
                                 type="number"
                                 value={quarter.positiveAdj}
                                 onChange={(e) => updateQuarterData(product.id, qIndex, 'positiveAdj', parseInt(e.target.value) || 0)}
-                                className="h-8 text-xs w-20"
+                                disabled={!isQuarterAvailable(product, qIndex)}
+                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
                             <TableCell className={quarterColors[qIndex]}>
@@ -359,7 +415,8 @@ const DataEntry = () => {
                                 type="number"
                                 value={quarter.negativeAdj}
                                 onChange={(e) => updateQuarterData(product.id, qIndex, 'negativeAdj', parseInt(e.target.value) || 0)}
-                                className="h-8 text-xs w-20"
+                                disabled={!isQuarterAvailable(product, qIndex)}
+                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
                             <TableCell className={quarterColors[qIndex]}>
@@ -375,7 +432,8 @@ const DataEntry = () => {
                                 type="number"
                                 value={quarter.stockOutDays}
                                 onChange={(e) => updateQuarterData(product.id, qIndex, 'stockOutDays', parseInt(e.target.value) || 0)}
-                                className="h-8 text-xs w-20"
+                                disabled={!isQuarterAvailable(product, qIndex)}
+                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                                 max="90"
                               />
                             </TableCell>
@@ -384,7 +442,8 @@ const DataEntry = () => {
                                 type="number"
                                 value={quarter.expiredDamaged}
                                 onChange={(e) => updateQuarterData(product.id, qIndex, 'expiredDamaged', parseInt(e.target.value) || 0)}
-                                className="h-8 text-xs w-20"
+                                disabled={!isQuarterAvailable(product, qIndex)}
+                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
                             <TableCell className={quarterColors[qIndex]}>
@@ -392,7 +451,8 @@ const DataEntry = () => {
                                 type="number"
                                 value={quarter.consumptionIssue}
                                 onChange={(e) => updateQuarterData(product.id, qIndex, 'consumptionIssue', parseInt(e.target.value) || 0)}
-                                className="h-8 text-xs w-20"
+                                disabled={!isQuarterAvailable(product, qIndex)}
+                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
                             <TableCell className={quarterColors[qIndex]}>
