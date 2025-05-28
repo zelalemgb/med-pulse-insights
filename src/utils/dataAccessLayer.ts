@@ -1,5 +1,6 @@
-
 import { ProductData, Facility, User, PeriodData, ValidationResult } from '@/types/pharmaceutical';
+import { performanceOptimizer } from './performanceOptimizer';
+import { auditTrail } from './auditTrail';
 
 // Abstract data access layer for future database integration
 export interface DataAccessLayer {
@@ -117,98 +118,178 @@ export interface ImportSummary {
   filename?: string;
 }
 
-// In-memory implementation for development
+// Enhanced in-memory implementation with performance optimizations
 export class InMemoryDataAccess implements DataAccessLayer {
   private products: Map<string, ProductData> = new Map();
   private importLogs: ImportSummary[] = [];
 
   async createProduct(product: Omit<ProductData, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProductData> {
-    const newProduct: ProductData = {
-      ...product,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    this.products.set(newProduct.id, newProduct);
-    return newProduct;
+    return performanceOptimizer.measureAsyncPerformance('createProduct', async () => {
+      const newProduct: ProductData = {
+        ...product,
+        id: Date.now().toString(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      this.products.set(newProduct.id, newProduct);
+      
+      // Log audit trail
+      auditTrail.logUserAction(
+        product.createdBy || 'system',
+        'Unknown User',
+        'CREATE',
+        'product',
+        newProduct.id,
+        { productName: newProduct.productName }
+      );
+      
+      return newProduct;
+    });
   }
 
   async getProduct(id: string): Promise<ProductData | null> {
-    return this.products.get(id) || null;
+    const cacheKey = `product_${id}`;
+    let product = performanceOptimizer.getCache<ProductData>(cacheKey);
+    
+    if (!product) {
+      product = this.products.get(id) || null;
+      if (product) {
+        performanceOptimizer.setCache(cacheKey, product);
+      }
+    }
+    
+    return product;
   }
 
   async getProductsByFacility(facilityId: string): Promise<ProductData[]> {
-    return Array.from(this.products.values()).filter(p => p.facilityId === facilityId);
+    const cacheKey = `facility_products_${facilityId}`;
+    let products = performanceOptimizer.getCache<ProductData[]>(cacheKey);
+    
+    if (!products) {
+      products = Array.from(this.products.values()).filter(p => p.facilityId === facilityId);
+      performanceOptimizer.setCache(cacheKey, products);
+    }
+    
+    return products;
   }
 
   async updateProduct(id: string, updates: Partial<ProductData>): Promise<ProductData> {
-    const existing = this.products.get(id);
-    if (!existing) {
-      throw new Error(`Product ${id} not found`);
-    }
+    return performanceOptimizer.measureAsyncPerformance('updateProduct', async () => {
+      const existing = this.products.get(id);
+      if (!existing) {
+        throw new Error(`Product ${id} not found`);
+      }
 
-    const updated = {
-      ...existing,
-      ...updates,
-      updatedAt: new Date()
-    };
+      const updated = {
+        ...existing,
+        ...updates,
+        updatedAt: new Date()
+      };
 
-    this.products.set(id, updated);
-    return updated;
+      this.products.set(id, updated);
+      
+      // Clear related cache
+      performanceOptimizer.setCache(`product_${id}`, updated);
+      performanceOptimizer.setCache(`facility_products_${updated.facilityId}`, null);
+      
+      // Log changes for audit trail
+      const changes = Object.entries(updates).map(([field, newValue]) => ({
+        field,
+        oldValue: (existing as any)[field],
+        newValue,
+      }));
+      
+      auditTrail.logDataChange(
+        updates.createdBy || 'system',
+        'Unknown User',
+        'product',
+        id,
+        changes
+      );
+      
+      return updated;
+    });
   }
 
   async deleteProduct(id: string): Promise<boolean> {
-    return this.products.delete(id);
+    const product = this.products.get(id);
+    const result = this.products.delete(id);
+    
+    if (result && product) {
+      // Clear cache
+      performanceOptimizer.setCache(`product_${id}`, null);
+      performanceOptimizer.setCache(`facility_products_${product.facilityId}`, null);
+      
+      // Log audit trail
+      auditTrail.logUserAction(
+        'system',
+        'System',
+        'DELETE',
+        'product',
+        id,
+        { productName: product.productName }
+      );
+    }
+    
+    return result;
   }
 
   async createProductsBatch(products: Omit<ProductData, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<ProductData[]> {
-    const createdProducts: ProductData[] = [];
-    
-    for (const product of products) {
-      const created = await this.createProduct(product);
-      createdProducts.push(created);
-    }
-    
-    return createdProducts;
+    return performanceOptimizer.processBatch(
+      products,
+      async (batch) => {
+        const results = [];
+        for (const product of batch) {
+          const created = await this.createProduct(product);
+          results.push(created);
+        }
+        return results;
+      }
+    );
   }
 
   async getProductsWithFilters(filters: ProductFilters): Promise<PaginatedResult<ProductData>> {
-    let filtered = Array.from(this.products.values());
+    return performanceOptimizer.measureAsyncPerformance('getProductsWithFilters', async () => {
+      let filtered = Array.from(this.products.values());
 
-    if (filters.facilityId) {
-      filtered = filtered.filter(p => p.facilityId === filters.facilityId);
-    }
+      if (filters.facilityId) {
+        filtered = filtered.filter(p => p.facilityId === filters.facilityId);
+      }
 
-    if (filters.venClassification?.length) {
-      filtered = filtered.filter(p => filters.venClassification!.includes(p.venClassification));
-    }
+      if (filters.venClassification?.length) {
+        filtered = filtered.filter(p => filters.venClassification!.includes(p.venClassification));
+      }
 
-    if (filters.frequency?.length) {
-      filtered = filtered.filter(p => filters.frequency!.includes(p.frequency));
-    }
+      if (filters.frequency?.length) {
+        filtered = filtered.filter(p => filters.frequency!.includes(p.frequency));
+      }
 
-    if (filters.searchTerm) {
-      const term = filters.searchTerm.toLowerCase();
-      filtered = filtered.filter(p => 
-        p.productName.toLowerCase().includes(term) ||
-        p.productCode?.toLowerCase().includes(term)
-      );
-    }
+      if (filters.searchTerm) {
+        const term = filters.searchTerm.toLowerCase();
+        filtered = filtered.filter(p => 
+          p.productName.toLowerCase().includes(term) ||
+          p.productCode?.toLowerCase().includes(term)
+        );
+      }
 
-    const page = filters.page || 1;
-    const limit = filters.limit || 50;
-    const start = (page - 1) * limit;
-    const end = start + limit;
+      const page = filters.page || 1;
+      const limit = filters.limit || 50;
+      
+      // Use virtualization for large datasets
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const virtualizedData = performanceOptimizer.virtualizeData(filtered, startIndex, endIndex);
 
-    return {
-      data: filtered.slice(start, end),
-      total: filtered.length,
-      page,
-      limit,
-      hasNext: end < filtered.length,
-      hasPrevious: page > 1
-    };
+      return {
+        data: virtualizedData,
+        total: filtered.length,
+        page,
+        limit,
+        hasNext: endIndex < filtered.length,
+        hasPrevious: page > 1
+      };
+    });
   }
 
   async updatePeriodData(productId: string, periodIndex: number, data: Partial<PeriodData>): Promise<boolean> {
@@ -217,6 +298,7 @@ export class InMemoryDataAccess implements DataAccessLayer {
       return false;
     }
 
+    const oldData = { ...product.periods[periodIndex] };
     product.periods[periodIndex] = {
       ...product.periods[periodIndex],
       ...data
@@ -224,6 +306,26 @@ export class InMemoryDataAccess implements DataAccessLayer {
 
     product.updatedAt = new Date();
     this.products.set(productId, product);
+    
+    // Clear cache
+    performanceOptimizer.setCache(`product_${productId}`, product);
+    
+    // Log audit trail for period data changes
+    const changes = Object.entries(data).map(([field, newValue]) => ({
+      field: `period_${periodIndex}_${field}`,
+      oldValue: (oldData as any)[field],
+      newValue,
+    }));
+    
+    auditTrail.logDataChange(
+      'system',
+      'System',
+      'product',
+      productId,
+      changes,
+      { periodIndex }
+    );
+    
     return true;
   }
 

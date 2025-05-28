@@ -2,69 +2,194 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types/pharmaceutical';
 
+interface Permissions {
+  createProducts: boolean;
+  editProducts: boolean;
+  deleteProducts: boolean;
+  viewProducts: boolean;
+  importData: boolean;
+  exportData: boolean;
+  viewAnalytics: boolean;
+  dataAnalysis: boolean;
+  systemIntegration: boolean;
+  auditTrail: boolean;
+  scenarioPlanning: boolean;
+  manageUsers: boolean;
+  viewReports: boolean;
+  manageSystem: boolean;
+}
+
+const rolePermissions: Record<UserRole, Permissions> = {
+  facility_officer: {
+    createProducts: true,
+    editProducts: true,
+    deleteProducts: false,
+    viewProducts: true,
+    importData: true,
+    exportData: true,
+    viewAnalytics: false,
+    dataAnalysis: false,
+    systemIntegration: false,
+    auditTrail: false,
+    scenarioPlanning: false,
+    manageUsers: false,
+    viewReports: true,
+    manageSystem: false,
+  },
+  facility_manager: {
+    createProducts: true,
+    editProducts: true,
+    deleteProducts: true,
+    viewProducts: true,
+    importData: true,
+    exportData: true,
+    viewAnalytics: true,
+    dataAnalysis: false,
+    systemIntegration: false,
+    auditTrail: true,
+    scenarioPlanning: true,
+    manageUsers: false,
+    viewReports: true,
+    manageSystem: false,
+  },
+  zonal: {
+    createProducts: false,
+    editProducts: false,
+    deleteProducts: false,
+    viewProducts: true,
+    importData: false,
+    exportData: true,
+    viewAnalytics: true,
+    dataAnalysis: true,
+    systemIntegration: true,
+    auditTrail: true,
+    scenarioPlanning: true,
+    manageUsers: true,
+    viewReports: true,
+    manageSystem: false,
+  },
+  regional: {
+    createProducts: false,
+    editProducts: false,
+    deleteProducts: false,
+    viewProducts: true,
+    importData: false,
+    exportData: true,
+    viewAnalytics: true,
+    dataAnalysis: true,
+    systemIntegration: true,
+    auditTrail: true,
+    scenarioPlanning: true,
+    manageUsers: true,
+    viewReports: true,
+    manageSystem: true,
+  },
+  national: {
+    createProducts: false,
+    editProducts: false,
+    deleteProducts: false,
+    viewProducts: true,
+    importData: false,
+    exportData: true,
+    viewAnalytics: true,
+    dataAnalysis: true,
+    systemIntegration: true,
+    auditTrail: true,
+    scenarioPlanning: true,
+    manageUsers: true,
+    viewReports: true,
+    manageSystem: true,
+  },
+  procurement: {
+    createProducts: true,
+    editProducts: true,
+    deleteProducts: false,
+    viewProducts: true,
+    importData: true,
+    exportData: true,
+    viewAnalytics: true,
+    dataAnalysis: false,
+    systemIntegration: false,
+    auditTrail: false,
+    scenarioPlanning: true,
+    manageUsers: false,
+    viewReports: true,
+    manageSystem: false,
+  },
+  finance: {
+    createProducts: false,
+    editProducts: false,
+    deleteProducts: false,
+    viewProducts: true,
+    importData: false,
+    exportData: true,
+    viewAnalytics: true,
+    dataAnalysis: true,
+    systemIntegration: false,
+    auditTrail: true,
+    scenarioPlanning: true,
+    manageUsers: false,
+    viewReports: true,
+    manageSystem: false,
+  },
+  program_manager: {
+    createProducts: false,
+    editProducts: false,
+    deleteProducts: false,
+    viewProducts: true,
+    importData: false,
+    exportData: true,
+    viewAnalytics: true,
+    dataAnalysis: true,
+    systemIntegration: true,
+    auditTrail: true,
+    scenarioPlanning: true,
+    manageUsers: false,
+    viewReports: true,
+    manageSystem: false,
+  },
+  qa: {
+    createProducts: false,
+    editProducts: false,
+    deleteProducts: false,
+    viewProducts: true,
+    importData: false,
+    exportData: true,
+    viewAnalytics: true,
+    dataAnalysis: false,
+    systemIntegration: false,
+    auditTrail: true,
+    scenarioPlanning: false,
+    manageUsers: false,
+    viewReports: true,
+    manageSystem: false,
+  },
+  data_analyst: {
+    createProducts: false,
+    editProducts: false,
+    deleteProducts: false,
+    viewProducts: true,
+    importData: false,
+    exportData: true,
+    viewAnalytics: true,
+    dataAnalysis: true,
+    systemIntegration: false,
+    auditTrail: true,
+    scenarioPlanning: true,
+    manageUsers: false,
+    viewReports: true,
+    manageSystem: false,
+  },
+};
+
 export const usePermissions = () => {
   const { profile } = useAuth();
-
-  const hasRole = (requiredRole: UserRole): boolean => {
-    return profile?.role === requiredRole;
-  };
-
-  const hasAnyRole = (roles: UserRole[]): boolean => {
-    return profile ? roles.includes(profile.role) : false;
-  };
-
-  const hasMinimumRole = (minimumRole: UserRole): boolean => {
-    if (!profile) return false;
-    
-    // Define hierarchy for pharmaceutical roles (higher index = higher privilege)
-    const roleHierarchy: UserRole[] = [
-      'facility_officer',    // Level 0 - Lowest
-      'facility_manager',    // Level 1
-      'data_analyst',        // Level 2
-      'zonal',              // Level 3
-      'regional',           // Level 4
-      'national',           // Level 5 - Highest
-      'procurement',        // Level 2 (same as data_analyst)
-      'finance',            // Level 2 (same as data_analyst)
-      'program_manager',    // Level 4 (same as regional)
-      'qa'                  // Level 2 (same as data_analyst)
-    ];
-    
-    const userRoleIndex = roleHierarchy.indexOf(profile.role);
-    const minimumRoleIndex = roleHierarchy.indexOf(minimumRole);
-    
-    return userRoleIndex >= minimumRoleIndex;
-  };
-
-  const canAccess = {
-    // National only
-    userManagement: hasAnyRole(['national']),
-    systemSettings: hasAnyRole(['national']),
-    
-    // Regional and above (includes national)
-    teamManagement: hasAnyRole(['national', 'regional', 'program_manager']),
-    advancedReports: hasAnyRole(['national', 'regional', 'zonal', 'program_manager']),
-    
-    // Zonal and above
-    zonalReports: hasAnyRole(['national', 'regional', 'zonal', 'program_manager']),
-    
-    // Data analysts and managers
-    dataAnalysis: hasAnyRole(['data_analyst', 'program_manager', 'national', 'regional', 'zonal']),
-    customReports: hasAnyRole(['data_analyst', 'program_manager', 'national', 'regional', 'zonal', 'facility_manager']),
-    
-    // Facility level and above
-    facilityReports: hasAnyRole(['facility_manager', 'zonal', 'regional', 'national', 'program_manager']),
-    
-    // All authenticated users
-    basicDashboard: true,
-    viewReports: true,
-  };
+  
+  const userRole = profile?.role || 'facility_officer';
+  const canAccess = rolePermissions[userRole];
 
   return {
-    hasRole,
-    hasAnyRole,
-    hasMinimumRole,
     canAccess,
-    currentRole: profile?.role,
+    userRole,
   };
 };
