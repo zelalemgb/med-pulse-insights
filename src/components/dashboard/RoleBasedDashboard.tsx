@@ -2,8 +2,13 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Users, BarChart3, Eye } from 'lucide-react';
 import RoleGuard from '@/components/auth/RoleGuard';
+import FacilityOfficerDashboard from './FacilityOfficerDashboard';
+import FacilityManagerDashboard from './FacilityManagerDashboard';
+import ReportGenerator from '../reporting/ReportGenerator';
+import ReportTemplates from '../reporting/ReportTemplates';
 
 const RoleBasedDashboard = () => {
   const { profile } = useAuth();
@@ -97,7 +102,46 @@ const RoleBasedDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Role-specific dashboard sections */}
+      {/* Role-specific dashboard content */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview">
+          {/* Facility-level dashboards based on role */}
+          <RoleGuard allowedRoles={['viewer']} fallback={null}>
+            <FacilityOfficerDashboard />
+          </RoleGuard>
+
+          <RoleGuard allowedRoles={['manager', 'admin']} fallback={null}>
+            <FacilityManagerDashboard />
+          </RoleGuard>
+
+          <RoleGuard allowedRoles={['analyst']} fallback={null}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-green-600">Analyst Dashboard</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">Advanced analytical tools and data analysis features.</p>
+              </CardContent>
+            </Card>
+          </RoleGuard>
+        </TabsContent>
+
+        <TabsContent value="reports">
+          <ReportGenerator />
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <ReportTemplates />
+        </TabsContent>
+      </Tabs>
+
+      {/* Legacy role-specific sections */}
       <RoleGuard allowedRoles={['admin']}>
         <Card>
           <CardHeader>
@@ -105,28 +149,6 @@ const RoleBasedDashboard = () => {
           </CardHeader>
           <CardContent>
             <p className="text-gray-600">Advanced administrative features would go here.</p>
-          </CardContent>
-        </Card>
-      </RoleGuard>
-
-      <RoleGuard allowedRoles={['admin', 'manager']}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-blue-600">Management Features</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600">Management-level features accessible to admins and managers.</p>
-          </CardContent>
-        </Card>
-      </RoleGuard>
-
-      <RoleGuard allowedRoles={['admin', 'manager', 'analyst']}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-green-600">Analytics Tools</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600">Advanced analytics available to analysts and above.</p>
           </CardContent>
         </Card>
       </RoleGuard>
