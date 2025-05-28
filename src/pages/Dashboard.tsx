@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/cards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConsumptionOverview } from '@/components/dashboard/ConsumptionOverview';
 import { InventoryStatus } from '@/components/dashboard/InventoryStatus';
@@ -18,6 +18,22 @@ const Dashboard = () => {
   const { profile } = useAuth();
   const { canAccess } = usePermissions();
 
+  const getRoleDisplayName = (role: string) => {
+    const roleNames = {
+      'facility_officer': 'Facility Officer',
+      'facility_manager': 'Facility Manager',
+      'zonal': 'Zonal',
+      'regional': 'Regional',
+      'national': 'National',
+      'data_analyst': 'Data Analyst',
+      'program_manager': 'Program Manager',
+      'procurement': 'Procurement',
+      'finance': 'Finance',
+      'qa': 'Quality Assurance'
+    };
+    return roleNames[role] || role.charAt(0).toUpperCase() + role.slice(1);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -29,7 +45,7 @@ const Dashboard = () => {
               Monitor consumption patterns, forecast demand, and optimize inventory management
               {profile?.role && (
                 <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                  {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)} View
+                  {getRoleDisplayName(profile.role)} View
                 </span>
               )}
             </p>

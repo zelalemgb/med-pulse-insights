@@ -30,13 +30,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Map Supabase roles to pharmaceutical roles
+// Map Supabase roles to pharmaceutical roles with complete hierarchy
 const mapSupabaseRoleToPharmaceutical = (supabaseRole: SupabaseUserRole): UserRole => {
   const roleMapping: Record<SupabaseUserRole, UserRole> = {
     'admin': 'national',
     'manager': 'facility_manager',
     'analyst': 'data_analyst',
-    'viewer': 'facility_officer'
+    'viewer': 'facility_officer',
+    'zonal': 'zonal',
+    'regional': 'regional'
   };
   
   return roleMapping[supabaseRole] || 'facility_officer';

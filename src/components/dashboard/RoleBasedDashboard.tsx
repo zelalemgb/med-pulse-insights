@@ -26,6 +26,10 @@ const RoleBasedDashboard = () => {
       case 'data_analyst':
       case 'program_manager':
         return <AnalyticsDashboard />;
+      case 'procurement':
+      case 'finance':
+      case 'qa':
+        return <FacilityManagerDashboard />;
       default:
         return <FacilityOfficerDashboard />;
     }
@@ -39,7 +43,7 @@ const RoleBasedDashboard = () => {
     ];
 
     // Add analytics tab for authorized roles
-    if (canAccess.dataAnalysis || ['data_analyst', 'program_manager', 'national', 'regional'].includes(profile?.role || '')) {
+    if (canAccess.dataAnalysis) {
       tabs.push({
         id: 'analytics',
         label: 'Advanced Analytics',
