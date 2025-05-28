@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,107 +6,69 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Save, Plus, Trash2, Download, ChevronDown, ChevronRight, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface ProductData {
-  id: string;
-  productName: string;
-  unit: string;
-  unitPrice: number;
-  venClassification: 'V' | 'E' | 'N';
-  facilitySpecific: boolean;
-  procurementSource: string;
-  quarters: QuarterData[];
-  annualAverages: {
-    annualConsumption: number;
-    aamc: number;
-    wastageRate: number;
-    awamc: number;
-  };
-  forecast: {
-    aamcApplied: number;
-    wastageRateApplied: number;
-    programExpansionContraction: number;
-    projectedAmcAdjusted: number;
-    projectedAnnualConsumption: number;
-  };
-  seasonality: {
-    q1: number;
-    q2: number;
-    q3: number;
-    q4: number;
-    total: number;
-  };
-}
-
-interface QuarterData {
-  quarter: number;
-  beginningBalance: number;
-  received: number;
-  positiveAdj: number;
-  negativeAdj: number;
-  endingBalance: number;
-  stockOutDays: number;
-  expiredDamaged: number;
-  consumptionIssue: number;
-  aamc: number;
-  wastageRate: number;
-}
+import { ProductData, DataFrequency, PeriodData, getPeriodsForFrequency, createEmptyPeriods } from '@/types/dataEntry';
 
 const DataEntry = () => {
   const { toast } = useToast();
   const [products, setProducts] = useState<ProductData[]>([]);
-  const [openQuarters, setOpenQuarters] = useState<{[key: number]: boolean}>({
-    0: true, // Quarter 1 open by default
-    1: false,
-    2: false,
-    3: false
-  });
+  const [selectedFrequency, setSelectedFrequency] = useState<DataFrequency>('quarterly');
+  const [openPeriods, setOpenPeriods] = useState<{[key: number]: boolean}>({});
 
-  // Check if a quarter is complete for a product
-  const isQuarterComplete = (product: ProductData, quarterIndex: number) => {
-    const quarter = product.quarters[quarterIndex];
-    return quarter.beginningBalance > 0 || quarter.received > 0 || quarter.consumptionIssue > 0;
+  // Initialize open periods when frequency changes
+  useEffect(() => {
+    const { count } = getPeriodsForFrequency(selectedFrequency);
+    const initialOpenPeriods: {[key: number]: boolean} = {};
+    for (let i = 0; i < count; i++) {
+      initialOpenPeriods[i] = i === 0; // Only first period open by default
+    }
+    setOpenPeriods(initialOpenPeriods);
+  }, [selectedFrequency]);
+
+  // Check if a period is complete for a product
+  const isPeriodComplete = (product: ProductData, periodIndex: number) => {
+    const period = product.periods[periodIndex];
+    return period.beginningBalance > 0 || period.received > 0 || period.consumptionIssue > 0;
   };
 
-  // Check if a quarter should be available (unlocked)
-  const isQuarterAvailable = (product: ProductData, quarterIndex: number) => {
-    if (quarterIndex === 0) return true; // Q1 always available
+  // Check if a period should be available (unlocked)
+  const isPeriodAvailable = (product: ProductData, periodIndex: number) => {
+    if (periodIndex === 0) return true; // First period always available
     
-    // Check if previous quarter is complete
-    for (let i = 0; i < quarterIndex; i++) {
-      if (!isQuarterComplete(product, i)) {
+    // Check if previous period is complete
+    for (let i = 0; i < periodIndex; i++) {
+      if (!isPeriodComplete(product, i)) {
         return false;
       }
     }
     return true;
   };
 
-  // Check if all products have completed a specific quarter
-  const areAllProductsCompleteForQuarter = (quarterIndex: number) => {
+  // Check if all products have completed a specific period
+  const areAllProductsCompleteForPeriod = (periodIndex: number) => {
     if (products.length === 0) return false;
-    return products.every(product => isQuarterComplete(product, quarterIndex));
+    return products.every(product => isPeriodComplete(product, periodIndex));
   };
 
-  // Auto-unlock next quarter when all products complete current quarter
+  // Auto-unlock next period when all products complete current period
   useEffect(() => {
-    for (let q = 0; q < 3; q++) {
-      if (areAllProductsCompleteForQuarter(q) && !openQuarters[q + 1]) {
-        setOpenQuarters(prev => ({ ...prev, [q + 1]: false })); // Keep it closed but available
+    const { count } = getPeriodsForFrequency(selectedFrequency);
+    for (let p = 0; p < count - 1; p++) {
+      if (areAllProductsCompleteForPeriod(p) && !openPeriods[p + 1]) {
+        setOpenPeriods(prev => ({ ...prev, [p + 1]: false })); // Keep it closed but available
       }
     }
-  }, [products]);
+  }, [products, selectedFrequency]);
 
-  const toggleQuarter = (quarterIndex: number) => {
-    // Check if at least one product has this quarter available
-    const hasAvailableQuarter = products.some(product => isQuarterAvailable(product, quarterIndex));
+  const togglePeriod = (periodIndex: number) => {
+    // Check if at least one product has this period available
+    const hasAvailablePeriod = products.some(product => isPeriodAvailable(product, periodIndex));
     
-    if (hasAvailableQuarter || quarterIndex === 0) {
-      setOpenQuarters(prev => ({
+    if (hasAvailablePeriod || periodIndex === 0) {
+      setOpenPeriods(prev => ({
         ...prev,
-        [quarterIndex]: !prev[quarterIndex]
+        [periodIndex]: !prev[periodIndex]
       }));
     }
   };
@@ -119,12 +82,8 @@ const DataEntry = () => {
       venClassification: 'V',
       facilitySpecific: false,
       procurementSource: '',
-      quarters: [
-        { quarter: 1, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0, aamc: 0, wastageRate: 0 },
-        { quarter: 2, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0, aamc: 0, wastageRate: 0 },
-        { quarter: 3, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0, aamc: 0, wastageRate: 0 },
-        { quarter: 4, beginningBalance: 0, received: 0, positiveAdj: 0, negativeAdj: 0, endingBalance: 0, stockOutDays: 0, expiredDamaged: 0, consumptionIssue: 0, aamc: 0, wastageRate: 0 }
-      ],
+      frequency: selectedFrequency,
+      periods: createEmptyPeriods(selectedFrequency),
       annualAverages: {
         annualConsumption: 0,
         aamc: 0,
@@ -138,13 +97,14 @@ const DataEntry = () => {
         projectedAmcAdjusted: 0,
         projectedAnnualConsumption: 0
       },
-      seasonality: {
-        q1: 0,
-        q2: 0,
-        q3: 0,
-        q4: 0,
-        total: 0
-      }
+      seasonality: (() => {
+        const { names } = getPeriodsForFrequency(selectedFrequency);
+        const seasonality: {[key: string]: number} = { total: 0 };
+        names.forEach((name, index) => {
+          seasonality[`p${index + 1}`] = 0;
+        });
+        return seasonality;
+      })()
     };
     
     setProducts(prev => [...prev, newProduct]);
@@ -169,7 +129,9 @@ const DataEntry = () => {
           updatedForecast.projectedAmcAdjusted = adjustedAmc * wastageAdjustment;
           
           // Auto-calculate projected annual consumption
-          updatedForecast.projectedAnnualConsumption = updatedForecast.projectedAmcAdjusted * 12;
+          const periodsPerYear = getPeriodsForFrequency(product.frequency).count;
+          const periodMultiplier = product.frequency === 'yearly' ? 1 : periodsPerYear;
+          updatedForecast.projectedAnnualConsumption = updatedForecast.projectedAmcAdjusted * periodMultiplier;
         }
         
         return { ...product, forecast: updatedForecast };
@@ -178,37 +140,42 @@ const DataEntry = () => {
     }));
   };
 
-  const updateQuarterData = (productId: string, quarterIndex: number, field: keyof QuarterData, value: number) => {
+  const updatePeriodData = (productId: string, periodIndex: number, field: keyof PeriodData, value: number) => {
     setProducts(prev => prev.map(product => {
       if (product.id === productId) {
-        const updatedQuarters = [...product.quarters];
-        updatedQuarters[quarterIndex] = { ...updatedQuarters[quarterIndex], [field]: value };
+        const updatedPeriods = [...product.periods];
+        updatedPeriods[periodIndex] = { ...updatedPeriods[periodIndex], [field]: value };
         
         // Auto-calculate ending balance
         if (['beginningBalance', 'received', 'positiveAdj', 'negativeAdj', 'consumptionIssue', 'expiredDamaged'].includes(field)) {
-          const quarter = updatedQuarters[quarterIndex];
-          const endingBalance = quarter.beginningBalance + quarter.received + quarter.positiveAdj - quarter.negativeAdj - quarter.consumptionIssue - quarter.expiredDamaged;
-          updatedQuarters[quarterIndex].endingBalance = Math.max(0, endingBalance);
+          const period = updatedPeriods[periodIndex];
+          const endingBalance = period.beginningBalance + period.received + period.positiveAdj - period.negativeAdj - period.consumptionIssue - period.expiredDamaged;
+          updatedPeriods[periodIndex].endingBalance = Math.max(0, endingBalance);
         }
         
         // Auto-calculate aamc
         if (['stockOutDays', 'consumptionIssue'].includes(field)) {
-          const quarter = updatedQuarters[quarterIndex];
-          if (quarter.stockOutDays < 90) {
-            quarter.aamc = quarter.consumptionIssue / (3 - (quarter.stockOutDays / 30.5));
+          const period = updatedPeriods[periodIndex];
+          const { maxStockOutDays } = getPeriodsForFrequency(product.frequency);
+          const periodsPerYear = getPeriodsForFrequency(product.frequency).count;
+          
+          if (period.stockOutDays < maxStockOutDays) {
+            const daysInPeriod = maxStockOutDays;
+            const adjustedDays = daysInPeriod - period.stockOutDays;
+            period.aamc = period.consumptionIssue / (adjustedDays / (365 / periodsPerYear));
           }
         }
         
         // Auto-calculate wastage rate
         if (['expiredDamaged', 'beginningBalance', 'received', 'positiveAdj'].includes(field)) {
-          const quarter = updatedQuarters[quarterIndex];
-          const totalAvailable = quarter.beginningBalance + quarter.received + quarter.positiveAdj;
+          const period = updatedPeriods[periodIndex];
+          const totalAvailable = period.beginningBalance + period.received + period.positiveAdj;
           if (totalAvailable > 0) {
-            quarter.wastageRate = (quarter.expiredDamaged / totalAvailable) * 100;
+            period.wastageRate = (period.expiredDamaged / totalAvailable) * 100;
           }
         }
         
-        return { ...product, quarters: updatedQuarters };
+        return { ...product, periods: updatedPeriods };
       }
       return product;
     }));
@@ -230,23 +197,65 @@ const DataEntry = () => {
     });
   };
 
-  const quarterColors = ['bg-blue-50', 'bg-green-50', 'bg-yellow-50', 'bg-red-50'];
-  const quarterNames = ['Quarter 1', 'Quarter 2', 'Quarter 3', 'Quarter 4'];
+  const changeFrequency = (newFrequency: DataFrequency) => {
+    setSelectedFrequency(newFrequency);
+    // Update existing products to new frequency
+    setProducts(prev => prev.map(product => ({
+      ...product,
+      frequency: newFrequency,
+      periods: createEmptyPeriods(newFrequency),
+      seasonality: (() => {
+        const { names } = getPeriodsForFrequency(newFrequency);
+        const seasonality: {[key: string]: number} = { total: 0 };
+        names.forEach((name, index) => {
+          seasonality[`p${index + 1}`] = 0;
+        });
+        return seasonality;
+      })()
+    })));
+  };
 
-  // Check if a quarter button should be available globally
-  const isQuarterGloballyAvailable = (quarterIndex: number) => {
-    if (quarterIndex === 0) return true;
+  const { count: periodCount, names: periodNames } = getPeriodsForFrequency(selectedFrequency);
+  const periodColors = ['bg-blue-50', 'bg-green-50', 'bg-yellow-50', 'bg-red-50', 'bg-purple-50', 'bg-indigo-50'];
+
+  // Check if a period button should be available globally
+  const isPeriodGloballyAvailable = (periodIndex: number) => {
+    if (periodIndex === 0) return true;
     if (products.length === 0) return false;
-    return products.some(product => isQuarterAvailable(product, quarterIndex));
+    return products.some(product => isPeriodAvailable(product, periodIndex));
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-full mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Quarterly Pharmaceutical Data Entry</h1>
-          <p className="text-gray-600 mt-2">Enter quarterly pharmaceutical usage data with progressive quarter unlocking</p>
+          <h1 className="text-3xl font-bold text-gray-900">Dynamic Pharmaceutical Data Entry</h1>
+          <p className="text-gray-600 mt-2">Enter pharmaceutical usage data with configurable frequency periods</p>
         </div>
+
+        {/* Frequency Selection */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Data Entry Configuration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <Label htmlFor="frequency">Data Entry Frequency:</Label>
+              <Select value={selectedFrequency} onValueChange={(value: DataFrequency) => changeFrequency(value)}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">Weekly (52 periods)</SelectItem>
+                  <SelectItem value="monthly">Monthly (12 periods)</SelectItem>
+                  <SelectItem value="bimonthly">Bi-monthly (6 periods)</SelectItem>
+                  <SelectItem value="quarterly">Quarterly (4 periods)</SelectItem>
+                  <SelectItem value="yearly">Yearly (1 period)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="flex gap-4 mb-6">
           <Button onClick={addNewProduct} className="bg-blue-600 hover:bg-blue-700">
@@ -263,31 +272,37 @@ const DataEntry = () => {
           </Button>
         </div>
 
-        {/* Quarter Toggle Buttons */}
+        {/* Period Toggle Buttons */}
         <div className="mb-4 flex gap-2 flex-wrap">
-          {quarterNames.map((name, index) => {
-            const isAvailable = isQuarterGloballyAvailable(index);
+          {periodNames.slice(0, Math.min(12, periodCount)).map((name, index) => {
+            const isAvailable = isPeriodGloballyAvailable(index);
+            const colorClass = periodColors[index % periodColors.length];
             return (
               <Button
                 key={index}
-                variant={openQuarters[index] ? "default" : "outline"}
+                variant={openPeriods[index] ? "default" : "outline"}
                 size="sm"
-                onClick={() => toggleQuarter(index)}
+                onClick={() => togglePeriod(index)}
                 disabled={!isAvailable}
-                className={`${quarterColors[index]} border ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`${colorClass} border ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {!isAvailable && <Lock className="w-4 h-4 mr-2" />}
-                {isAvailable && (openQuarters[index] ? <ChevronDown className="w-4 h-4 mr-2" /> : <ChevronRight className="w-4 h-4 mr-2" />)}
+                {isAvailable && (openPeriods[index] ? <ChevronDown className="w-4 h-4 mr-2" /> : <ChevronRight className="w-4 h-4 mr-2" />)}
                 {name}
-                {!isAvailable && <span className="ml-2 text-xs">(Complete Q{index} first)</span>}
+                {!isAvailable && index > 0 && <span className="ml-2 text-xs">(Complete P{index} first)</span>}
               </Button>
             );
           })}
+          {periodCount > 12 && (
+            <span className="text-sm text-gray-500 self-center">
+              ... and {periodCount - 12} more periods
+            </span>
+          )}
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Pharmaceutical Data Entry Table</CardTitle>
+            <CardTitle>Pharmaceutical Data Entry Table ({selectedFrequency.charAt(0).toUpperCase() + selectedFrequency.slice(1)})</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -301,10 +316,10 @@ const DataEntry = () => {
                     <TableHead className="font-bold border-r min-w-[150px]">Facility Specific</TableHead>
                     <TableHead className="font-bold border-r min-w-[150px]">Procurement Source</TableHead>
                     
-                    {/* Quarterly Data Headers - Only show if quarter is open */}
-                    {quarterNames.map((name, qIndex) => (
-                      openQuarters[qIndex] && (
-                        <TableHead key={qIndex} colSpan={10} className={`text-center font-bold border-r ${quarterColors[qIndex]}`}>
+                    {/* Period Data Headers - Only show if period is open */}
+                    {periodNames.slice(0, Math.min(12, periodCount)).map((name, pIndex) => (
+                      openPeriods[pIndex] && (
+                        <TableHead key={pIndex} colSpan={10} className={`text-center font-bold border-r ${periodColors[pIndex % periodColors.length]}`}>
                           {name}
                         </TableHead>
                       )
@@ -317,7 +332,7 @@ const DataEntry = () => {
                     <TableHead colSpan={5} className="text-center font-bold border-r bg-teal-50">Forecast</TableHead>
                     
                     {/* Seasonality */}
-                    <TableHead colSpan={5} className="text-center font-bold bg-orange-50">Seasonality</TableHead>
+                    <TableHead colSpan={Math.min(6, periodCount + 1)} className="text-center font-bold bg-orange-50">Seasonality</TableHead>
                     <TableHead className="font-bold">Actions</TableHead>
                   </TableRow>
                   <TableRow className="bg-gray-50 text-xs">
@@ -328,20 +343,20 @@ const DataEntry = () => {
                     <TableHead></TableHead>
                     <TableHead></TableHead>
                     
-                    {/* Quarter Subheadings - Only show if quarter is open */}
-                    {[0, 1, 2, 3].map((qIndex) => (
-                      openQuarters[qIndex] && (
-                        <React.Fragment key={qIndex}>
-                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Beginning Balance</TableHead>
-                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Received</TableHead>
-                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Positive Adj</TableHead>
-                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Negative Adj</TableHead>
-                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Ending Balance</TableHead>
-                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Stock Out Days</TableHead>
-                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Expired/Damaged</TableHead>
-                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>Consumption/Issue</TableHead>
-                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px]`}>aAMC</TableHead>
-                          <TableHead className={`${quarterColors[qIndex]} min-w-[100px] border-r`}>Wastage Rate</TableHead>
+                    {/* Period Subheadings - Only show if period is open */}
+                    {Array.from({ length: Math.min(12, periodCount) }, (_, pIndex) => (
+                      openPeriods[pIndex] && (
+                        <React.Fragment key={pIndex}>
+                          <TableHead className={`${periodColors[pIndex % periodColors.length]} min-w-[100px]`}>Beginning Balance</TableHead>
+                          <TableHead className={`${periodColors[pIndex % periodColors.length]} min-w-[100px]`}>Received</TableHead>
+                          <TableHead className={`${periodColors[pIndex % periodColors.length]} min-w-[100px]`}>Positive Adj</TableHead>
+                          <TableHead className={`${periodColors[pIndex % periodColors.length]} min-w-[100px]`}>Negative Adj</TableHead>
+                          <TableHead className={`${periodColors[pIndex % periodColors.length]} min-w-[100px]`}>Ending Balance</TableHead>
+                          <TableHead className={`${periodColors[pIndex % periodColors.length]} min-w-[100px]`}>Stock Out Days</TableHead>
+                          <TableHead className={`${periodColors[pIndex % periodColors.length]} min-w-[100px]`}>Expired/Damaged</TableHead>
+                          <TableHead className={`${periodColors[pIndex % periodColors.length]} min-w-[100px]`}>Consumption/Issue</TableHead>
+                          <TableHead className={`${periodColors[pIndex % periodColors.length]} min-w-[100px]`}>aAMC</TableHead>
+                          <TableHead className={`${periodColors[pIndex % periodColors.length]} min-w-[100px] border-r`}>Wastage Rate</TableHead>
                         </React.Fragment>
                       )
                     ))}
@@ -360,10 +375,9 @@ const DataEntry = () => {
                     <TableHead className="bg-teal-50 min-w-[150px] border-r">Projected Annual Consumption</TableHead>
                     
                     {/* Seasonality Subheadings */}
-                    <TableHead className="bg-orange-50 min-w-[60px]">Q1</TableHead>
-                    <TableHead className="bg-orange-50 min-w-[60px]">Q2</TableHead>
-                    <TableHead className="bg-orange-50 min-w-[60px]">Q3</TableHead>
-                    <TableHead className="bg-orange-50 min-w-[60px]">Q4</TableHead>
+                    {Array.from({ length: Math.min(5, periodCount) }, (_, i) => (
+                      <TableHead key={i} className="bg-orange-50 min-w-[60px]">P{i + 1}</TableHead>
+                    ))}
                     <TableHead className="bg-orange-50 min-w-[80px]">Total</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
@@ -425,93 +439,93 @@ const DataEntry = () => {
                         />
                       </TableCell>
                       
-                      {/* Quarter Data - Only show if quarter is open and available for this product */}
-                      {product.quarters.map((quarter, qIndex) => (
-                        openQuarters[qIndex] && (
-                          <React.Fragment key={qIndex}>
-                            <TableCell className={quarterColors[qIndex]}>
+                      {/* Period Data - Only show if period is open and available for this product */}
+                      {product.periods.slice(0, Math.min(12, periodCount)).map((period, pIndex) => (
+                        openPeriods[pIndex] && (
+                          <React.Fragment key={pIndex}>
+                            <TableCell className={periodColors[pIndex % periodColors.length]}>
                               <Input
                                 type="number"
-                                value={quarter.beginningBalance}
-                                onChange={(e) => updateQuarterData(product.id, qIndex, 'beginningBalance', parseInt(e.target.value) || 0)}
-                                disabled={!isQuarterAvailable(product, qIndex)}
-                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
+                                value={period.beginningBalance}
+                                onChange={(e) => updatePeriodData(product.id, pIndex, 'beginningBalance', parseInt(e.target.value) || 0)}
+                                disabled={!isPeriodAvailable(product, pIndex)}
+                                className={`h-8 text-xs w-20 ${!isPeriodAvailable(product, pIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
-                            <TableCell className={quarterColors[qIndex]}>
+                            <TableCell className={periodColors[pIndex % periodColors.length]}>
                               <Input
                                 type="number"
-                                value={quarter.received}
-                                onChange={(e) => updateQuarterData(product.id, qIndex, 'received', parseInt(e.target.value) || 0)}
-                                disabled={!isQuarterAvailable(product, qIndex)}
-                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
+                                value={period.received}
+                                onChange={(e) => updatePeriodData(product.id, pIndex, 'received', parseInt(e.target.value) || 0)}
+                                disabled={!isPeriodAvailable(product, pIndex)}
+                                className={`h-8 text-xs w-20 ${!isPeriodAvailable(product, pIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
-                            <TableCell className={quarterColors[qIndex]}>
+                            <TableCell className={periodColors[pIndex % periodColors.length]}>
                               <Input
                                 type="number"
-                                value={quarter.positiveAdj}
-                                onChange={(e) => updateQuarterData(product.id, qIndex, 'positiveAdj', parseInt(e.target.value) || 0)}
-                                disabled={!isQuarterAvailable(product, qIndex)}
-                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
+                                value={period.positiveAdj}
+                                onChange={(e) => updatePeriodData(product.id, pIndex, 'positiveAdj', parseInt(e.target.value) || 0)}
+                                disabled={!isPeriodAvailable(product, pIndex)}
+                                className={`h-8 text-xs w-20 ${!isPeriodAvailable(product, pIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
-                            <TableCell className={quarterColors[qIndex]}>
+                            <TableCell className={periodColors[pIndex % periodColors.length]}>
                               <Input
                                 type="number"
-                                value={quarter.negativeAdj}
-                                onChange={(e) => updateQuarterData(product.id, qIndex, 'negativeAdj', parseInt(e.target.value) || 0)}
-                                disabled={!isQuarterAvailable(product, qIndex)}
-                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
+                                value={period.negativeAdj}
+                                onChange={(e) => updatePeriodData(product.id, pIndex, 'negativeAdj', parseInt(e.target.value) || 0)}
+                                disabled={!isPeriodAvailable(product, pIndex)}
+                                className={`h-8 text-xs w-20 ${!isPeriodAvailable(product, pIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
-                            <TableCell className={quarterColors[qIndex]}>
+                            <TableCell className={periodColors[pIndex % periodColors.length]}>
                               <Input
                                 type="number"
-                                value={quarter.endingBalance}
+                                value={period.endingBalance}
                                 readOnly
                                 className="h-8 text-xs w-20 bg-gray-100"
                               />
                             </TableCell>
-                            <TableCell className={quarterColors[qIndex]}>
+                            <TableCell className={periodColors[pIndex % periodColors.length]}>
                               <Input
                                 type="number"
-                                value={quarter.stockOutDays}
-                                onChange={(e) => updateQuarterData(product.id, qIndex, 'stockOutDays', parseInt(e.target.value) || 0)}
-                                disabled={!isQuarterAvailable(product, qIndex)}
-                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
-                                max="90"
+                                value={period.stockOutDays}
+                                onChange={(e) => updatePeriodData(product.id, pIndex, 'stockOutDays', parseInt(e.target.value) || 0)}
+                                disabled={!isPeriodAvailable(product, pIndex)}
+                                className={`h-8 text-xs w-20 ${!isPeriodAvailable(product, pIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
+                                max={getPeriodsForFrequency(product.frequency).maxStockOutDays}
                               />
                             </TableCell>
-                            <TableCell className={quarterColors[qIndex]}>
+                            <TableCell className={periodColors[pIndex % periodColors.length]}>
                               <Input
                                 type="number"
-                                value={quarter.expiredDamaged}
-                                onChange={(e) => updateQuarterData(product.id, qIndex, 'expiredDamaged', parseInt(e.target.value) || 0)}
-                                disabled={!isQuarterAvailable(product, qIndex)}
-                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
+                                value={period.expiredDamaged}
+                                onChange={(e) => updatePeriodData(product.id, pIndex, 'expiredDamaged', parseInt(e.target.value) || 0)}
+                                disabled={!isPeriodAvailable(product, pIndex)}
+                                className={`h-8 text-xs w-20 ${!isPeriodAvailable(product, pIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
-                            <TableCell className={quarterColors[qIndex]}>
+                            <TableCell className={periodColors[pIndex % periodColors.length]}>
                               <Input
                                 type="number"
-                                value={quarter.consumptionIssue}
-                                onChange={(e) => updateQuarterData(product.id, qIndex, 'consumptionIssue', parseInt(e.target.value) || 0)}
-                                disabled={!isQuarterAvailable(product, qIndex)}
-                                className={`h-8 text-xs w-20 ${!isQuarterAvailable(product, qIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
+                                value={period.consumptionIssue}
+                                onChange={(e) => updatePeriodData(product.id, pIndex, 'consumptionIssue', parseInt(e.target.value) || 0)}
+                                disabled={!isPeriodAvailable(product, pIndex)}
+                                className={`h-8 text-xs w-20 ${!isPeriodAvailable(product, pIndex) ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                               />
                             </TableCell>
-                            <TableCell className={quarterColors[qIndex]}>
+                            <TableCell className={periodColors[pIndex % periodColors.length]}>
                               <Input
                                 type="number"
-                                value={quarter.aamc.toFixed(2)}
+                                value={period.aamc.toFixed(2)}
                                 readOnly
                                 className="h-8 text-xs w-20 bg-gray-100"
                               />
                             </TableCell>
-                            <TableCell className={`${quarterColors[qIndex]} border-r`}>
+                            <TableCell className={`${periodColors[pIndex % periodColors.length]} border-r`}>
                               <Input
-                                value={`${quarter.wastageRate.toFixed(1)}%`}
+                                value={`${period.wastageRate.toFixed(1)}%`}
                                 readOnly
                                 className="h-8 text-xs w-20 bg-gray-100"
                               />
@@ -570,18 +584,11 @@ const DataEntry = () => {
                       </TableCell>
                       
                       {/* Seasonality */}
-                      <TableCell className="bg-orange-25">
-                        <span className="text-xs">{product.seasonality.q1}%</span>
-                      </TableCell>
-                      <TableCell className="bg-orange-25">
-                        <span className="text-xs">{product.seasonality.q2}%</span>
-                      </TableCell>
-                      <TableCell className="bg-orange-25">
-                        <span className="text-xs">{product.seasonality.q3}%</span>
-                      </TableCell>
-                      <TableCell className="bg-orange-25">
-                        <span className="text-xs">{product.seasonality.q4}%</span>
-                      </TableCell>
+                      {Array.from({ length: Math.min(5, periodCount) }, (_, i) => (
+                        <TableCell key={i} className="bg-orange-25">
+                          <span className="text-xs">{product.seasonality[`p${i + 1}`] || 0}%</span>
+                        </TableCell>
+                      ))}
                       <TableCell className="bg-orange-25">
                         <span className="text-xs">{product.seasonality.total}%</span>
                       </TableCell>
