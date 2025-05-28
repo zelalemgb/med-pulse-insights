@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Save, Plus, Trash2, Download, ChevronDown, ChevronRight, Lock, Upload, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ProductData, DataFrequency, PeriodData, getPeriodsForFrequency, createEmptyPeriods } from '@/types/dataEntry';
+import DataMappingDialog from '@/components/DataMappingDialog';
 import * as XLSX from 'xlsx';
 
 const DataEntry = () => {
@@ -16,6 +17,8 @@ const DataEntry = () => {
   const [selectedFrequency, setSelectedFrequency] = useState<DataFrequency | ''>('');
   const [openPeriods, setOpenPeriods] = useState<{[key: number]: boolean}>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Initialize open periods when frequency changes
   useEffect(() => {
@@ -253,71 +256,73 @@ const DataEntry = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-        console.log('Imported data:', jsonData);
-        
-        const importedProducts: ProductData[] = jsonData.map((row: any, index: number) => {
-          const { names } = getPeriodsForFrequency(selectedFrequency as DataFrequency);
-          const seasonality: {[key: string]: number; total: number} = { total: 0 };
-          names.forEach((name, pIndex) => {
-            seasonality[`p${pIndex + 1}`] = 0;
-          });
-
-          return {
-            id: `imported-${Date.now()}-${index}`,
-            productName: row['Product Name'] || row['productName'] || '',
-            unit: row['Unit'] || row['unit'] || '',
-            unitPrice: parseFloat(row['Unit Price'] || row['unitPrice']) || 0,
-            venClassification: (row['VEN Classification'] || row['venClassification'] || 'V') as 'V' | 'E' | 'N',
-            facilitySpecific: Boolean(row['Facility Specific'] || row['facilitySpecific']),
-            procurementSource: row['Procurement Source'] || row['procurementSource'] || '',
-            frequency: selectedFrequency as DataFrequency,
-            periods: createEmptyPeriods(selectedFrequency as DataFrequency),
-            annualAverages: {
-              annualConsumption: 0,
-              aamc: 0,
-              wastageRate: 0,
-              awamc: 0
-            },
-            forecast: {
-              aamcApplied: 0,
-              wastageRateApplied: 0,
-              programExpansionContraction: 0,
-              projectedAmcAdjusted: 0,
-              projectedAnnualConsumption: 0
-            },
-            seasonality
-          };
-        });
-
-        setProducts(prev => [...prev, ...importedProducts]);
-        
-        toast({
-          title: "Import Successful",
-          description: `${importedProducts.length} products imported successfully`,
-        });
-      } catch (error) {
-        console.error('Import error:', error);
-        toast({
-          title: "Import Failed",
-          description: "Failed to import the file. Please check the format.",
-          variant: "destructive"
-        });
-      }
-    };
-    reader.readAsArrayBuffer(file);
+    setSelectedFile(file);
+    setMappingDialogOpen(true);
     
     // Reset the input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleMappingComplete = (mappedData: any[], mapping: Record<string, string>) => {
+    try {
+      const importedProducts: ProductData[] = mappedData.map((row: any, index: number) => {
+        const { names } = getPeriodsForFrequency(selectedFrequency as DataFrequency);
+        const seasonality: {[key: string]: number; total: number} = { total: 0 };
+        names.forEach((name, pIndex) => {
+          seasonality[`p${pIndex + 1}`] = 0;
+        });
+
+        return {
+          id: `imported-${Date.now()}-${index}`,
+          productName: row.productName || '',
+          unit: row.unit || '',
+          unitPrice: parseFloat(row.unitPrice) || 0,
+          venClassification: (row.venClassification || 'V') as 'V' | 'E' | 'N',
+          facilitySpecific: Boolean(row.facilitySpecific),
+          procurementSource: row.procurementSource || '',
+          frequency: selectedFrequency as DataFrequency,
+          periods: createEmptyPeriods(selectedFrequency as DataFrequency).map((period, pIndex) => ({
+            ...period,
+            beginningBalance: parseFloat(row.beginningBalance) || 0,
+            received: parseFloat(row.received) || 0,
+            positiveAdj: parseFloat(row.positiveAdj) || 0,
+            negativeAdj: parseFloat(row.negativeAdj) || 0,
+            stockOutDays: parseFloat(row.stockOutDays) || 0,
+            expiredDamaged: parseFloat(row.expiredDamaged) || 0,
+            consumptionIssue: parseFloat(row.consumptionIssue) || 0
+          })),
+          annualAverages: {
+            annualConsumption: 0,
+            aamc: parseFloat(row.aamcApplied) || 0,
+            wastageRate: parseFloat(row.wastageRateApplied) || 0,
+            awamc: 0
+          },
+          forecast: {
+            aamcApplied: parseFloat(row.aamcApplied) || 0,
+            wastageRateApplied: parseFloat(row.wastageRateApplied) || 0,
+            programExpansionContraction: parseFloat(row.programExpansionContraction) || 0,
+            projectedAmcAdjusted: 0,
+            projectedAnnualConsumption: 0
+          },
+          seasonality
+        };
+      });
+
+      setProducts(prev => [...prev, ...importedProducts]);
+      
+      toast({
+        title: "Import Successful",
+        description: `${importedProducts.length} products imported successfully`,
+      });
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import Failed",
+        description: "Failed to process the mapped data. Please check the mapping.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -457,6 +462,14 @@ const DataEntry = () => {
           accept=".xlsx,.xls,.csv"
           onChange={handleFileUpload}
           className="hidden"
+        />
+
+        {/* Data Mapping Dialog */}
+        <DataMappingDialog
+          open={mappingDialogOpen}
+          onOpenChange={setMappingDialogOpen}
+          file={selectedFile}
+          onMappingComplete={handleMappingComplete}
         />
 
         {/* Period Toggle Buttons - Only show if frequency is selected */}
