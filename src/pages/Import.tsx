@@ -348,9 +348,9 @@ const Import = () => {
         {/* Progress Steps */}
         <div className="mb-6">
           <div className="flex items-center space-x-4">
-            <div className={`flex items-center space-x-2 ${step === 'upload' ? 'text-blue-600' : step !== 'upload' ? 'text-green-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'upload' ? 'bg-blue-100 border-2 border-blue-600' : step !== 'upload' ? 'bg-green-100' : 'bg-gray-100'}`}>
-                {step !== 'upload' ? <CheckCircle className="w-5 h-5" /> : '1'}
+            <div className={`flex items-center space-x-2 ${step === 'upload' ? 'text-blue-600' : 'text-green-600'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'upload' ? 'bg-blue-100 border-2 border-blue-600' : 'bg-green-100'}`}>
+                {step === 'upload' ? '1' : <CheckCircle className="w-5 h-5" />}
               </div>
               <span className="font-medium">Upload File</span>
             </div>
