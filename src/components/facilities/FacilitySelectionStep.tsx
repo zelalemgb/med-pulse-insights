@@ -118,16 +118,14 @@ export const FacilitySelectionStep = ({
         </Button>
       </div>
 
-      {showCreateDialog && (
-        <CreateFacilityDialog 
-          isOpen={showCreateDialog}
-          onClose={() => setShowCreateDialog(false)}
-          onSuccess={(facility) => {
-            setShowCreateDialog(false);
-            onFacilitySelected(facility.id);
-          }}
-        />
-      )}
+      <CreateFacilityDialog 
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSuccess={(facility) => {
+          setShowCreateDialog(false);
+          onFacilitySelected(facility.id);
+        }}
+      />
     </div>
   );
 };
