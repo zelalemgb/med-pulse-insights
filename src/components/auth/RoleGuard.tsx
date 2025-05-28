@@ -1,9 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Database } from '@/integrations/supabase/types';
-
-type UserRole = Database['public']['Enums']['user_role'];
+import { UserRole } from '@/types/pharmaceutical';
 
 interface RoleGuardProps {
   children: React.ReactNode;

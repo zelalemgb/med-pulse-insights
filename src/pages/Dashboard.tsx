@@ -67,25 +67,25 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="forecast">
-              <RoleGuard allowedRoles={['admin', 'manager', 'analyst']}>
+              <RoleGuard allowedRoles={['data_analyst', 'program_manager', 'national', 'regional', 'zonal']}>
                 <ForecastAnalysis />
               </RoleGuard>
             </TabsContent>
 
             <TabsContent value="seasonality">
-              <RoleGuard allowedRoles={['admin', 'manager', 'analyst']}>
+              <RoleGuard allowedRoles={['data_analyst', 'program_manager', 'national', 'regional', 'zonal']}>
                 <SeasonalityTrends />
               </RoleGuard>
             </TabsContent>
 
             <TabsContent value="wastage">
-              <RoleGuard allowedRoles={['admin', 'manager']}>
+              <RoleGuard allowedRoles={['national', 'regional', 'zonal', 'facility_manager', 'program_manager']}>
                 <WastageAnalysis />
               </RoleGuard>
             </TabsContent>
 
             <TabsContent value="stockouts">
-              <RoleGuard allowedRoles={['admin', 'manager']}>
+              <RoleGuard allowedRoles={['national', 'regional', 'zonal', 'facility_manager', 'program_manager']}>
                 <StockOutAnalysis />
               </RoleGuard>
             </TabsContent>
