@@ -211,7 +211,7 @@ const DataEntry = () => {
         periods: createEmptyPeriods(newFrequency),
         seasonality
       };
-    })));
+    }));
   };
 
   const { count: periodCount, names: periodNames } = getPeriodsForFrequency(selectedFrequency);
