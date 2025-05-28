@@ -37,7 +37,7 @@ const LoadingSpinner = () => (
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider delayDuration={0}>
+      <TooltipProvider>
         <Toaster />
         <Sonner />
         <AuthProvider>
