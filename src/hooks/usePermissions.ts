@@ -17,6 +17,7 @@ interface Permissions {
   manageUsers: boolean;
   viewReports: boolean;
   manageSystem: boolean;
+  advancedReports: boolean;
 }
 
 const rolePermissions: Record<UserRole, Permissions> = {
@@ -35,6 +36,7 @@ const rolePermissions: Record<UserRole, Permissions> = {
     manageUsers: false,
     viewReports: true,
     manageSystem: false,
+    advancedReports: false,
   },
   facility_manager: {
     createProducts: true,
@@ -51,6 +53,7 @@ const rolePermissions: Record<UserRole, Permissions> = {
     manageUsers: false,
     viewReports: true,
     manageSystem: false,
+    advancedReports: true,
   },
   zonal: {
     createProducts: false,
@@ -67,6 +70,7 @@ const rolePermissions: Record<UserRole, Permissions> = {
     manageUsers: true,
     viewReports: true,
     manageSystem: false,
+    advancedReports: true,
   },
   regional: {
     createProducts: false,
@@ -83,6 +87,7 @@ const rolePermissions: Record<UserRole, Permissions> = {
     manageUsers: true,
     viewReports: true,
     manageSystem: true,
+    advancedReports: true,
   },
   national: {
     createProducts: false,
@@ -99,6 +104,7 @@ const rolePermissions: Record<UserRole, Permissions> = {
     manageUsers: true,
     viewReports: true,
     manageSystem: true,
+    advancedReports: true,
   },
   procurement: {
     createProducts: true,
@@ -115,6 +121,7 @@ const rolePermissions: Record<UserRole, Permissions> = {
     manageUsers: false,
     viewReports: true,
     manageSystem: false,
+    advancedReports: false,
   },
   finance: {
     createProducts: false,
@@ -131,6 +138,7 @@ const rolePermissions: Record<UserRole, Permissions> = {
     manageUsers: false,
     viewReports: true,
     manageSystem: false,
+    advancedReports: true,
   },
   program_manager: {
     createProducts: false,
@@ -147,6 +155,7 @@ const rolePermissions: Record<UserRole, Permissions> = {
     manageUsers: false,
     viewReports: true,
     manageSystem: false,
+    advancedReports: true,
   },
   qa: {
     createProducts: false,
@@ -163,6 +172,7 @@ const rolePermissions: Record<UserRole, Permissions> = {
     manageUsers: false,
     viewReports: true,
     manageSystem: false,
+    advancedReports: false,
   },
   data_analyst: {
     createProducts: false,
@@ -179,6 +189,7 @@ const rolePermissions: Record<UserRole, Permissions> = {
     manageUsers: false,
     viewReports: true,
     manageSystem: false,
+    advancedReports: true,
   },
 };
 

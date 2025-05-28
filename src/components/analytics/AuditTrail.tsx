@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CalendarIcon, Search, Download, Shield, User, Database, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { auditTrail, AuditEntry, AuditFilter, AuditReport } from '@/utils/auditTrail';
+import type { DateRange } from 'react-day-picker';
 
 const AuditTrail = () => {
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
@@ -21,7 +21,7 @@ const AuditTrail = () => {
     page: 1,
     limit: 50,
   });
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   useEffect(() => {
     // Load initial audit entries
@@ -32,14 +32,14 @@ const AuditTrail = () => {
   const loadAuditEntries = () => {
     const entries = auditTrail.getAuditEntries({
       ...filter,
-      startDate: dateRange.from,
-      endDate: dateRange.to,
+      startDate: dateRange?.from,
+      endDate: dateRange?.to,
     });
     setAuditEntries(entries);
   };
 
   const generateAuditReport = () => {
-    const report = auditTrail.generateAuditReport(dateRange.from, dateRange.to);
+    const report = auditTrail.generateAuditReport(dateRange?.from, dateRange?.to);
     setAuditReport(report);
   };
 
@@ -189,7 +189,7 @@ const AuditTrail = () => {
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start text-left font-normal">
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateRange.from ? (
+                        {dateRange?.from ? (
                           dateRange.to ? (
                             <>
                               {format(dateRange.from, "LLL dd, y")} -{" "}
@@ -207,10 +207,11 @@ const AuditTrail = () => {
                       <Calendar
                         initialFocus
                         mode="range"
-                        defaultMonth={dateRange.from}
+                        defaultMonth={dateRange?.from}
                         selected={dateRange}
                         onSelect={setDateRange}
                         numberOfMonths={2}
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
@@ -224,7 +225,7 @@ const AuditTrail = () => {
                 </Button>
                 <Button variant="outline" onClick={() => {
                   setFilter({ page: 1, limit: 50 });
-                  setDateRange({});
+                  setDateRange(undefined);
                 }}>
                   Clear Filters
                 </Button>

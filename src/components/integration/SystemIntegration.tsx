@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, CheckCircle, Clock, ExternalLink, Settings, Sync } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, ExternalLink, Settings, RefreshCw } from 'lucide-react';
 import { ExternalSystem } from '@/utils/apiClient';
 import { syncManager, SyncStatus } from '@/utils/realTimeSync';
 
@@ -216,7 +215,7 @@ const SystemIntegration = () => {
                       onClick={() => handleManualSync(system.id)}
                       disabled={!system.isActive}
                     >
-                      <Sync className="h-4 w-4 mr-2" />
+                      <RefreshCw className="h-4 w-4 mr-2" />
                       Sync Now
                     </Button>
                     <Button variant="outline" size="sm">
