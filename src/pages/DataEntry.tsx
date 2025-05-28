@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +23,13 @@ interface ProductData {
     aamc: number;
     wastageRate: number;
     awamc: number;
+  };
+  forecast: {
+    aamcApplied: number;
+    wastageRateApplied: number;
+    programExpansionContraction: number;
+    projectedAmcAdjusted: number;
+    projectedAnnualConsumption: number;
   };
   seasonality: {
     q1: number;
@@ -125,6 +131,13 @@ const DataEntry = () => {
         wastageRate: 0,
         awamc: 0
       },
+      forecast: {
+        aamcApplied: 0,
+        wastageRateApplied: 0,
+        programExpansionContraction: 0,
+        projectedAmcAdjusted: 0,
+        projectedAnnualConsumption: 0
+      },
       seasonality: {
         q1: 0,
         q2: 0,
@@ -141,6 +154,28 @@ const DataEntry = () => {
     setProducts(prev => prev.map(product => 
       product.id === productId ? { ...product, [field]: value } : product
     ));
+  };
+
+  const updateForecastField = (productId: string, field: keyof ProductData['forecast'], value: number) => {
+    setProducts(prev => prev.map(product => {
+      if (product.id === productId) {
+        const updatedForecast = { ...product.forecast, [field]: value };
+        
+        // Auto-calculate projected AMC adjusted for wastage
+        if (['aamcApplied', 'wastageRateApplied', 'programExpansionContraction'].includes(field)) {
+          const expansionFactor = 1 + (updatedForecast.programExpansionContraction / 100);
+          const adjustedAmc = updatedForecast.aamcApplied * expansionFactor;
+          const wastageAdjustment = 1 + (updatedForecast.wastageRateApplied / 100);
+          updatedForecast.projectedAmcAdjusted = adjustedAmc * wastageAdjustment;
+          
+          // Auto-calculate projected annual consumption
+          updatedForecast.projectedAnnualConsumption = updatedForecast.projectedAmcAdjusted * 12;
+        }
+        
+        return { ...product, forecast: updatedForecast };
+      }
+      return product;
+    }));
   };
 
   const updateQuarterData = (productId: string, quarterIndex: number, field: keyof QuarterData, value: number) => {
@@ -277,6 +312,10 @@ const DataEntry = () => {
                     
                     {/* Annual Averages */}
                     <TableHead colSpan={4} className="text-center font-bold border-r bg-purple-50">Annual Averages</TableHead>
+                    
+                    {/* Forecast */}
+                    <TableHead colSpan={5} className="text-center font-bold border-r bg-teal-50">Forecast</TableHead>
+                    
                     {/* Seasonality */}
                     <TableHead colSpan={5} className="text-center font-bold bg-orange-50">Seasonality</TableHead>
                     <TableHead className="font-bold">Actions</TableHead>
@@ -312,6 +351,13 @@ const DataEntry = () => {
                     <TableHead className="bg-purple-50 min-w-[100px]">aAMC</TableHead>
                     <TableHead className="bg-purple-50 min-w-[100px]">Wastage Rate</TableHead>
                     <TableHead className="bg-purple-50 min-w-[100px] border-r">awAMC</TableHead>
+                    
+                    {/* Forecast Subheadings */}
+                    <TableHead className="bg-teal-50 min-w-[100px]">aAMC Applied</TableHead>
+                    <TableHead className="bg-teal-50 min-w-[120px]">Wastage Rate Applied</TableHead>
+                    <TableHead className="bg-teal-50 min-w-[150px]">Program Expansion/Contraction %</TableHead>
+                    <TableHead className="bg-teal-50 min-w-[150px]">Projected AMC Adjusted</TableHead>
+                    <TableHead className="bg-teal-50 min-w-[150px] border-r">Projected Annual Consumption</TableHead>
                     
                     {/* Seasonality Subheadings */}
                     <TableHead className="bg-orange-50 min-w-[60px]">Q1</TableHead>
@@ -486,6 +532,41 @@ const DataEntry = () => {
                       </TableCell>
                       <TableCell className="bg-purple-25 border-r">
                         <span className="text-xs">{product.annualAverages.awamc.toFixed(2)}</span>
+                      </TableCell>
+                      
+                      {/* Forecast */}
+                      <TableCell className="bg-teal-25">
+                        <Input
+                          type="number"
+                          value={product.forecast.aamcApplied}
+                          onChange={(e) => updateForecastField(product.id, 'aamcApplied', parseFloat(e.target.value) || 0)}
+                          className="h-8 text-xs w-20"
+                          step="0.01"
+                        />
+                      </TableCell>
+                      <TableCell className="bg-teal-25">
+                        <Input
+                          type="number"
+                          value={product.forecast.wastageRateApplied}
+                          onChange={(e) => updateForecastField(product.id, 'wastageRateApplied', parseFloat(e.target.value) || 0)}
+                          className="h-8 text-xs w-20"
+                          step="0.1"
+                        />
+                      </TableCell>
+                      <TableCell className="bg-teal-25">
+                        <Input
+                          type="number"
+                          value={product.forecast.programExpansionContraction}
+                          onChange={(e) => updateForecastField(product.id, 'programExpansionContraction', parseFloat(e.target.value) || 0)}
+                          className="h-8 text-xs w-20"
+                          step="0.1"
+                        />
+                      </TableCell>
+                      <TableCell className="bg-teal-25">
+                        <span className="text-xs">{product.forecast.projectedAmcAdjusted.toFixed(2)}</span>
+                      </TableCell>
+                      <TableCell className="bg-teal-25 border-r">
+                        <span className="text-xs">{product.forecast.projectedAnnualConsumption.toFixed(2)}</span>
                       </TableCell>
                       
                       {/* Seasonality */}
