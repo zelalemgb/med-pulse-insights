@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          can_approve_associations: boolean
           created_at: string
           department: string | null
           email: string
@@ -22,6 +23,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          can_approve_associations?: boolean
           created_at?: string
           department?: string | null
           email: string
@@ -33,6 +35,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          can_approve_associations?: boolean
           created_at?: string
           department?: string | null
           email?: string
@@ -88,6 +91,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       user_role:
@@ -97,6 +104,7 @@ export type Database = {
         | "viewer"
         | "zonal"
         | "regional"
+        | "national"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -212,7 +220,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      user_role: ["admin", "manager", "analyst", "viewer", "zonal", "regional"],
+      user_role: [
+        "admin",
+        "manager",
+        "analyst",
+        "viewer",
+        "zonal",
+        "regional",
+        "national",
+      ],
     },
   },
 } as const

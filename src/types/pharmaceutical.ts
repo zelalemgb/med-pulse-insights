@@ -1,7 +1,16 @@
-
 export type DataFrequency = 'weekly' | 'monthly' | 'bimonthly' | 'quarterly' | 'yearly';
 export type VENClassification = 'V' | 'E' | 'N';
-export type UserRole = 'facility_officer' | 'facility_manager' | 'zonal' | 'regional' | 'national' | 'procurement' | 'finance' | 'program_manager' | 'qa' | 'data_analyst';
+export type UserRole = 
+  | 'facility_officer'
+  | 'facility_manager' 
+  | 'zonal'
+  | 'regional'
+  | 'national'
+  | 'procurement'
+  | 'finance'
+  | 'program_manager'
+  | 'qa'
+  | 'data_analyst';
 
 export interface User {
   id: string;
