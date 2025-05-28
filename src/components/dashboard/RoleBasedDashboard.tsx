@@ -1,157 +1,80 @@
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, BarChart3, Eye } from 'lucide-react';
-import RoleGuard from '@/components/auth/RoleGuard';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import FacilityOfficerDashboard from './FacilityOfficerDashboard';
 import FacilityManagerDashboard from './FacilityManagerDashboard';
-import ReportGenerator from '../reporting/ReportGenerator';
-import ReportTemplates from '../reporting/ReportTemplates';
+import AnalyticsDashboard from './AnalyticsDashboard';
+import ReportGenerator from '@/components/reporting/ReportGenerator';
+import ReportTemplates from '@/components/reporting/ReportTemplates';
+import RoleGuard from '@/components/auth/RoleGuard';
 
 const RoleBasedDashboard = () => {
   const { profile } = useAuth();
+  const { canAccess } = usePermissions();
 
-  const getRoleConfig = () => {
-    switch (profile?.role) {
-      case 'admin':
-        return {
-          title: 'Administrator Dashboard',
-          icon: Shield,
-          color: 'text-red-600 bg-red-100',
-          features: ['Full system access', 'User management', 'System configuration', 'All analytics'],
-        };
-      case 'manager':
-        return {
-          title: 'Manager Dashboard',
-          icon: Users,
-          color: 'text-blue-600 bg-blue-100',
-          features: ['Team oversight', 'Advanced analytics', 'Inventory management', 'Reporting'],
-        };
-      case 'analyst':
-        return {
-          title: 'Analyst Dashboard',
-          icon: BarChart3,
-          color: 'text-green-600 bg-green-100',
-          features: ['Data analysis', 'Consumption patterns', 'Forecasting', 'Custom reports'],
-        };
-      case 'viewer':
-        return {
-          title: 'Viewer Dashboard',
-          icon: Eye,
-          color: 'text-gray-600 bg-gray-100',
-          features: ['Basic analytics', 'Read-only access', 'Standard reports'],
-        };
+  const getDashboardComponent = () => {
+    if (!profile?.role) return <FacilityOfficerDashboard />;
+
+    switch (profile.role) {
+      case 'facility_manager':
+      case 'zonal':
+      case 'regional':
+      case 'national':
+        return <FacilityManagerDashboard />;
+      case 'data_analyst':
+      case 'program_manager':
+        return <AnalyticsDashboard />;
       default:
-        return {
-          title: 'Dashboard',
-          icon: Shield,
-          color: 'text-gray-600 bg-gray-100',
-          features: ['Limited access'],
-        };
+        return <FacilityOfficerDashboard />;
     }
   };
 
-  const roleConfig = getRoleConfig();
-  const IconComponent = roleConfig.icon;
+  const getAvailableTabs = () => {
+    const tabs = [
+      { id: 'dashboard', label: 'Dashboard', component: getDashboardComponent() },
+      { id: 'reports', label: 'Reports', component: <ReportGenerator /> },
+      { id: 'templates', label: 'Templates', component: <ReportTemplates /> }
+    ];
+
+    // Add analytics tab for authorized roles
+    if (canAccess.dataAnalysis || ['data_analyst', 'program_manager', 'national', 'regional'].includes(profile?.role || '')) {
+      tabs.push({
+        id: 'analytics',
+        label: 'Advanced Analytics',
+        component: <AnalyticsDashboard />
+      });
+    }
+
+    return tabs;
+  };
+
+  const availableTabs = getAvailableTabs();
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${roleConfig.color}`}>
-              <IconComponent className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold">{roleConfig.title}</h2>
-              <p className="text-sm text-gray-600">
-                Welcome back, {profile?.full_name || 'User'}
-              </p>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h3 className="font-medium mb-2">Your Access Level</h3>
-              <ul className="space-y-1">
-                {roleConfig.features.map((feature, index) => (
-                  <li key={index} className="text-sm text-gray-600 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-medium mb-2">Account Information</h3>
-              <div className="space-y-1 text-sm text-gray-600">
-                <p><span className="font-medium">Role:</span> {profile?.role}</p>
-                <p><span className="font-medium">Department:</span> {profile?.department || 'Not assigned'}</p>
-                <p><span className="font-medium">Facility:</span> {profile?.facility_id || 'Not assigned'}</p>
-                <p><span className="font-medium">Status:</span> 
-                  <span className={`ml-1 ${profile?.is_active ? 'text-green-600' : 'text-red-600'}`}>
-                    {profile?.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Role-specific dashboard content */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${availableTabs.length}, 1fr)` }}>
+          {availableTabs.map((tab) => (
+            <TabsTrigger key={tab.id} value={tab.id}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value="overview">
-          {/* Facility-level dashboards based on role */}
-          <RoleGuard allowedRoles={['viewer']} fallback={null}>
-            <FacilityOfficerDashboard />
-          </RoleGuard>
-
-          <RoleGuard allowedRoles={['manager', 'admin']} fallback={null}>
-            <FacilityManagerDashboard />
-          </RoleGuard>
-
-          <RoleGuard allowedRoles={['analyst']} fallback={null}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-green-600">Analyst Dashboard</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Advanced analytical tools and data analysis features.</p>
-              </CardContent>
-            </Card>
-          </RoleGuard>
-        </TabsContent>
-
-        <TabsContent value="reports">
-          <ReportGenerator />
-        </TabsContent>
-
-        <TabsContent value="templates">
-          <ReportTemplates />
-        </TabsContent>
+        {availableTabs.map((tab) => (
+          <TabsContent key={tab.id} value={tab.id}>
+            {tab.id === 'analytics' ? (
+              <RoleGuard allowedRoles={['data_analyst', 'program_manager', 'national', 'regional', 'zonal']}>
+                {tab.component}
+              </RoleGuard>
+            ) : (
+              tab.component
+            )}
+          </TabsContent>
+        ))}
       </Tabs>
-
-      {/* Legacy role-specific sections */}
-      <RoleGuard allowedRoles={['admin']}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-red-600">Admin Controls</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600">Advanced administrative features would go here.</p>
-          </CardContent>
-        </Card>
-      </RoleGuard>
     </div>
   );
 };
