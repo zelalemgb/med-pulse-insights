@@ -106,7 +106,7 @@ const ReportTemplates = () => {
                     </Badge>
                   </div>
                   <p className="text-xs text-gray-600">{template.description}</p>
-                </CardContent>
+                </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-xs">
