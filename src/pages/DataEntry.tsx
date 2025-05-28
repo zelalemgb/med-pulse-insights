@@ -103,12 +103,14 @@ const DataEntry = () => {
     const newProduct: ProductData = {
       id: Date.now().toString(),
       productName: '',
+      productCode: '',
       unit: '',
       unitPrice: 0,
       venClassification: 'V',
       facilitySpecific: false,
       procurementSource: '',
       frequency: selectedFrequency as DataFrequency,
+      facilityId: 'default-facility',
       periods: createEmptyPeriods(selectedFrequency as DataFrequency),
       annualAverages: {
         annualConsumption: 0,
@@ -123,7 +125,10 @@ const DataEntry = () => {
         projectedAmcAdjusted: 0,
         projectedAnnualConsumption: 0
       },
-      seasonality
+      seasonality,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: 'current-user'
     };
     
     setProducts(prev => [...prev, newProduct]);
@@ -220,11 +225,12 @@ const DataEntry = () => {
     });
   };
 
-  const changeFrequency = (newFrequency: DataFrequency) => {
-    setSelectedFrequency(newFrequency);
+  const changeFrequency = (newFrequency: string) => {
+    const frequency = newFrequency as DataFrequency;
+    setSelectedFrequency(frequency);
     // Update existing products to new frequency
     setProducts(prev => prev.map(product => {
-      const { names } = getPeriodsForFrequency(newFrequency);
+      const { names } = getPeriodsForFrequency(frequency);
       const seasonality: {[key: string]: number; total: number} = { total: 0 };
       names.forEach((name, index) => {
         seasonality[`p${index + 1}`] = 0;
@@ -232,9 +238,10 @@ const DataEntry = () => {
 
       return {
         ...product,
-        frequency: newFrequency,
-        periods: createEmptyPeriods(newFrequency),
-        seasonality
+        frequency: frequency,
+        periods: createEmptyPeriods(frequency),
+        seasonality,
+        updatedAt: new Date()
       };
     }));
   };
@@ -476,6 +483,7 @@ const DataEntry = () => {
                       <TableHead className="font-bold border-r min-w-[120px]">VEN Classification</TableHead>
                       <TableHead className="font-bold border-r min-w-[150px]">Facility Specific</TableHead>
                       <TableHead className="font-bold border-r min-w-[150px]">Procurement Source</TableHead>
+                      <TableHead className="font-bold border-r min-w-[150px]">Facility ID</TableHead>
                       
                       {periodNames.slice(0, Math.min(12, periodCount)).map((name, pIndex) => (
                         openPeriods[pIndex] && (
@@ -492,6 +500,7 @@ const DataEntry = () => {
                     </TableRow>
                     <TableRow className="bg-gray-50 text-xs">
                       <TableHead className="sticky left-0 bg-gray-50"></TableHead>
+                      <TableHead></TableHead>
                       <TableHead></TableHead>
                       <TableHead></TableHead>
                       <TableHead></TableHead>
@@ -585,6 +594,14 @@ const DataEntry = () => {
                             value={product.procurementSource}
                             onChange={(e) => updateProductField(product.id, 'procurementSource', e.target.value)}
                             placeholder="Source"
+                            className="h-8 text-xs w-24"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={product.facilityId}
+                            onChange={(e) => updateProductField(product.id, 'facilityId', e.target.value)}
+                            placeholder="Facility ID"
                             className="h-8 text-xs w-24"
                           />
                         </TableCell>
