@@ -1,13 +1,33 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Database, FileSpreadsheet, Upload } from "lucide-react";
+import { BarChart3, Database, FileSpreadsheet, Upload, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-16">
+        {/* Auth Button in top right */}
+        <div className="flex justify-end mb-8">
+          {!user ? (
+            <Link to="/auth">
+              <Button className="flex items-center gap-2">
+                <LogIn className="w-4 h-4" />
+                Sign In
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/dashboard">
+              <Button>
+                Go to Dashboard
+              </Button>
+            </Link>
+          )}
+        </div>
+
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Pharmaceutical Supply Chain Analytics
@@ -29,11 +49,19 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link to="/import">
-                <Button className="w-full">
-                  Start Import
-                </Button>
-              </Link>
+              {user ? (
+                <Link to="/import">
+                  <Button className="w-full">
+                    Start Import
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/auth">
+                  <Button className="w-full">
+                    Sign In to Import
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
 
@@ -48,11 +76,19 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link to="/data-entry">
-                <Button className="w-full">
-                  Enter Data
-                </Button>
-              </Link>
+              {user ? (
+                <Link to="/data-entry">
+                  <Button className="w-full">
+                    Enter Data
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/auth">
+                  <Button className="w-full">
+                    Sign In to Enter Data
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
 
@@ -67,11 +103,19 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link to="/dashboard">
-                <Button className="w-full">
-                  View Analytics
-                </Button>
-              </Link>
+              {user ? (
+                <Link to="/dashboard">
+                  <Button className="w-full">
+                    View Analytics
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/auth">
+                  <Button className="w-full">
+                    Sign In to View Analytics
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
 
