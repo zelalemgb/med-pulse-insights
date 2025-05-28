@@ -5,11 +5,17 @@ import { HealthFacility, CreateFacilityRequest, UserFacilityAssociation } from '
 export class HealthFacilitiesService {
   // Create a new health facility
   async createFacility(facilityData: CreateFacilityRequest): Promise<HealthFacility> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     const { data, error } = await supabase
       .from('health_facilities')
       .insert({
         ...facilityData,
-        created_by: (await supabase.auth.getUser()).data.user?.id
+        created_by: user.id
       })
       .select()
       .single();
@@ -21,7 +27,7 @@ export class HealthFacilitiesService {
     return data as HealthFacility;
   }
 
-  // Get facilities accessible to the current user
+  // Get facilities accessible to the current user (RLS will filter automatically)
   async getUserFacilities(): Promise<HealthFacility[]> {
     const { data, error } = await supabase
       .from('health_facilities')
@@ -35,25 +41,22 @@ export class HealthFacilitiesService {
     return data as HealthFacility[];
   }
 
-  // Get a specific facility by ID
+  // Get a specific facility by ID (RLS will check access)
   async getFacilityById(facilityId: string): Promise<HealthFacility | null> {
     const { data, error } = await supabase
       .from('health_facilities')
       .select('*')
       .eq('id', facilityId)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return null; // Not found
-      }
       throw new Error(`Failed to fetch facility: ${error.message}`);
     }
 
-    return data as HealthFacility;
+    return data as HealthFacility | null;
   }
 
-  // Update a facility
+  // Update a facility (RLS will check ownership)
   async updateFacility(facilityId: string, updates: Partial<CreateFacilityRequest>): Promise<HealthFacility> {
     const { data, error } = await supabase
       .from('health_facilities')
@@ -74,15 +77,16 @@ export class HealthFacilitiesService {
 
   // Request association with a facility
   async requestFacilityAssociation(facilityId: string, notes?: string): Promise<UserFacilityAssociation> {
-    const user = await supabase.auth.getUser();
-    if (!user.data.user) {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
       throw new Error('User not authenticated');
     }
 
     const { data, error } = await supabase
       .from('user_facility_associations')
       .insert({
-        user_id: user.data.user.id,
+        user_id: user.id,
         facility_id: facilityId,
         association_type: 'pending_approval',
         approval_status: 'pending',
@@ -92,13 +96,16 @@ export class HealthFacilitiesService {
       .single();
 
     if (error) {
+      if (error.code === '23505') { // Unique constraint violation
+        throw new Error('You have already requested access to this facility');
+      }
       throw new Error(`Failed to request facility association: ${error.message}`);
     }
 
     return data as UserFacilityAssociation;
   }
 
-  // Get user's facility associations
+  // Get user's facility associations (RLS will filter automatically)
   async getUserAssociations(): Promise<UserFacilityAssociation[]> {
     const { data, error } = await supabase
       .from('user_facility_associations')
@@ -121,25 +128,37 @@ export class HealthFacilitiesService {
     return data as UserFacilityAssociation[];
   }
 
-  // Approve or reject facility association (for facility owners/super admins)
+  // Approve or reject facility association (RLS will check permissions)
   async updateAssociationStatus(
     associationId: string, 
     status: 'approved' | 'rejected',
     notes?: string
   ): Promise<UserFacilityAssociation> {
-    const user = await supabase.auth.getUser();
-    if (!user.data.user) {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
       throw new Error('User not authenticated');
+    }
+
+    const updateData: any = {
+      approval_status: status,
+      approved_by: user.id,
+      approved_at: new Date().toISOString()
+    };
+
+    // If approving, change association type to approved_user
+    if (status === 'approved') {
+      updateData.association_type = 'approved_user';
+    }
+
+    // Add notes if provided
+    if (notes) {
+      updateData.notes = notes;
     }
 
     const { data, error } = await supabase
       .from('user_facility_associations')
-      .update({
-        approval_status: status,
-        approved_by: user.data.user.id,
-        approved_at: new Date().toISOString(),
-        notes
-      })
+      .update(updateData)
       .eq('id', associationId)
       .select()
       .single();
@@ -151,7 +170,7 @@ export class HealthFacilitiesService {
     return data as UserFacilityAssociation;
   }
 
-  // Get pending associations for facilities owned by the current user
+  // Get pending associations for facilities owned by the current user (RLS will filter)
   async getPendingAssociations(): Promise<UserFacilityAssociation[]> {
     const { data, error } = await supabase
       .from('user_facility_associations')
@@ -179,15 +198,16 @@ export class HealthFacilitiesService {
     return data as UserFacilityAssociation[];
   }
 
-  // Check if user has access to a facility
+  // Check if user has access to a facility (uses RLS function)
   async checkFacilityAccess(facilityId: string, requiredType: string = 'approved_user'): Promise<boolean> {
-    const user = await supabase.auth.getUser();
-    if (!user.data.user) {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
       return false;
     }
 
     const { data, error } = await supabase.rpc('user_has_facility_access', {
-      _user_id: user.data.user.id,
+      _user_id: user.id,
       _facility_id: facilityId,
       _required_type: requiredType
     });

@@ -8,6 +8,7 @@ export const useHealthFacilities = () => {
   return useQuery({
     queryKey: ['health-facilities'],
     queryFn: () => healthFacilitiesService.getUserFacilities(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -28,6 +29,7 @@ export const useCreateFacility = () => {
       healthFacilitiesService.createFacility(facilityData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['health-facilities'] });
+      queryClient.invalidateQueries({ queryKey: ['user-facility-associations'] });
       toast({
         title: 'Success',
         description: 'Health facility created successfully',
@@ -47,6 +49,7 @@ export const useUserAssociations = () => {
   return useQuery({
     queryKey: ['user-facility-associations'],
     queryFn: () => healthFacilitiesService.getUserAssociations(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };
 
@@ -59,9 +62,10 @@ export const useRequestFacilityAssociation = () => {
       healthFacilitiesService.requestFacilityAssociation(facilityId, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-facility-associations'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-facility-associations'] });
       toast({
         title: 'Success',
-        description: 'Facility association request submitted',
+        description: 'Facility association request submitted successfully',
       });
     },
     onError: (error: Error) => {
@@ -78,6 +82,7 @@ export const usePendingAssociations = () => {
   return useQuery({
     queryKey: ['pending-facility-associations'],
     queryFn: () => healthFacilitiesService.getPendingAssociations(),
+    staleTime: 1 * 60 * 1000, // 1 minute (shorter for pending items)
   });
 };
 
@@ -95,12 +100,13 @@ export const useUpdateAssociationStatus = () => {
       status: 'approved' | 'rejected'; 
       notes?: string; 
     }) => healthFacilitiesService.updateAssociationStatus(associationId, status, notes),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['pending-facility-associations'] });
       queryClient.invalidateQueries({ queryKey: ['user-facility-associations'] });
+      queryClient.invalidateQueries({ queryKey: ['health-facilities'] });
       toast({
         title: 'Success',
-        description: 'Association status updated successfully',
+        description: `Association ${variables.status} successfully`,
       });
     },
     onError: (error: Error) => {
@@ -110,5 +116,14 @@ export const useUpdateAssociationStatus = () => {
         variant: 'destructive',
       });
     },
+  });
+};
+
+export const useFacilityAccess = (facilityId: string, requiredType?: string) => {
+  return useQuery({
+    queryKey: ['facility-access', facilityId, requiredType],
+    queryFn: () => healthFacilitiesService.checkFacilityAccess(facilityId, requiredType),
+    enabled: !!facilityId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

@@ -18,15 +18,16 @@ export const FacilityManagement = () => {
     (profile as any)?.is_facility_owner ||
     (profile as any)?.can_approve_associations;
 
+  const tabsCount = canApproveAssociations ? 4 : 3;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Facility Management</h2>
-        <FacilityAssociationRequest />
       </div>
 
       <Tabs defaultValue="facilities" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className={`grid w-full grid-cols-${tabsCount}`}>
           <TabsTrigger value="facilities" className="flex items-center">
             <Building className="h-4 w-4 mr-2" />
             Facilities

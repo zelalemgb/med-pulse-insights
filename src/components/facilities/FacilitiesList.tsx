@@ -7,7 +7,7 @@ import { useHealthFacilities } from '@/hooks/useHealthFacilities';
 import { CreateFacilityDialog } from './CreateFacilityDialog';
 import { FacilityAssociationRequest } from './FacilityAssociationRequest';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, MapPin, Users, Building, Copy } from 'lucide-react';
+import { Loader2, MapPin, Users, Building, Copy, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export const FacilitiesList = () => {
@@ -22,6 +22,10 @@ export const FacilitiesList = () => {
       description: 'Facility ID copied to clipboard',
     });
   };
+
+  const canManageFacilities = profile?.role === 'national' || 
+    profile?.role === 'regional' || 
+    profile?.role === 'zonal';
 
   if (isLoading) {
     return (
@@ -46,7 +50,7 @@ export const FacilitiesList = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Health Facilities</h2>
+        <h3 className="text-lg font-semibold">Health Facilities</h3>
         <CreateFacilityDialog />
       </div>
 
@@ -55,13 +59,12 @@ export const FacilitiesList = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <Building className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-semibold mb-2">No facilities found</h3>
+              <h4 className="text-lg font-semibold mb-2">No facilities found</h4>
               <p className="text-gray-600 mb-4">
                 You don't have access to any health facilities yet.
               </p>
               <div className="flex justify-center space-x-2">
                 <CreateFacilityDialog />
-                <FacilityAssociationRequest />
               </div>
             </div>
           </CardContent>
@@ -135,7 +138,7 @@ export const FacilitiesList = () => {
                   <Button variant="outline" size="sm" className="flex-1">
                     View Details
                   </Button>
-                  {profile?.role === 'national' || profile?.role === 'regional' || profile?.role === 'zonal' ? (
+                  {canManageFacilities ? (
                     <Button variant="outline" size="sm">
                       Manage
                     </Button>
