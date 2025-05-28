@@ -51,13 +51,23 @@ const Index = () => {
           </Card>
         </div>
         
-        <Button 
-          onClick={() => navigate('/dashboard')} 
-          size="lg"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
-        >
-          Launch Dashboard
-        </Button>
+        <div className="flex justify-center space-x-4">
+          <Button 
+            onClick={() => navigate('/dashboard')} 
+            size="lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
+          >
+            View Dashboard
+          </Button>
+          <Button 
+            onClick={() => navigate('/data-entry')} 
+            size="lg"
+            variant="outline"
+            className="px-8 py-3 text-lg"
+          >
+            Enter Data
+          </Button>
+        </div>
       </div>
     </div>
   );

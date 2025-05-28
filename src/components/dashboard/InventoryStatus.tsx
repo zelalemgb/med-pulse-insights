@@ -1,19 +1,17 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { mockPharmaceuticalData } from '@/data/pharmaceuticalData';
+import { AlertTriangle, Package, TrendingDown, TrendingUp } from 'lucide-react';
 
 export const InventoryStatus = () => {
-  const getStockStatus = (product: any) => {
-    const latestQuarter = product.quarters[3]; // Q4
-    const stockOutDays = latestQuarter.stockOutDays;
-    
-    if (stockOutDays > 30) return { status: 'Critical', color: 'destructive' };
-    if (stockOutDays > 0) return { status: 'Low', color: 'secondary' };
-    if (latestQuarter.endingBalance < 100) return { status: 'Low', color: 'secondary' };
-    return { status: 'Good', color: 'default' };
+  const getStockStatus = (endingBalance: number, aamc: number) => {
+    if (aamc === 0) return { status: 'No Data', variant: 'secondary' as const };
+    const monthsOfStock = endingBalance / aamc;
+    if (monthsOfStock < 1) return { status: 'Critical', variant: 'destructive' as const };
+    if (monthsOfStock < 3) return { status: 'Low', variant: 'outline' as const };
+    return { status: 'Adequate', variant: 'default' as const };
   };
 
   const getVENBadgeColor = (classification: string) => {
@@ -46,7 +44,7 @@ export const InventoryStatus = () => {
             </TableHeader>
             <TableBody>
               {mockPharmaceuticalData.map((product) => {
-                const stockStatus = getStockStatus(product);
+                const stockStatus = getStockStatus(product.quarters[3].endingBalance, product.aamc);
                 const latestQuarter = product.quarters[3];
                 
                 return (
@@ -61,7 +59,7 @@ export const InventoryStatus = () => {
                     <TableCell>${product.unitPrice.toFixed(2)}</TableCell>
                     <TableCell>{latestQuarter.stockOutDays} days</TableCell>
                     <TableCell>
-                      <Badge variant={stockStatus.color}>{stockStatus.status}</Badge>
+                      <Badge variant={stockStatus.variant}>{stockStatus.status}</Badge>
                     </TableCell>
                     <TableCell>
                       {product.quarters.map((q, idx) => (
@@ -86,7 +84,7 @@ export const InventoryStatus = () => {
           <CardContent>
             <div className="space-y-2">
               {mockPharmaceuticalData.filter(product => 
-                getStockStatus(product).status === 'Critical'
+                getStockStatus(product.quarters[3].endingBalance, product.aamc).status === 'Critical'
               ).map(product => (
                 <div key={product.id} className="flex justify-between items-center p-2 border rounded">
                   <span className="text-sm font-medium">{product.productName}</span>
@@ -94,7 +92,7 @@ export const InventoryStatus = () => {
                 </div>
               ))}
               {mockPharmaceuticalData.filter(product => 
-                getStockStatus(product).status === 'Critical'
+                getStockStatus(product.quarters[3].endingBalance, product.aamc).status === 'Critical'
               ).length === 0 && (
                 <p className="text-muted-foreground">No critical stock items</p>
               )}
@@ -139,7 +137,7 @@ export const InventoryStatus = () => {
                 <h4 className="font-medium">Items Requiring Reorder</h4>
                 <p className="text-2xl font-bold text-red-600">
                   {mockPharmaceuticalData.filter(product => 
-                    getStockStatus(product).status !== 'Good'
+                    getStockStatus(product.quarters[3].endingBalance, product.aamc).status !== 'Adequate'
                   ).length}
                 </p>
               </div>
