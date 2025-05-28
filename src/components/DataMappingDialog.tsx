@@ -31,26 +31,26 @@ interface DataMappingDialogProps {
 
 const REQUIRED_FIELDS: MappingField[] = [
   // Product Information
-  { key: 'productName', label: 'Product List', required: true, category: 'Product Information', aliases: ['product', 'product name', 'item', 'medicine', 'drug'] },
+  { key: 'productName', label: 'Product List', required: true, category: 'Product Information', aliases: ['product', 'product name', 'item', 'medicine', 'drug', 'product list'] },
   { key: 'unit', label: 'Unit', required: true, category: 'Product Information', aliases: ['unit', 'uom', 'unit of measure', 'measurement'] },
   { key: 'unitPrice', label: 'Unit Price', required: true, category: 'Product Information', aliases: ['price', 'cost', 'unit price', 'unit cost'] },
-  { key: 'venClassification', label: 'VEN Classification', required: true, category: 'Product Information', aliases: ['ven', 'classification', 'category', 'ven class'] },
+  { key: 'venClassification', label: 'VEN Classification', required: true, category: 'Product Information', aliases: ['ven', 'classification', 'category', 'ven class', 'ven classification'] },
   { key: 'facilitySpecific', label: 'Facility Specific', required: true, category: 'Product Information', aliases: ['facility', 'specific', 'facility specific'] },
-  { key: 'procurementSource', label: 'Procurement Source', required: true, category: 'Product Information', aliases: ['source', 'procurement', 'supplier', 'vendor'] },
+  { key: 'procurementSource', label: 'Procurement Source', required: true, category: 'Product Information', aliases: ['source', 'procurement', 'supplier', 'vendor', 'procurement source'] },
   
   // Consumption Data
-  { key: 'beginningBalance', label: 'Beginning Balance', required: true, category: 'Consumption Data', aliases: ['beginning', 'start balance', 'opening balance', 'initial'] },
+  { key: 'beginningBalance', label: 'Beginning Balance', required: true, category: 'Consumption Data', aliases: ['beginning', 'start balance', 'opening balance', 'initial', 'beginning balance'] },
   { key: 'received', label: 'Received', required: true, category: 'Consumption Data', aliases: ['received', 'receipts', 'incoming', 'delivered'] },
-  { key: 'positiveAdj', label: 'Positive Adjustment', required: true, category: 'Consumption Data', aliases: ['positive adj', 'positive adjustment', 'add adjustment'] },
-  { key: 'negativeAdj', label: 'Negative Adjustment', required: true, category: 'Consumption Data', aliases: ['negative adj', 'negative adjustment', 'minus adjustment'] },
-  { key: 'endingBalance', label: 'Ending Balance', required: false, category: 'Consumption Data', aliases: ['ending', 'final balance', 'closing balance'] },
-  { key: 'stockOutDays', label: 'Stock Out Days', required: true, category: 'Consumption Data', aliases: ['stockout', 'stock out', 'outage days', 'shortage days'] },
-  { key: 'expiredDamaged', label: 'Expired/Damaged', required: true, category: 'Consumption Data', aliases: ['expired', 'damaged', 'wastage', 'loss'] },
+  { key: 'positiveAdj', label: 'Positive Adjustment', required: true, category: 'Consumption Data', aliases: ['positive adj', 'positive adjustment', 'add adjustment', 'positive'] },
+  { key: 'negativeAdj', label: 'Negative Adjustment', required: true, category: 'Consumption Data', aliases: ['negative adj', 'negative adjustment', 'minus adjustment', 'negative'] },
+  { key: 'endingBalance', label: 'Ending Balance', required: true, category: 'Consumption Data', aliases: ['ending', 'final balance', 'closing balance', 'ending balance'] },
+  { key: 'stockOutDays', label: 'Stock Out Days', required: true, category: 'Consumption Data', aliases: ['stockout', 'stock out', 'outage days', 'shortage days', 'stock out days'] },
+  { key: 'expiredDamaged', label: 'Expired/Damaged', required: true, category: 'Consumption Data', aliases: ['expired', 'damaged', 'wastage', 'loss', 'expired/damaged'] },
   
   // Forecast Data
-  { key: 'aamcApplied', label: 'aAMC Applied', required: false, category: 'Annual Averages', aliases: ['aamc', 'average monthly consumption', 'amc'] },
-  { key: 'wastageRateApplied', label: 'Wastage Rate Applied', required: false, category: 'Annual Averages', aliases: ['wastage rate', 'loss rate', 'waste percentage'] },
-  { key: 'programExpansionContraction', label: 'Program Expansion/Contraction', required: false, category: 'Forecast', aliases: ['expansion', 'contraction', 'program change', 'growth rate'] }
+  { key: 'aamcApplied', label: 'aAMC Applied', required: true, category: 'Forecast Data', aliases: ['aamc', 'average monthly consumption', 'amc', 'aamc applied'] },
+  { key: 'wastageRateApplied', label: 'Wastage Rate Applied', required: true, category: 'Forecast Data', aliases: ['wastage rate', 'loss rate', 'waste percentage', 'wastage rate applied'] },
+  { key: 'programExpansionContraction', label: 'Program Expansion/Contraction', required: true, category: 'Forecast Data', aliases: ['expansion', 'contraction', 'program change', 'growth rate', 'program expansion', 'program contraction'] }
 ];
 
 const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
@@ -148,21 +148,24 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
       
       // Process each sheet and extract mapped data
       Object.entries(excelData).forEach(([sheetName, data]) => {
-        data.forEach((row: any) => {
-          const mappedRow: any = {};
-          
-          Object.entries(mapping).forEach(([fieldKey, columnPath]) => {
-            const [targetSheet, targetColumn] = columnPath.split(' → ');
-            if (targetSheet === sheetName && row[targetColumn] !== undefined) {
-              mappedRow[fieldKey] = row[targetColumn];
+        // Type check: ensure data is an array before using forEach
+        if (Array.isArray(data)) {
+          data.forEach((row: any) => {
+            const mappedRow: any = {};
+            
+            Object.entries(mapping).forEach(([fieldKey, columnPath]) => {
+              const [targetSheet, targetColumn] = columnPath.split(' → ');
+              if (targetSheet === sheetName && row[targetColumn] !== undefined) {
+                mappedRow[fieldKey] = row[targetColumn];
+              }
+            });
+            
+            // Only add rows that have at least the product name
+            if (mappedRow.productName) {
+              mappedData.push(mappedRow);
             }
           });
-          
-          // Only add rows that have at least the product name
-          if (mappedRow.productName) {
-            mappedData.push(mappedRow);
-          }
-        });
+        }
       });
       
       onMappingComplete(mappedData, mapping);
@@ -212,7 +215,7 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
                 </span>
               </div>
               <p className="text-sm text-gray-600">
-                Map your Excel columns to the required fields below. Required fields are marked and must be mapped to proceed.
+                Map your Excel columns to the required fields below. All fields are required for forecast calculation.
               </p>
             </div>
 
