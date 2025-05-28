@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy } from "react";
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,13 +10,13 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { Loader2 } from "lucide-react";
 
 // Lazy load components for code splitting
-const Index = lazy(() => import("./pages/Index"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const DataEntry = lazy(() => import("./pages/DataEntry"));
-const Import = lazy(() => import("./pages/Import"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Facilities = lazy(() => import("./pages/Facilities"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const Index = React.lazy(() => import("./pages/Index"));
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+const DataEntry = React.lazy(() => import("./pages/DataEntry"));
+const Import = React.lazy(() => import("./pages/Import"));
+const Auth = React.lazy(() => import("./pages/Auth"));
+const Facilities = React.lazy(() => import("./pages/Facilities"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,7 +42,7 @@ const App = () => {
         <Sonner />
         <AuthProvider>
           <BrowserRouter>
-            <Suspense fallback={<LoadingSpinner />}>
+            <React.Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -81,7 +81,7 @@ const App = () => {
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </Suspense>
+            </React.Suspense>
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
