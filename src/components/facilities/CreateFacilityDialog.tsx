@@ -21,7 +21,7 @@ export const CreateFacilityDialog = ({ open, onOpenChange, onSuccess }: CreateFa
   const [isSubmitting, setIsSubmitting] = useState(false);
   const createFacility = useCreateFacility();
   
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateFacilityRequest>({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CreateFacilityRequest>({
     defaultValues: {
       operational_status: 'active'
     }

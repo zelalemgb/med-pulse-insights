@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useHealthFacilities } from '@/hooks/useHealthFacilities';
 import { CreateFacilityDialog } from './CreateFacilityDialog';
 import { Loader2, Building, MapPin, Plus, Check } from 'lucide-react';
+import { HealthFacility } from '@/types/healthFacilities';
 
 interface FacilitySelectionStepProps {
   onFacilitySelected: (facilityId: string | null) => void;
@@ -18,6 +19,11 @@ export const FacilitySelectionStep = ({
 }: FacilitySelectionStepProps) => {
   const { data: facilities, isLoading, error } = useHealthFacilities();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  const handleFacilityCreated = (facility: HealthFacility) => {
+    setShowCreateDialog(false);
+    onFacilitySelected(facility.id);
+  };
 
   if (isLoading) {
     return (
@@ -121,10 +127,7 @@ export const FacilitySelectionStep = ({
       <CreateFacilityDialog 
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onSuccess={(facility) => {
-          setShowCreateDialog(false);
-          onFacilitySelected(facility.id);
-        }}
+        onSuccess={handleFacilityCreated}
       />
     </div>
   );

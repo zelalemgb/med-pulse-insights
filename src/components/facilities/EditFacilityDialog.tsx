@@ -1,319 +1,266 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useUpdateFacility } from '@/hooks/useHealthFacilities';
-import { HealthFacility } from '@/types/healthFacilities';
-
-const facilitySchema = z.object({
-  name: z.string().min(2, 'Facility name must be at least 2 characters'),
-  code: z.string().optional(),
-  facility_type: z.string().min(1, 'Facility type is required'),
-  level: z.string().min(1, 'Level is required'),
-  region: z.string().min(1, 'Region is required'),
-  zone: z.string().min(1, 'Zone is required'),
-  wereda: z.string().optional(),
-  capacity: z.number().min(1).optional(),
-  staff_count: z.number().min(0).optional(),
-  operational_status: z.enum(['active', 'inactive', 'under_maintenance']),
-  services_offered: z.string().optional(),
-});
-
-type FacilityForm = z.infer<typeof facilitySchema>;
+import { CreateFacilityRequest, HealthFacility } from '@/types/healthFacilities';
+import { Loader2 } from 'lucide-react';
 
 interface EditFacilityDialogProps {
-  facility: HealthFacility;
+  facility: HealthFacility | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
 export const EditFacilityDialog = ({ facility, isOpen, onClose }: EditFacilityDialogProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const updateFacility = useUpdateFacility();
+  
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CreateFacilityRequest>();
 
-  const form = useForm<FacilityForm>({
-    resolver: zodResolver(facilitySchema),
-    defaultValues: {
-      name: facility.name,
-      code: facility.code || '',
-      facility_type: facility.facility_type,
-      level: facility.level,
-      region: facility.region,
-      zone: facility.zone,
-      wereda: facility.wereda || '',
-      capacity: facility.capacity || undefined,
-      staff_count: facility.staff_count || undefined,
-      operational_status: facility.operational_status,
-      services_offered: facility.services_offered?.join(', ') || '',
-    },
-  });
+  // Reset form when facility changes
+  useEffect(() => {
+    if (facility) {
+      reset({
+        name: facility.name,
+        code: facility.code || '',
+        facility_type: facility.facility_type,
+        level: facility.level,
+        region: facility.region,
+        zone: facility.zone,
+        wereda: facility.wereda || '',
+        operational_status: facility.operational_status,
+        capacity: facility.capacity || undefined,
+        staff_count: facility.staff_count || undefined,
+        catchment_area: facility.catchment_area || undefined,
+        latitude: facility.latitude || undefined,
+        longitude: facility.longitude || undefined,
+        services_offered: facility.services_offered || []
+      });
 
-  const onSubmit = async (data: FacilityForm) => {
+      // Set select values
+      setValue('facility_type', facility.facility_type);
+      setValue('level', facility.level);
+      setValue('operational_status', facility.operational_status);
+    }
+  }, [facility, reset, setValue]);
+
+  const onSubmit = async (data: CreateFacilityRequest) => {
+    if (!facility) return;
+    
     try {
-      const updateData = {
-        ...data,
-        capacity: data.capacity || null,
-        staff_count: data.staff_count || null,
-        services_offered: data.services_offered 
-          ? data.services_offered.split(',').map(s => s.trim()).filter(Boolean)
-          : [],
-      };
-
+      setIsSubmitting(true);
       await updateFacility.mutateAsync({
         facilityId: facility.id,
-        updates: updateData,
+        updates: data
       });
       onClose();
     } catch (error) {
-      // Error handled by the mutation
+      console.error('Error updating facility:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  if (!facility) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Facility</DialogTitle>
-          <DialogDescription>
-            Update the facility information below.
-          </DialogDescription>
+          <DialogTitle>Edit Facility: {facility.name}</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Facility Name *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter facility name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+        
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="name">Facility Name *</Label>
+              <Input
+                id="name"
+                {...register('name', { required: 'Facility name is required' })}
+                placeholder="Enter facility name"
               />
-              <FormField
-                control={form.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Facility Code</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter facility code" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="facility_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Facility Type *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select facility type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Hospital">Hospital</SelectItem>
-                        <SelectItem value="Health Center">Health Center</SelectItem>
-                        <SelectItem value="Health Post">Health Post</SelectItem>
-                        <SelectItem value="Clinic">Clinic</SelectItem>
-                        <SelectItem value="Pharmacy">Pharmacy</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="level"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Level *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select level" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Primary">Primary</SelectItem>
-                        <SelectItem value="Secondary">Secondary</SelectItem>
-                        <SelectItem value="Tertiary">Tertiary</SelectItem>
-                        <SelectItem value="Specialized">Specialized</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="region"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Region *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter region" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="zone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Zone *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter zone" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="wereda"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Wereda</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter wereda" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="capacity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Capacity</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="Enter capacity"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="staff_count"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Staff Count</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="Enter staff count"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="operational_status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="under_maintenance">Under Maintenance</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="services_offered"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Services Offered</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Enter services separated by commas (e.g., OPD, IPD, Emergency)"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              {errors.name && (
+                <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
               )}
-            />
-
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updateFacility.isPending}>
-                {updateFacility.isPending ? 'Updating...' : 'Update Facility'}
-              </Button>
             </div>
-          </form>
-        </Form>
+
+            <div>
+              <Label htmlFor="code">Facility Code</Label>
+              <Input
+                id="code"
+                {...register('code')}
+                placeholder="Enter facility code"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="facility_type">Facility Type *</Label>
+              <Select onValueChange={(value) => setValue('facility_type', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select facility type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hospital">Hospital</SelectItem>
+                  <SelectItem value="health_center">Health Center</SelectItem>
+                  <SelectItem value="health_post">Health Post</SelectItem>
+                  <SelectItem value="clinic">Clinic</SelectItem>
+                  <SelectItem value="specialized_hospital">Specialized Hospital</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="level">Level *</Label>
+              <Select onValueChange={(value) => setValue('level', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="primary">Primary</SelectItem>
+                  <SelectItem value="secondary">Secondary</SelectItem>
+                  <SelectItem value="tertiary">Tertiary</SelectItem>
+                  <SelectItem value="quaternary">Quaternary</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="region">Region *</Label>
+              <Input
+                id="region"
+                {...register('region', { required: 'Region is required' })}
+                placeholder="Enter region"
+              />
+              {errors.region && (
+                <p className="text-sm text-red-600 mt-1">{errors.region.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="zone">Zone *</Label>
+              <Input
+                id="zone"
+                {...register('zone', { required: 'Zone is required' })}
+                placeholder="Enter zone"
+              />
+              {errors.zone && (
+                <p className="text-sm text-red-600 mt-1">{errors.zone.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="wereda">Wereda</Label>
+              <Input
+                id="wereda"
+                {...register('wereda')}
+                placeholder="Enter wereda"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="operational_status">Operational Status</Label>
+              <Select onValueChange={(value) => setValue('operational_status', value as any)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="under_maintenance">Under Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="capacity">Capacity</Label>
+              <Input
+                id="capacity"
+                type="number"
+                {...register('capacity', { valueAsNumber: true })}
+                placeholder="Enter capacity"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="staff_count">Staff Count</Label>
+              <Input
+                id="staff_count"
+                type="number"
+                {...register('staff_count', { valueAsNumber: true })}
+                placeholder="Enter staff count"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="catchment_area">Catchment Area</Label>
+              <Input
+                id="catchment_area"
+                type="number"
+                {...register('catchment_area', { valueAsNumber: true })}
+                placeholder="Enter catchment area"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="latitude">Latitude</Label>
+              <Input
+                id="latitude"
+                type="number"
+                step="any"
+                {...register('latitude', { valueAsNumber: true })}
+                placeholder="Enter latitude"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="longitude">Longitude</Label>
+              <Input
+                id="longitude"
+                type="number"
+                step="any"
+                {...register('longitude', { valueAsNumber: true })}
+                placeholder="Enter longitude"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="services_offered">Services Offered</Label>
+            <Textarea
+              id="services_offered"
+              placeholder="Enter services offered (comma-separated)"
+              defaultValue={facility.services_offered?.join(', ') || ''}
+              onChange={(e) => {
+                const services = e.target.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                setValue('services_offered', services);
+              }}
+            />
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+            >
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Update Facility
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

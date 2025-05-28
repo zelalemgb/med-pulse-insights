@@ -7,7 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePendingAssociations, useHealthFacilities } from '@/hooks/useHealthFacilities';
 import { PendingAssociations } from './PendingAssociations';
 import { FacilitiesList } from './FacilitiesList';
-import { Shield, Users, Building, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { FacilityTestHelper } from './FacilityTestHelper';
+import { Shield, Users, Building, Clock, CheckCircle, TestTube } from 'lucide-react';
 
 export const SuperAdminDashboard = () => {
   const { profile } = useAuth();
@@ -102,8 +103,12 @@ export const SuperAdminDashboard = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="testing" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="testing" className="flex items-center">
+            <TestTube className="h-4 w-4 mr-2" />
+            Phase 3 Testing
+          </TabsTrigger>
           <TabsTrigger value="pending" className="flex items-center">
             <Clock className="h-4 w-4 mr-2" />
             Pending Approvals
@@ -122,6 +127,10 @@ export const SuperAdminDashboard = () => {
             User Management
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="testing">
+          <FacilityTestHelper />
+        </TabsContent>
 
         <TabsContent value="pending">
           {pendingCount > 0 ? (
