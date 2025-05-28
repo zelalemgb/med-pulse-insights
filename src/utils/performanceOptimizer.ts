@@ -1,4 +1,3 @@
-
 export interface PerformanceMetrics {
   queryTime: number;
   cacheHitRate: number;
