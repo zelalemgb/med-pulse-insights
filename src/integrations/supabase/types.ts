@@ -9,6 +9,83 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      health_facilities: {
+        Row: {
+          capacity: number | null
+          catchment_area: number | null
+          code: string | null
+          created_at: string
+          created_by: string | null
+          equipment_inventory: Json | null
+          facility_type: string
+          hmis_indicators: Json | null
+          id: string
+          latitude: number | null
+          level: string
+          longitude: number | null
+          name: string
+          operational_status: string | null
+          region: string
+          services_offered: string[] | null
+          staff_count: number | null
+          updated_at: string
+          wereda: string | null
+          zone: string
+        }
+        Insert: {
+          capacity?: number | null
+          catchment_area?: number | null
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          equipment_inventory?: Json | null
+          facility_type: string
+          hmis_indicators?: Json | null
+          id?: string
+          latitude?: number | null
+          level: string
+          longitude?: number | null
+          name: string
+          operational_status?: string | null
+          region: string
+          services_offered?: string[] | null
+          staff_count?: number | null
+          updated_at?: string
+          wereda?: string | null
+          zone: string
+        }
+        Update: {
+          capacity?: number | null
+          catchment_area?: number | null
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          equipment_inventory?: Json | null
+          facility_type?: string
+          hmis_indicators?: Json | null
+          id?: string
+          latitude?: number | null
+          level?: string
+          longitude?: number | null
+          name?: string
+          operational_status?: string | null
+          region?: string
+          services_offered?: string[] | null
+          staff_count?: number | null
+          updated_at?: string
+          wereda?: string | null
+          zone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_facilities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           can_approve_associations: boolean
@@ -19,6 +96,8 @@ export type Database = {
           full_name: string | null
           id: string
           is_active: boolean
+          is_facility_owner: boolean | null
+          primary_facility_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
@@ -31,6 +110,8 @@ export type Database = {
           full_name?: string | null
           id: string
           is_active?: boolean
+          is_facility_owner?: boolean | null
+          primary_facility_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -43,10 +124,78 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_active?: boolean
+          is_facility_owner?: boolean | null
+          primary_facility_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_primary_facility_id_fkey"
+            columns: ["primary_facility_id"]
+            isOneToOne: false
+            referencedRelation: "health_facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_facility_associations: {
+        Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
+          association_type: string
+          facility_id: string
+          id: string
+          notes: string | null
+          requested_at: string
+          user_id: string
+        }
+        Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          association_type: string
+          facility_id: string
+          id?: string
+          notes?: string | null
+          requested_at?: string
+          user_id: string
+        }
+        Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          association_type?: string
+          facility_id?: string
+          id?: string
+          notes?: string | null
+          requested_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_facility_associations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_facility_associations_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "health_facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_facility_associations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -93,6 +242,14 @@ export type Database = {
       }
       is_super_admin: {
         Args: { user_uuid: string }
+        Returns: boolean
+      }
+      user_has_facility_access: {
+        Args: {
+          _user_id: string
+          _facility_id: string
+          _required_type?: string
+        }
         Returns: boolean
       }
     }

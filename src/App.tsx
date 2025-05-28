@@ -15,6 +15,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DataEntry = lazy(() => import("./pages/DataEntry"));
 const Import = lazy(() => import("./pages/Import"));
 const Auth = lazy(() => import("./pages/Auth"));
+const Facilities = lazy(() => import("./pages/Facilities"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -66,6 +67,14 @@ const App = () => {
                   element={
                     <ProtectedRoute>
                       <Import />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/facilities" 
+                  element={
+                    <ProtectedRoute>
+                      <Facilities />
                     </ProtectedRoute>
                   } 
                 />
