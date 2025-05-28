@@ -16,8 +16,8 @@ export function useOptimizedHandlers<T extends Record<string, (...args: any[]) =
   return useMemo(() => {
     const optimized = {} as T;
     
-    Object.keys(handlers).forEach(key => {
-      optimized[key as keyof T] = useCallback(handlers[key], [handlers[key]]);
+    (Object.keys(handlers) as Array<keyof T>).forEach(key => {
+      optimized[key] = useCallback(handlers[key], [handlers[key]]) as T[keyof T];
     });
     
     return optimized;

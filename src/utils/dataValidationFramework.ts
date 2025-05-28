@@ -281,11 +281,15 @@ pharmaValidator.addFieldRule('unitPrice', CommonValidationRules.positiveNumber('
 // Global validation rules
 pharmaValidator.addGlobalRule({
   name: 'dataIntegrity',
-  validate: (data) => {
+  validate: (data: any) => {
     // Check for data consistency
-    if (data.quantity && data.unitPrice) {
-      const totalValue = data.quantity * data.unitPrice;
-      return totalValue > 0;
+    if (data && typeof data === 'object' && 'quantity' in data && 'unitPrice' in data) {
+      const quantity = Number(data.quantity);
+      const unitPrice = Number(data.unitPrice);
+      if (!isNaN(quantity) && !isNaN(unitPrice)) {
+        const totalValue = quantity * unitPrice;
+        return totalValue > 0;
+      }
     }
     return true;
   },

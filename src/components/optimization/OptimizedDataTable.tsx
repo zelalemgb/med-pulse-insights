@@ -6,7 +6,7 @@ import { useOptimizedHandlers } from '@/hooks/useOptimizedComponent';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 interface OptimizedDataTableProps<T> {
   data: T[];
@@ -22,7 +22,7 @@ interface OptimizedDataTableProps<T> {
 
 interface TableColumn<T> {
   key: string;
-  header: string;
+  header: string | React.ReactNode;
   width?: number;
   render?: (item: T, index: number) => React.ReactNode;
   sortable?: boolean;
@@ -96,18 +96,18 @@ export function OptimizedDataTable<T>({
 
   // Optimized event handlers
   const handlers = useOptimizedHandlers({
-    handleSearch: (value: string) => setSearchTerm(value),
-    handleSort: (field: string) => {
+    handleSearch: useCallback((value: string) => setSearchTerm(value), []),
+    handleSort: useCallback((field: string) => {
       if (sortField === field) {
         setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
       } else {
         setSortField(field);
         setSortDirection('asc');
       }
-    },
-    handleFilter: (field: string, value: string) => {
+    }, [sortField]),
+    handleFilter: useCallback((field: string, value: string) => {
       setFilters(prev => ({ ...prev, [field]: value }));
-    },
+    }, []),
     handleRowClick: onRowClick || (() => {})
   });
 
@@ -121,7 +121,7 @@ export function OptimizedDataTable<T>({
           onClick={() => handlers.handleSort(column.key)}
           className="p-0 h-auto font-medium"
         >
-          {column.header}
+          {typeof column.header === 'string' ? column.header : column.header}
           {sortField === column.key && (
             <span className="ml-1">
               {sortDirection === 'asc' ? '↑' : '↓'}

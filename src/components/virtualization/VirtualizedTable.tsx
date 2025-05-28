@@ -15,7 +15,7 @@ interface VirtualizedTableProps<T> {
 
 interface TableColumn<T> {
   key: string;
-  header: string;
+  header: string | React.ReactNode;
   width?: number;
   render?: (item: T, index: number) => React.ReactNode;
   sortable?: boolean;
