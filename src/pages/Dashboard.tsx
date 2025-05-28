@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/cards';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConsumptionOverview } from '@/components/dashboard/ConsumptionOverview';
 import { InventoryStatus } from '@/components/dashboard/InventoryStatus';
