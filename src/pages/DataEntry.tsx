@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,6 +73,12 @@ const DataEntry = () => {
   };
 
   const addNewProduct = () => {
+    const { names } = getPeriodsForFrequency(selectedFrequency);
+    const seasonality: {[key: string]: number; total: number} = { total: 0 };
+    names.forEach((name, index) => {
+      seasonality[`p${index + 1}`] = 0;
+    });
+
     const newProduct: ProductData = {
       id: Date.now().toString(),
       productName: '',
@@ -97,14 +102,7 @@ const DataEntry = () => {
         projectedAmcAdjusted: 0,
         projectedAnnualConsumption: 0
       },
-      seasonality: (() => {
-        const { names } = getPeriodsForFrequency(selectedFrequency);
-        const seasonality: {[key: string]: number} = { total: 0 };
-        names.forEach((name, index) => {
-          seasonality[`p${index + 1}`] = 0;
-        });
-        return seasonality;
-      })()
+      seasonality
     };
     
     setProducts(prev => [...prev, newProduct]);
@@ -200,18 +198,19 @@ const DataEntry = () => {
   const changeFrequency = (newFrequency: DataFrequency) => {
     setSelectedFrequency(newFrequency);
     // Update existing products to new frequency
-    setProducts(prev => prev.map(product => ({
-      ...product,
-      frequency: newFrequency,
-      periods: createEmptyPeriods(newFrequency),
-      seasonality: (() => {
-        const { names } = getPeriodsForFrequency(newFrequency);
-        const seasonality: {[key: string]: number} = { total: 0 };
-        names.forEach((name, index) => {
-          seasonality[`p${index + 1}`] = 0;
-        });
-        return seasonality;
-      })()
+    setProducts(prev => prev.map(product => {
+      const { names } = getPeriodsForFrequency(newFrequency);
+      const seasonality: {[key: string]: number; total: number} = { total: 0 };
+      names.forEach((name, index) => {
+        seasonality[`p${index + 1}`] = 0;
+      });
+
+      return {
+        ...product,
+        frequency: newFrequency,
+        periods: createEmptyPeriods(newFrequency),
+        seasonality
+      };
     })));
   };
 
