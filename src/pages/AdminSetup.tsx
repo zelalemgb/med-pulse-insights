@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHasNationalUsers, useCreateFirstAdmin } from '@/hooks/useFirstAdmin';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, Crown, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield, Crown, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AdminSetup = () => {
@@ -18,6 +18,9 @@ const AdminSetup = () => {
   const createFirstAdmin = useCreateFirstAdmin();
   const [isLoading, setIsLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any[]>([]);
+  
+  // Use useRef to prevent function recreation on every render
+  const debugInfoRef = useRef<any[]>([]);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -26,31 +29,31 @@ const AdminSetup = () => {
     fullName: '',
   });
 
-  const addDebugInfo = (info: any) => {
+  // Memoize addDebugInfo to prevent recreation on every render
+  const addDebugInfo = useCallback((info: any) => {
     console.log('🐛 Debug:', info);
-    setDebugInfo(prev => [...prev, { timestamp: new Date().toISOString(), ...info }]);
-  };
+    const newInfo = { timestamp: new Date().toISOString(), ...info };
+    debugInfoRef.current = [...debugInfoRef.current, newInfo];
+    setDebugInfo(prev => [...prev, newInfo]);
+  }, []);
 
   // If user is already logged in, redirect to dashboard
   if (user) {
-    addDebugInfo({ type: 'redirect', reason: 'user_logged_in', userId: user.id });
     return <Navigate to="/dashboard" replace />;
   }
 
   // Show error if can't check national users
   if (nationalUsersError) {
-    addDebugInfo({ type: 'error', error: nationalUsersError.message });
+    console.error('Error checking national users:', nationalUsersError);
   }
 
   // If national users already exist, redirect to normal auth
   if (!checkingNationalUsers && hasNationalUsers) {
-    addDebugInfo({ type: 'redirect', reason: 'national_users_exist' });
     return <Navigate to="/auth" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addDebugInfo({ type: 'form_submit', formData: { email: formData.email, fullName: formData.fullName } });
     
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
@@ -142,6 +145,11 @@ const AdminSetup = () => {
       setIsLoading(false);
     }
   };
+
+  const clearDebugLog = useCallback(() => {
+    debugInfoRef.current = [];
+    setDebugInfo([]);
+  }, []);
 
   if (loading || checkingNationalUsers) {
     return (
@@ -282,7 +290,7 @@ const AdminSetup = () => {
                 variant="outline" 
                 size="sm" 
                 className="mt-4 w-full"
-                onClick={() => setDebugInfo([])}
+                onClick={clearDebugLog}
               >
                 Clear Debug Log
               </Button>
