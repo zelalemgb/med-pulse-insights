@@ -48,26 +48,26 @@ const VALID_ROLES: UserRole[] = [
   'viewer'
 ];
 
-// Updated role mapping to handle the mismatch between Supabase and pharmaceutical roles
+// Fixed role mapping to ensure national role is properly recognized
 const mapSupabaseRoleToPharmaceutical = (supabaseRole: SupabaseUserRole): UserRole => {
-  // Handle cases where Supabase roles don't directly map to pharmaceutical roles
+  console.log('Mapping Supabase role:', supabaseRole);
+  
   switch (supabaseRole) {
-    case 'admin':
+    case 'national':
       return 'national';
+    case 'regional':
+      return 'regional';
+    case 'zonal':
+      return 'zonal';
+    case 'admin':
+      return 'national'; // Map legacy admin to national
     case 'manager':
       return 'facility_manager';
     case 'analyst':
       return 'data_analyst';
     case 'viewer':
       return 'viewer';
-    case 'zonal':
-      return 'zonal';
-    case 'regional':
-      return 'regional';
-    case 'national':
-      return 'national';
     default:
-      // For any unmapped roles, default to facility_officer
       console.warn(`Unmapped Supabase role: ${supabaseRole}, defaulting to facility_officer`);
       return 'facility_officer';
   }
@@ -78,23 +78,22 @@ const mapPharmaceuticalToSupabaseRole = (pharmaceuticalRole: UserRole): Supabase
   switch (pharmaceuticalRole) {
     case 'national':
       return 'national';
+    case 'regional':
+      return 'regional';
+    case 'zonal':
+      return 'zonal';
     case 'facility_manager':
       return 'manager';
     case 'data_analyst':
       return 'analyst';
     case 'viewer':
       return 'viewer';
-    case 'zonal':
-      return 'zonal';
-    case 'regional':
-      return 'regional';
     case 'facility_officer':
     case 'procurement':
     case 'finance':
     case 'program_manager':
     case 'qa':
     default:
-      // For pharmaceutical roles that don't exist in Supabase, we'll use 'viewer' as default
       return 'viewer';
   }
 };
@@ -153,14 +152,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      console.log('Profile data:', data);
+      console.log('Raw profile data from database:', data);
 
       // Convert the Supabase role to pharmaceutical role with validation
+      const pharmaceuticalRole = mapSupabaseRoleToPharmaceutical(data.role);
+      
       const pharmaceuticalProfile: UserProfile = {
         id: data.id,
         email: data.email,
         full_name: data.full_name,
-        role: mapSupabaseRoleToPharmaceutical(data.role),
+        role: pharmaceuticalRole,
         facility_id: data.facility_id,
         department: data.department,
         is_active: data.is_active
@@ -199,7 +200,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const hasRole = (role: UserRole): boolean => {
-    return profile?.role === role;
+    const hasRoleResult = profile?.role === role;
+    console.log(`Checking if user has role ${role}:`, hasRoleResult, 'Current role:', profile?.role);
+    return hasRoleResult;
   };
 
   // Role validation function
