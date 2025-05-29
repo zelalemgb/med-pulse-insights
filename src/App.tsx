@@ -1,5 +1,5 @@
 
-import React from "react";
+import * as React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,19 +26,19 @@ const LoadingSpinner = () => (
   </div>
 );
 
-const App = () => {
+// Create QueryClient instance outside component
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+    },
+  },
+});
+
+function App() {
   console.log('App component rendering');
   console.log('React object:', React); // Debug log to check React availability
-  
-  // Create QueryClient instance inside component to ensure React is available
-  const queryClient = React.useMemo(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000, // 10 minutes
-      },
-    },
-  }), []);
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -92,6 +92,6 @@ const App = () => {
       </TooltipProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;
