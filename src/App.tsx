@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy } from "react";
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,14 +10,14 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { Loader2 } from "lucide-react";
 
 // Lazy load components for code splitting
-const Index = lazy(() => import("./pages/Index"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const DataEntry = lazy(() => import("./pages/DataEntry"));
-const Import = lazy(() => import("./pages/Import"));
-const Auth = lazy(() => import("./pages/Auth"));
-const AdminSetup = lazy(() => import("./pages/AdminSetup"));
-const Facilities = lazy(() => import("./pages/Facilities"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const Index = React.lazy(() => import("./pages/Index"));
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+const DataEntry = React.lazy(() => import("./pages/DataEntry"));
+const Import = React.lazy(() => import("./pages/Import"));
+const Auth = React.lazy(() => import("./pages/Auth"));
+const AdminSetup = React.lazy(() => import("./pages/AdminSetup"));
+const Facilities = React.lazy(() => import("./pages/Facilities"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
@@ -26,18 +26,18 @@ const LoadingSpinner = () => (
   </div>
 );
 
+// Create QueryClient outside component to avoid recreation
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+    },
+  },
+});
+
 const App: React.FC = () => {
   console.log('App component rendering');
-  
-  // Create QueryClient inside component to ensure React context is properly established
-  const [queryClient] = React.useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000, // 10 minutes
-      },
-    },
-  }));
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -46,7 +46,7 @@ const App: React.FC = () => {
         <Sonner />
         <AuthProvider>
           <BrowserRouter>
-            <Suspense fallback={<LoadingSpinner />}>
+            <React.Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -85,7 +85,7 @@ const App: React.FC = () => {
                 />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </Suspense>
+            </React.Suspense>
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
