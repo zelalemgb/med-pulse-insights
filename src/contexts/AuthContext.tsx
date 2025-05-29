@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserProfile = useCallback(async (userId: string) => {
+  const fetchUserProfile = useCallback(async (userId: string, userEmail?: string) => {
     try {
       console.log(`🔍 Fetching profile for user: ${userId}`);
       
@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('🔧 Creating default profile for user');
         const defaultProfile: UserProfile = {
           id: userId,
-          email: user?.email || '',
+          email: userEmail || '',
           full_name: null,
           role: 'viewer',
           facility_id: null,
@@ -117,14 +117,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('💥 Unexpected error fetching profile:', error);
       setProfile(null);
     }
-  }, [user?.email]);
+  }, []); // Remove all dependencies to prevent recreation
 
   const refreshProfile = useCallback(async () => {
     if (user) {
-      await fetchUserProfile(user.id);
+      await fetchUserProfile(user.id, user.email);
     }
   }, [user, fetchUserProfile]);
 
+  // Set up auth state listener
   useEffect(() => {
     console.log('🔧 Setting up auth state change listener...');
     
@@ -159,10 +160,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Separate useEffect for profile fetching to avoid infinite loops
+  // Fetch profile when user changes
   useEffect(() => {
     if (user && !profile) {
-      fetchUserProfile(user.id).finally(() => setLoading(false));
+      fetchUserProfile(user.id, user.email).finally(() => setLoading(false));
     } else if (!user) {
       setLoading(false);
     }
@@ -256,7 +257,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // If updating own role, refresh profile
       if (userId === user?.id) {
-        await fetchUserProfile(userId);
+        await fetchUserProfile(userId, user?.email);
       }
 
       return { error: null };
@@ -264,7 +265,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('💥 Unexpected error updating user role:', error);
       return { error };
     }
-  }, [profile, validateRole, user?.id, fetchUserProfile]);
+  }, [profile, validateRole, user?.id, user?.email, fetchUserProfile]);
 
   const getEffectiveRoleForFacility = useCallback(async (userId: string, facilityId: string): Promise<UserRole | null> => {
     try {
