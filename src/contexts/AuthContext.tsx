@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,15 +48,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileFetched, setProfileFetched] = useState(false);
 
-  const fetchUserProfile = async (userId: string, retryCount = 0) => {
+  const fetchUserProfile = async (userId: string) => {
+    // Prevent multiple simultaneous fetches
+    if (profileFetched) return;
+    
     try {
-      console.log(`🔍 Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
-      
-      // Add delay on retries for database consistency
-      if (retryCount > 0) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-      }
+      console.log(`🔍 Fetching profile for user: ${userId}`);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -65,20 +65,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (error) {
         console.error('❌ Error fetching profile:', error);
-        if (retryCount < 3) {
-          console.log(`🔄 Retrying profile fetch... (${retryCount + 1}/4)`);
-          return fetchUserProfile(userId, retryCount + 1);
-        }
         setProfile(null);
+        setProfileFetched(true);
         return;
       }
 
       if (!data) {
         console.log('⚠️ No profile found for user:', userId);
-        if (retryCount < 3) {
-          console.log(`🔄 Retrying profile fetch... (${retryCount + 1}/4)`);
-          return fetchUserProfile(userId, retryCount + 1);
-        }
         
         // Create a default profile if none exists
         console.log('🔧 Creating default profile for user');
@@ -92,6 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           is_active: true
         };
         setProfile(defaultProfile);
+        setProfileFetched(true);
         return;
       }
 
@@ -125,18 +119,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('✅ Final mapped pharmaceutical profile:', pharmaceuticalProfile);
       console.log(`🎯 User role confirmed as: ${pharmaceuticalRole}`);
       setProfile(pharmaceuticalProfile);
+      setProfileFetched(true);
     } catch (error) {
       console.error('💥 Unexpected error fetching profile:', error);
-      if (retryCount < 3) {
-        console.log(`🔄 Retrying profile fetch... (${retryCount + 1}/4)`);
-        return fetchUserProfile(userId, retryCount + 1);
-      }
       setProfile(null);
+      setProfileFetched(true);
     }
   };
 
   const refreshProfile = async () => {
     if (user) {
+      setProfileFetched(false);
       await fetchUserProfile(user.id);
     }
   };
@@ -145,19 +138,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('🔧 Setting up auth state change listener...');
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('🔄 Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
+        // Reset profile state when user changes
         if (session?.user) {
-          // Defer profile fetch to avoid blocking auth state change
-          setTimeout(async () => {
-            await fetchUserProfile(session.user.id);
-            setLoading(false);
-          }, 100);
+          setProfileFetched(false);
+          setProfile(null);
         } else {
           setProfile(null);
+          setProfileFetched(false);
           setLoading(false);
         }
       }
@@ -169,9 +161,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (session?.user) {
-        fetchUserProfile(session.user.id).finally(() => setLoading(false));
-      } else {
+      if (!session?.user) {
         setLoading(false);
       }
     });
@@ -181,6 +171,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Separate useEffect for profile fetching to avoid infinite loops
+  useEffect(() => {
+    if (user && !profileFetched) {
+      fetchUserProfile(user.id).finally(() => setLoading(false));
+    } else if (!user) {
+      setLoading(false);
+    }
+  }, [user, profileFetched]);
 
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
@@ -223,6 +222,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('🚪 Signing out...');
     await supabase.auth.signOut();
     setProfile(null);
+    setProfileFetched(false);
   };
 
   const hasRole = (role: UserRole): boolean => {
@@ -270,6 +270,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // If updating own role, refresh profile
       if (userId === user?.id) {
+        setProfileFetched(false);
         await fetchUserProfile(userId);
       }
 

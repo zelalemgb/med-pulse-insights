@@ -480,6 +480,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin_user: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       is_super_admin: {
         Args: { user_uuid: string }
         Returns: boolean
