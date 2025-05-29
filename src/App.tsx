@@ -1,5 +1,5 @@
 
-import React, { Suspense } from "react";
+import React, { Suspense, useMemo } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,8 +29,8 @@ const LoadingSpinner = () => (
 const App = () => {
   console.log('App component rendering');
   
-  // Create QueryClient instance directly in component
-  const queryClient = new QueryClient({
+  // Use useMemo to create QueryClient only once
+  const queryClient = useMemo(() => new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 5 * 60 * 1000, // 5 minutes
@@ -38,7 +38,7 @@ const App = () => {
         retry: 1,
       },
     },
-  });
+  }), []);
   
   return (
     <QueryClientProvider client={queryClient}>
