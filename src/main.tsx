@@ -4,6 +4,10 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
+// Debug React instance
+console.log('React in main.tsx:', React);
+console.log('React.useEffect in main.tsx:', React.useEffect);
+
 // Register PWA manifest
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
