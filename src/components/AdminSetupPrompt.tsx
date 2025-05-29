@@ -9,11 +9,8 @@ import { useHasNationalUsers } from '@/hooks/useFirstAdmin';
 const AdminSetupPrompt = () => {
   const { data: hasNationalUsers, isLoading, error } = useHasNationalUsers();
 
-  console.log('🔍 AdminSetupPrompt render:', { hasNationalUsers, isLoading, error });
-
   // Show loading state
   if (isLoading) {
-    console.log('⏳ AdminSetupPrompt: Still loading...');
     return (
       <Card className="w-full max-w-md mx-auto mb-6 border-2 border-dashed border-gray-300">
         <CardContent className="pt-6">
@@ -28,7 +25,6 @@ const AdminSetupPrompt = () => {
 
   // Show error state
   if (error) {
-    console.error('❌ AdminSetupPrompt error:', error);
     return (
       <Card className="w-full max-w-md mx-auto mb-6 border-2 border-dashed border-red-300 bg-red-50/50">
         <CardContent className="pt-6">
@@ -44,11 +40,8 @@ const AdminSetupPrompt = () => {
 
   // Don't show if national users already exist
   if (hasNationalUsers) {
-    console.log('✅ AdminSetupPrompt: National users exist, hiding prompt');
     return null;
   }
-
-  console.log('🚀 AdminSetupPrompt: Showing setup prompt');
 
   return (
     <Card className="w-full max-w-md mx-auto mb-6 border-2 border-dashed border-blue-300 bg-blue-50/50">
