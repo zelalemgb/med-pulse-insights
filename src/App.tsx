@@ -26,21 +26,17 @@ const LoadingSpinner = () => (
   </div>
 );
 
-const App = () => {
-  console.log('App component rendering');
-  console.log('React available:', !!React);
-  console.log('React.Suspense available:', !!React.Suspense);
-  
-  // Create QueryClient instance inside component to ensure React is available
-  const queryClient = React.useMemo(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000, // 10 minutes
-      },
+// Create QueryClient instance outside component to avoid re-creation
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
     },
-  }), []);
+  },
+});
 
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

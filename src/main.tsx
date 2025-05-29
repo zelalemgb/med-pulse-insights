@@ -4,8 +4,6 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-console.log('Main.tsx loaded, React available:', !!React);
-
 // Register PWA manifest
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -24,7 +22,5 @@ if (!container) {
   throw new Error('Root element not found');
 }
 
-console.log('Creating React root...');
 const root = createRoot(container);
-console.log('Rendering App component...');
 root.render(<App />);
