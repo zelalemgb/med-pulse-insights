@@ -1,5 +1,5 @@
 
-import * as React from "react";
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -36,7 +36,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+const App = () => {
   console.log('App component rendering');
   console.log('React object:', React); // Debug log to check React availability
   
@@ -92,6 +92,6 @@ function App() {
       </TooltipProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;
