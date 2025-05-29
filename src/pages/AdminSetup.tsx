@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,7 +53,7 @@ const AdminSetup = () => {
       console.log('Starting admin setup process...');
       
       // Create the user account first
-      const { data: signUpData, error: signUpError } = await signUp(
+      const { error: signUpError } = await signUp(
         formData.email,
         formData.password,
         formData.fullName
@@ -66,7 +65,7 @@ const AdminSetup = () => {
         return;
       }
 
-      console.log('User created successfully:', signUpData);
+      console.log('User signup completed successfully');
 
       // Wait longer for the user to be created and triggers to run
       await new Promise(resolve => setTimeout(resolve, 2000));
