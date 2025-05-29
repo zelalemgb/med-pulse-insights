@@ -1,5 +1,5 @@
 
-import React from "react";
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,14 +10,14 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { Loader2 } from "lucide-react";
 
 // Lazy load components for code splitting
-const Index = React.lazy(() => import("./pages/Index"));
-const Dashboard = React.lazy(() => import("./pages/Dashboard"));
-const DataEntry = React.lazy(() => import("./pages/DataEntry"));
-const Import = React.lazy(() => import("./pages/Import"));
-const Auth = React.lazy(() => import("./pages/Auth"));
-const AdminSetup = React.lazy(() => import("./pages/AdminSetup"));
-const Facilities = React.lazy(() => import("./pages/Facilities"));
-const NotFound = React.lazy(() => import("./pages/NotFound"));
+const Index = lazy(() => import("./pages/Index"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const DataEntry = lazy(() => import("./pages/DataEntry"));
+const Import = lazy(() => import("./pages/Import"));
+const Auth = lazy(() => import("./pages/Auth"));
+const AdminSetup = lazy(() => import("./pages/AdminSetup"));
+const Facilities = lazy(() => import("./pages/Facilities"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
@@ -37,10 +37,6 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  console.log('App component rendering');
-  console.log('React in App:', typeof React);
-  console.log('React.useEffect in App:', typeof React.useEffect);
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -48,7 +44,7 @@ const App = () => {
         <Sonner />
         <AuthProvider>
           <BrowserRouter>
-            <React.Suspense fallback={<LoadingSpinner />}>
+            <Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -87,7 +83,7 @@ const App = () => {
                 />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </React.Suspense>
+            </Suspense>
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>

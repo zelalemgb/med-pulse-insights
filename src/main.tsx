@@ -1,13 +1,8 @@
 
-import React from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-
-// Debug React instance
-console.log('React in main.tsx:', typeof React);
-console.log('React.useEffect in main.tsx:', typeof React.useEffect);
-console.log('React object:', React);
 
 // Register PWA manifest
 if ('serviceWorker' in navigator) {
@@ -29,7 +24,7 @@ if (!container) {
 
 const root = createRoot(container);
 root.render(
-  <React.StrictMode>
+  <StrictMode>
     <App />
-  </React.StrictMode>
+  </StrictMode>
 );
