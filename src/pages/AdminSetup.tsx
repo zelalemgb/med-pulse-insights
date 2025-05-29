@@ -51,7 +51,7 @@ const AdminSetup = () => {
 
     try {
       // First, create the user account
-      const { data, error } = await signUp(
+      const { error } = await signUp(
         formData.email,
         formData.password,
         formData.fullName
@@ -62,17 +62,10 @@ const AdminSetup = () => {
         return;
       }
 
-      if (data.user) {
-        // Then upgrade them to national admin
-        await createFirstAdmin.mutateAsync({
-          userId: data.user.id,
-          email: formData.email,
-          fullName: formData.fullName,
-        });
-
-        toast.success('First admin account created successfully! You can now sign in.');
-        navigate('/auth');
-      }
+      // Since signUp doesn't return user data directly, we'll need to wait for auth state change
+      // For now, let's show a success message and redirect to auth page
+      toast.success('Account created successfully! Please check your email and then sign in to complete the admin setup.');
+      navigate('/auth');
     } catch (error) {
       toast.error('An unexpected error occurred');
       console.error('Admin setup error:', error);
@@ -159,7 +152,7 @@ const AdminSetup = () => {
                 <Shield className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div className="text-sm text-blue-800">
                   <p className="font-medium">Admin Account</p>
-                  <p>This account will have full system access and can create other user accounts.</p>
+                  <p>After creating your account, you'll need to sign in and complete the admin setup process.</p>
                 </div>
               </div>
             </div>
@@ -167,9 +160,9 @@ const AdminSetup = () => {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isLoading || createFirstAdmin.isPending}
+              disabled={isLoading}
             >
-              {isLoading || createFirstAdmin.isPending ? 'Creating Admin Account...' : 'Create First Admin'}
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
         </CardContent>
