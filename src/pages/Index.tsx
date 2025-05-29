@@ -2,9 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { BarChart3, Users, TrendingUp, Shield, Database } from "lucide-react";
-import AdminSetupPrompt from "@/components/AdminSetupPrompt";
-import { FirstAdminTestPanel } from "@/components/FirstAdminTestPanel";
+import { BarChart3, Users, TrendingUp, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
@@ -21,14 +19,6 @@ const Index = () => {
             Comprehensive analytics and management system for pharmaceutical supply chains, 
             inventory optimization, and data-driven decision making.
           </p>
-        </div>
-
-        {/* Admin Setup Prompt - Only shows if no national users exist */}
-        <AdminSetupPrompt />
-
-        {/* Test Panel for Development */}
-        <div className="mb-8">
-          <FirstAdminTestPanel />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
