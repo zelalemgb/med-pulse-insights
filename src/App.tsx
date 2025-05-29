@@ -39,58 +39,56 @@ const queryClient = new QueryClient({
 
 const App: React.FC = () => {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AuthProvider>
-            <BrowserRouter>
-              <React.Suspense fallback={<LoadingSpinner />}>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/admin-setup" element={<AdminSetup />} />
-                  <Route 
-                    path="/dashboard" 
-                    element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/data-entry" 
-                    element={
-                      <ProtectedRoute>
-                        <DataEntry />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/import" 
-                    element={
-                      <ProtectedRoute>
-                        <Import />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/facilities" 
-                    element={
-                      <ProtectedRoute>
-                        <Facilities />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </React.Suspense>
-            </BrowserRouter>
-          </AuthProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <React.Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/admin-setup" element={<AdminSetup />} />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/data-entry" 
+                  element={
+                    <ProtectedRoute>
+                      <DataEntry />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/import" 
+                  element={
+                    <ProtectedRoute>
+                      <Import />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/facilities" 
+                  element={
+                    <ProtectedRoute>
+                      <Facilities />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </React.Suspense>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
