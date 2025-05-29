@@ -117,13 +117,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('💥 Unexpected error fetching profile:', error);
       setProfile(null);
     }
-  }, []); // Remove all dependencies to prevent recreation
+  }, []); // Stable function - no dependencies
 
   const refreshProfile = useCallback(async () => {
     if (user) {
       await fetchUserProfile(user.id, user.email);
     }
-  }, [user, fetchUserProfile]);
+  }, [user?.id, user?.email, fetchUserProfile]);
 
   // Set up auth state listener
   useEffect(() => {
@@ -167,7 +167,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } else if (!user) {
       setLoading(false);
     }
-  }, [user, profile, fetchUserProfile]);
+  }, [user?.id, user?.email, profile, fetchUserProfile]);
 
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
@@ -226,7 +226,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateUserRole = useCallback(async (userId: string, newRole: UserRole) => {
     // Enhanced validation
-    if (!validateRole(newRole)) {
+    if (!isValidPharmaceuticalRole(newRole)) {
       console.error(`❌ Invalid role: ${newRole}`);
       return { error: { message: `Invalid role: ${newRole}` } };
     }
@@ -265,7 +265,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('💥 Unexpected error updating user role:', error);
       return { error };
     }
-  }, [profile, validateRole, user?.id, user?.email, fetchUserProfile]);
+  }, [profile, user?.id, user?.email, fetchUserProfile]);
 
   const getEffectiveRoleForFacility = useCallback(async (userId: string, facilityId: string): Promise<UserRole | null> => {
     try {
