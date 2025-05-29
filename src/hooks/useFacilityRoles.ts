@@ -3,6 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
 import { useToast } from '@/hooks/use-toast';
+import { Database } from '@/integrations/supabase/types';
+
+type SupabaseUserRole = Database['public']['Enums']['user_role'];
 
 interface FacilitySpecificRole {
   id: string;
@@ -15,12 +18,59 @@ interface FacilitySpecificRole {
   profiles?: {
     full_name: string | null;
     email: string;
-  };
+  } | null;
   health_facilities?: {
     name: string;
     facility_type: string;
-  };
+  } | null;
 }
+
+// Map Supabase roles to pharmaceutical roles
+const mapSupabaseToPharmaceuticalRole = (supabaseRole: SupabaseUserRole): UserRole => {
+  switch (supabaseRole) {
+    case 'admin':
+      return 'national';
+    case 'manager':
+      return 'facility_manager';
+    case 'analyst':
+      return 'data_analyst';
+    case 'viewer':
+      return 'viewer';
+    case 'zonal':
+      return 'zonal';
+    case 'regional':
+      return 'regional';
+    case 'national':
+      return 'national';
+    default:
+      return 'facility_officer';
+  }
+};
+
+// Map pharmaceutical roles to Supabase roles
+const mapPharmaceuticalToSupabaseRole = (pharmaceuticalRole: UserRole): SupabaseUserRole => {
+  switch (pharmaceuticalRole) {
+    case 'national':
+      return 'national';
+    case 'facility_manager':
+      return 'manager';
+    case 'data_analyst':
+      return 'analyst';
+    case 'viewer':
+      return 'viewer';
+    case 'zonal':
+      return 'zonal';
+    case 'regional':
+      return 'regional';
+    case 'facility_officer':
+    case 'procurement':
+    case 'finance':
+    case 'program_manager':
+    case 'qa':
+    default:
+      return 'viewer'; // Default mapping for roles not in Supabase
+  }
+};
 
 export const useFacilityRoles = (facilityId?: string) => {
   return useQuery({
@@ -30,8 +80,8 @@ export const useFacilityRoles = (facilityId?: string) => {
         .from('facility_specific_roles')
         .select(`
           *,
-          profiles (full_name, email),
-          health_facilities (name, facility_type)
+          profiles!inner (full_name, email),
+          health_facilities!inner (name, facility_type)
         `)
         .eq('is_active', true)
         .order('granted_at', { ascending: false });
@@ -46,7 +96,20 @@ export const useFacilityRoles = (facilityId?: string) => {
         throw new Error(`Failed to fetch facility roles: ${error.message}`);
       }
       
-      return data as FacilitySpecificRole[];
+      // Map the results to our expected type
+      const mappedData: FacilitySpecificRole[] = (data || []).map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        facility_id: item.facility_id,
+        role: mapSupabaseToPharmaceuticalRole(item.role),
+        granted_by: item.granted_by,
+        granted_at: item.granted_at,
+        is_active: item.is_active,
+        profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles,
+        health_facilities: Array.isArray(item.health_facilities) ? item.health_facilities[0] : item.health_facilities
+      }));
+      
+      return mappedData;
     },
     enabled: true,
   });
@@ -65,7 +128,7 @@ export const useUserEffectiveRole = (userId: string, facilityId: string) => {
         throw new Error(`Failed to get effective role: ${error.message}`);
       }
 
-      return data as UserRole;
+      return data ? mapSupabaseToPharmaceuticalRole(data) : null;
     },
     enabled: !!userId && !!facilityId,
   });
@@ -84,12 +147,14 @@ export const useAssignFacilityRole = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      const supabaseRole = mapPharmaceuticalToSupabaseRole(role);
+
       const { data, error } = await supabase
         .from('facility_specific_roles')
         .insert({
           user_id: userId,
           facility_id: facilityId,
-          role,
+          role: supabaseRole,
           granted_by: user.id
         })
         .select()
@@ -135,10 +200,12 @@ export const useBulkAssignRoles = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      const supabaseRole = mapPharmaceuticalToSupabaseRole(role);
+
       const { data, error } = await supabase.rpc('bulk_assign_facility_roles', {
         _user_ids: userIds,
         _facility_id: facilityId,
-        _role: role,
+        _role: supabaseRole,
         _granted_by: user.id
       });
 

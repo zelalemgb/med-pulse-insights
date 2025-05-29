@@ -1,6 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
+import { Database } from '@/integrations/supabase/types';
+
+type SupabaseUserRole = Database['public']['Enums']['user_role'];
 
 interface FacilityRoleAssignment {
   id: string;
@@ -11,6 +14,53 @@ interface FacilityRoleAssignment {
   granted_at: string;
   is_active: boolean;
 }
+
+// Map Supabase roles to pharmaceutical roles
+const mapSupabaseToPharmaceuticalRole = (supabaseRole: SupabaseUserRole): UserRole => {
+  switch (supabaseRole) {
+    case 'admin':
+      return 'national';
+    case 'manager':
+      return 'facility_manager';
+    case 'analyst':
+      return 'data_analyst';
+    case 'viewer':
+      return 'viewer';
+    case 'zonal':
+      return 'zonal';
+    case 'regional':
+      return 'regional';
+    case 'national':
+      return 'national';
+    default:
+      return 'facility_officer';
+  }
+};
+
+// Map pharmaceutical roles to Supabase roles
+const mapPharmaceuticalToSupabaseRole = (pharmaceuticalRole: UserRole): SupabaseUserRole => {
+  switch (pharmaceuticalRole) {
+    case 'national':
+      return 'national';
+    case 'facility_manager':
+      return 'manager';
+    case 'data_analyst':
+      return 'analyst';
+    case 'viewer':
+      return 'viewer';
+    case 'zonal':
+      return 'zonal';
+    case 'regional':
+      return 'regional';
+    case 'facility_officer':
+    case 'procurement':
+    case 'finance':
+    case 'program_manager':
+    case 'qa':
+    default:
+      return 'viewer'; // Default mapping for roles not in Supabase
+  }
+};
 
 export class FacilityRoleService {
   // Assign a role to a user for a specific facility
@@ -26,12 +76,14 @@ export class FacilityRoleService {
       throw new Error('User not authenticated');
     }
 
+    const supabaseRole = mapPharmaceuticalToSupabaseRole(role);
+
     const { data, error } = await supabase
       .from('facility_specific_roles')
       .insert({
         user_id: userId,
         facility_id: facilityId,
-        role,
+        role: supabaseRole,
         granted_by: grantedBy || user.id
       })
       .select()
@@ -44,7 +96,10 @@ export class FacilityRoleService {
       throw new Error(`Failed to assign facility role: ${error.message}`);
     }
 
-    return data as FacilityRoleAssignment;
+    return {
+      ...data,
+      role: mapSupabaseToPharmaceuticalRole(data.role)
+    } as FacilityRoleAssignment;
   }
 
   // Get all roles for a specific facility
@@ -66,7 +121,10 @@ export class FacilityRoleService {
       throw new Error(`Failed to fetch facility roles: ${error.message}`);
     }
 
-    return data as FacilityRoleAssignment[];
+    return (data || []).map(item => ({
+      ...item,
+      role: mapSupabaseToPharmaceuticalRole(item.role)
+    })) as FacilityRoleAssignment[];
   }
 
   // Get all roles for a specific user
@@ -90,7 +148,10 @@ export class FacilityRoleService {
       throw new Error(`Failed to fetch user facility roles: ${error.message}`);
     }
 
-    return data as FacilityRoleAssignment[];
+    return (data || []).map(item => ({
+      ...item,
+      role: mapSupabaseToPharmaceuticalRole(item.role)
+    })) as FacilityRoleAssignment[];
   }
 
   // Get effective role for user at facility (with inheritance)
@@ -104,7 +165,7 @@ export class FacilityRoleService {
       throw new Error(`Failed to get effective role: ${error.message}`);
     }
 
-    return data as UserRole;
+    return data ? mapSupabaseToPharmaceuticalRole(data) : null;
   }
 
   // Revoke a facility role
@@ -131,10 +192,12 @@ export class FacilityRoleService {
       throw new Error('User not authenticated');
     }
 
+    const supabaseRole = mapPharmaceuticalToSupabaseRole(role);
+
     const { data, error } = await supabase.rpc('bulk_assign_facility_roles', {
       _user_ids: userIds,
       _facility_id: facilityId,
-      _role: role,
+      _role: supabaseRole,
       _granted_by: user.id
     });
 
