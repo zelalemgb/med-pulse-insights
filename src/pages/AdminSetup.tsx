@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,36 +51,69 @@ const AdminSetup = () => {
     setIsLoading(true);
 
     try {
+      console.log('Starting admin setup process...');
+      
       // Create the user account first
-      const { error: signUpError } = await signUp(
+      const { data: signUpData, error: signUpError } = await signUp(
         formData.email,
         formData.password,
         formData.fullName
       );
       
       if (signUpError) {
+        console.error('Signup error:', signUpError);
         toast.error(signUpError.message || 'Failed to create account');
         return;
       }
 
-      // Wait a moment for the user to be created and triggers to run
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('User created successfully:', signUpData);
+
+      // Wait longer for the user to be created and triggers to run
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Get the current user after signup
-      const { data: { user: newUser } } = await supabase.auth.getUser();
+      const { data: { user: newUser }, error: getUserError } = await supabase.auth.getUser();
       
-      if (!newUser) {
+      if (getUserError) {
+        console.error('Error getting user:', getUserError);
         toast.error('Failed to get user information after signup');
         return;
       }
 
+      if (!newUser) {
+        console.error('No user returned after signup');
+        toast.error('Failed to get user information after signup');
+        return;
+      }
+
+      console.log('User retrieved after signup:', newUser.id);
+
+      // Check if profile exists before calling create_first_admin
+      const { data: existingProfile, error: profileCheckError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', newUser.id)
+        .maybeSingle();
+
+      if (profileCheckError) {
+        console.error('Error checking for existing profile:', profileCheckError);
+      } else {
+        console.log('Existing profile check:', existingProfile);
+      }
+
       // Now create the first admin using the mutation
+      console.log('Calling create_first_admin...');
       await createFirstAdmin.mutateAsync({
         userId: newUser.id,
         email: formData.email,
         fullName: formData.fullName
       });
 
+      console.log('First admin created successfully');
+      
+      // Sign out the user so they need to sign in again with their new role
+      await supabase.auth.signOut();
+      
       toast.success('First admin account created successfully! Please sign in to continue.');
       navigate('/auth');
     } catch (error) {

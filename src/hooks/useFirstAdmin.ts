@@ -31,6 +31,8 @@ export const useCreateFirstAdmin = () => {
       email: string;
       fullName: string;
     }) => {
+      console.log('Creating first admin with params:', { userId, email, fullName });
+      
       const { data, error } = await supabase.rpc('create_first_admin', {
         _user_id: userId,
         _email: email,
@@ -38,18 +40,22 @@ export const useCreateFirstAdmin = () => {
       });
 
       if (error) {
+        console.error('create_first_admin error:', error);
         throw new Error(`Failed to create first admin: ${error.message}`);
       }
 
+      console.log('create_first_admin response:', data);
       return data;
     },
     onSuccess: () => {
+      console.log('First admin mutation successful');
       toast({
         title: "Success",
         description: "First admin account created successfully!",
       });
     },
     onError: (error: Error) => {
+      console.error('First admin mutation error:', error);
       toast({
         title: "Error",
         description: error.message,
