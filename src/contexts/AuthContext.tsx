@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
@@ -48,12 +48,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profileFetched, setProfileFetched] = useState(false);
 
-  const fetchUserProfile = async (userId: string) => {
-    // Prevent multiple simultaneous fetches
-    if (profileFetched) return;
-    
+  const fetchUserProfile = useCallback(async (userId: string) => {
     try {
       console.log(`🔍 Fetching profile for user: ${userId}`);
       
@@ -66,7 +62,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         console.error('❌ Error fetching profile:', error);
         setProfile(null);
-        setProfileFetched(true);
         return;
       }
 
@@ -85,7 +80,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           is_active: true
         };
         setProfile(defaultProfile);
-        setProfileFetched(true);
         return;
       }
 
@@ -119,20 +113,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('✅ Final mapped pharmaceutical profile:', pharmaceuticalProfile);
       console.log(`🎯 User role confirmed as: ${pharmaceuticalRole}`);
       setProfile(pharmaceuticalProfile);
-      setProfileFetched(true);
     } catch (error) {
       console.error('💥 Unexpected error fetching profile:', error);
       setProfile(null);
-      setProfileFetched(true);
     }
-  };
+  }, [user?.email]);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
-      setProfileFetched(false);
       await fetchUserProfile(user.id);
     }
-  };
+  }, [user, fetchUserProfile]);
 
   useEffect(() => {
     console.log('🔧 Setting up auth state change listener...');
@@ -143,13 +134,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Reset profile state when user changes
-        if (session?.user) {
-          setProfileFetched(false);
+        // Reset profile when user changes
+        if (!session?.user) {
           setProfile(null);
-        } else {
-          setProfile(null);
-          setProfileFetched(false);
           setLoading(false);
         }
       }
@@ -174,12 +161,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Separate useEffect for profile fetching to avoid infinite loops
   useEffect(() => {
-    if (user && !profileFetched) {
+    if (user && !profile) {
       fetchUserProfile(user.id).finally(() => setLoading(false));
     } else if (!user) {
       setLoading(false);
     }
-  }, [user, profileFetched]);
+  }, [user, profile, fetchUserProfile]);
 
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
@@ -222,22 +209,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('🚪 Signing out...');
     await supabase.auth.signOut();
     setProfile(null);
-    setProfileFetched(false);
   };
 
-  const hasRole = (role: UserRole): boolean => {
+  const hasRole = useCallback((role: UserRole): boolean => {
     const hasRoleResult = profile?.role === role;
     console.log(`🔍 Checking if user has role ${role}:`, hasRoleResult, 'Current role:', profile?.role);
     return hasRoleResult;
-  };
+  }, [profile?.role]);
 
-  const validateRole = (role: string): boolean => {
+  const validateRole = useCallback((role: string): boolean => {
     const isValid = isValidPharmaceuticalRole(role);
     console.log(`🔍 Validating role ${role}:`, isValid);
     return isValid;
-  };
+  }, []);
 
-  const updateUserRole = async (userId: string, newRole: UserRole) => {
+  const updateUserRole = useCallback(async (userId: string, newRole: UserRole) => {
     // Enhanced validation
     if (!validateRole(newRole)) {
       console.error(`❌ Invalid role: ${newRole}`);
@@ -270,7 +256,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // If updating own role, refresh profile
       if (userId === user?.id) {
-        setProfileFetched(false);
         await fetchUserProfile(userId);
       }
 
@@ -279,9 +264,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('💥 Unexpected error updating user role:', error);
       return { error };
     }
-  };
+  }, [profile, validateRole, user?.id, fetchUserProfile]);
 
-  const getEffectiveRoleForFacility = async (userId: string, facilityId: string): Promise<UserRole | null> => {
+  const getEffectiveRoleForFacility = useCallback(async (userId: string, facilityId: string): Promise<UserRole | null> => {
     try {
       const { data, error } = await supabase.rpc('get_effective_role_for_facility', {
         _user_id: userId,
@@ -298,9 +283,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('💥 Error getting effective role:', error);
       return null;
     }
-  };
+  }, []);
 
-  const hasFacilityRole = async (facilityId: string, role: UserRole): Promise<boolean> => {
+  const hasFacilityRole = useCallback(async (facilityId: string, role: UserRole): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -310,7 +295,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('💥 Error checking facility role:', error);
       return false;
     }
-  };
+  }, [user, getEffectiveRoleForFacility]);
 
   const value: AuthContextType = {
     user,
