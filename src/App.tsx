@@ -1,5 +1,5 @@
 
-import * as React from "react";
+import React, { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -38,6 +38,8 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
+  console.log('App component rendering');
+  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -45,7 +47,7 @@ const App = () => {
         <Sonner />
         <AuthProvider>
           <BrowserRouter>
-            <React.Suspense fallback={<LoadingSpinner />}>
+            <Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -84,7 +86,7 @@ const App = () => {
                 />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </React.Suspense>
+            </Suspense>
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
