@@ -30,19 +30,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Map Supabase roles to pharmaceutical roles with complete hierarchy including 'national'
+// Updated role mapping to handle viewer role and fix default assignments
 const mapSupabaseRoleToPharmaceutical = (supabaseRole: SupabaseUserRole): UserRole => {
   const roleMapping: Record<SupabaseUserRole, UserRole> = {
     'admin': 'national',
     'manager': 'facility_manager',
     'analyst': 'data_analyst',
-    'viewer': 'facility_officer',
+    'viewer': 'viewer', // Keep viewer as viewer
     'zonal': 'zonal',
     'regional': 'regional',
     'national': 'national'
   };
   
-  return roleMapping[supabaseRole] || 'facility_officer';
+  return roleMapping[supabaseRole] || 'viewer';
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -54,6 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -70,6 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -85,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -95,6 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error fetching profile:', error);
         return;
       }
+
+      console.log('Profile data:', data);
 
       // Convert the Supabase role to pharmaceutical role
       const pharmaceuticalProfile: UserProfile = {
@@ -107,6 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         is_active: data.is_active
       };
 
+      console.log('Mapped pharmaceutical profile:', pharmaceuticalProfile);
       setProfile(pharmaceuticalProfile);
     } catch (error) {
       console.error('Error fetching profile:', error);

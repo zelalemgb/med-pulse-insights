@@ -191,13 +191,31 @@ const rolePermissions: Record<UserRole, Permissions> = {
     manageSystem: false,
     advancedReports: true,
   },
+  // Added missing viewer role with basic permissions
+  viewer: {
+    createProducts: false,
+    editProducts: false,
+    deleteProducts: false,
+    viewProducts: true,
+    importData: false,
+    exportData: false,
+    viewAnalytics: false,
+    dataAnalysis: false,
+    systemIntegration: false,
+    auditTrail: false,
+    scenarioPlanning: false,
+    manageUsers: false,
+    viewReports: true,
+    manageSystem: false,
+    advancedReports: false,
+  },
 };
 
 export const usePermissions = () => {
   const { profile } = useAuth();
   
-  const userRole = profile?.role || 'facility_officer';
-  const canAccess = rolePermissions[userRole];
+  const userRole = profile?.role || 'viewer';
+  const canAccess = rolePermissions[userRole] || rolePermissions['viewer'];
 
   return {
     canAccess,
