@@ -18,15 +18,6 @@ const Auth = React.lazy(() => import("./pages/Auth"));
 const Facilities = React.lazy(() => import("./pages/Facilities"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    },
-  },
-});
-
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -35,6 +26,16 @@ const LoadingSpinner = () => (
 );
 
 const App = () => {
+  // Create QueryClient inside component to ensure proper React context
+  const [queryClient] = React.useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        gcTime: 10 * 60 * 1000, // 10 minutes
+      },
+    },
+  }));
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -78,7 +79,6 @@ const App = () => {
                     </ProtectedRoute>
                   } 
                 />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </React.Suspense>
