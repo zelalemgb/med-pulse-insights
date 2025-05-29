@@ -26,22 +26,19 @@ const LoadingSpinner = () => (
   </div>
 );
 
+// Create QueryClient instance outside component to prevent recreation
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: 1,
+    },
+  },
+});
+
 const App = () => {
   console.log('App component rendering');
-  
-  // Create QueryClient instance inside component to ensure React is properly initialized
-  const queryClient = React.useMemo(
-    () => new QueryClient({
-      defaultOptions: {
-        queries: {
-          staleTime: 5 * 60 * 1000, // 5 minutes
-          gcTime: 10 * 60 * 1000, // 10 minutes
-          retry: 1,
-        },
-      },
-    }),
-    []
-  );
   
   return (
     <QueryClientProvider client={queryClient}>
