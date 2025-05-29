@@ -157,7 +157,8 @@ export const useRoleAuditAnalytics = (startDate?: Date, endDate?: Date) => {
         throw new Error(`Failed to get audit analytics: ${error.message}`);
       }
 
-      return data as AuditAnalytics;
+      // Properly type the data from the RPC call
+      return data as unknown as AuditAnalytics;
     },
     enabled: true,
   });
