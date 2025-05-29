@@ -36,8 +36,9 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  console.log('App component React instance:', React);
-  console.log('App component React.useEffect:', React.useEffect);
+  console.log('App component rendering');
+  console.log('React in App:', typeof React);
+  console.log('React.useEffect in App:', typeof React.useEffect);
 
   return (
     <QueryClientProvider client={queryClient}>

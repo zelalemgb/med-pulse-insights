@@ -5,8 +5,9 @@ import App from './App.tsx';
 import './index.css';
 
 // Debug React instance
-console.log('React in main.tsx:', React);
-console.log('React.useEffect in main.tsx:', React.useEffect);
+console.log('React in main.tsx:', typeof React);
+console.log('React.useEffect in main.tsx:', typeof React.useEffect);
+console.log('React object:', React);
 
 // Register PWA manifest
 if ('serviceWorker' in navigator) {
