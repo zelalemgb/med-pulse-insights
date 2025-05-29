@@ -43,10 +43,10 @@ export const AuditSearchFilters: React.FC<AuditSearchFiltersProps> = ({
               id="startDate"
               type="date"
               value={dateRange.start?.toISOString().split('T')[0] || ''}
-              onChange={(e) => setDateRange(prev => ({ 
-                ...prev, 
+              onChange={(e) => setDateRange({ 
+                ...dateRange, 
                 start: e.target.value ? new Date(e.target.value) : undefined 
-              }))}
+              })}
             />
           </div>
           <div>
@@ -55,10 +55,10 @@ export const AuditSearchFilters: React.FC<AuditSearchFiltersProps> = ({
               id="endDate"
               type="date"
               value={dateRange.end?.toISOString().split('T')[0] || ''}
-              onChange={(e) => setDateRange(prev => ({ 
-                ...prev, 
+              onChange={(e) => setDateRange({ 
+                ...dateRange, 
                 end: e.target.value ? new Date(e.target.value) : undefined 
-              }))}
+              })}
             />
           </div>
         </div>
