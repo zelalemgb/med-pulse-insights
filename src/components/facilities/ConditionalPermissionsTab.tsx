@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { useConditionalPermissions, useCreateConditionalPermission, usePermissionUsageLog } from '@/hooks/useConditionalPermissions';
+import { useConditionalPermissions } from '@/hooks/useConditionalPermissionsList';
+import { useCreateConditionalPermission } from '@/hooks/useCreateConditionalPermission';
+import { usePermissionUsageLog } from '@/hooks/usePermissionUsageLog';
 import { useHealthFacilities } from '@/hooks/useHealthFacilities';
 import { Clock, MapPin, Plus, Settings, BarChart3, User } from 'lucide-react';
 import { format } from 'date-fns';
