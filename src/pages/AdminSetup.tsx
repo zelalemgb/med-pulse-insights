@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHasNationalUsers, useCreateFirstAdmin } from '@/hooks/useFirstAdmin';
+import { supabase } from '@/integrations/supabase/client';
 import { Shield, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -50,25 +50,41 @@ const AdminSetup = () => {
     setIsLoading(true);
 
     try {
-      // First, create the user account
-      const { error } = await signUp(
+      // Create the user account first
+      const { error: signUpError } = await signUp(
         formData.email,
         formData.password,
         formData.fullName
       );
       
-      if (error) {
-        toast.error(error.message || 'Failed to create account');
+      if (signUpError) {
+        toast.error(signUpError.message || 'Failed to create account');
         return;
       }
 
-      // Since signUp doesn't return user data directly, we'll need to wait for auth state change
-      // For now, let's show a success message and redirect to auth page
-      toast.success('Account created successfully! Please check your email and then sign in to complete the admin setup.');
+      // Wait a moment for the user to be created and triggers to run
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Get the current user after signup
+      const { data: { user: newUser } } = await supabase.auth.getUser();
+      
+      if (!newUser) {
+        toast.error('Failed to get user information after signup');
+        return;
+      }
+
+      // Now create the first admin using the mutation
+      await createFirstAdmin.mutateAsync({
+        userId: newUser.id,
+        email: formData.email,
+        fullName: formData.fullName
+      });
+
+      toast.success('First admin account created successfully! Please sign in to continue.');
       navigate('/auth');
     } catch (error) {
-      toast.error('An unexpected error occurred');
       console.error('Admin setup error:', error);
+      toast.error('An unexpected error occurred during admin setup');
     } finally {
       setIsLoading(false);
     }
@@ -151,8 +167,8 @@ const AdminSetup = () => {
               <div className="flex items-start space-x-2">
                 <Shield className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div className="text-sm text-blue-800">
-                  <p className="font-medium">Admin Account</p>
-                  <p>After creating your account, you'll need to sign in and complete the admin setup process.</p>
+                  <p className="font-medium">First Admin Account</p>
+                  <p>This will create your account and immediately grant you national administrator privileges.</p>
                 </div>
               </div>
             </div>
@@ -160,9 +176,9 @@ const AdminSetup = () => {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isLoading}
+              disabled={isLoading || createFirstAdmin.isPending}
             >
-              {isLoading ? 'Creating Account...' : 'Create Account'}
+              {isLoading || createFirstAdmin.isPending ? 'Creating Admin Account...' : 'Create First Admin'}
             </Button>
           </form>
         </CardContent>
