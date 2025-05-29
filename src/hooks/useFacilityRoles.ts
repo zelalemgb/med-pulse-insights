@@ -171,7 +171,7 @@ export const useAssignFacilityRole = () => {
         _action: 'assign',
         _role_type: 'facility_specific',
         _old_role: null,
-        _new_role: role,
+        _new_role: supabaseRole,
         _facility_id: facilityId,
         _reason: 'Facility role assignment',
         _metadata: { source: 'facility_roles_hook' }
@@ -278,7 +278,7 @@ export const useRevokeFacilityRole = () => {
           _target_user_id: currentRole.user_id,
           _action: 'revoke',
           _role_type: 'facility_specific',
-          _old_role: mapSupabaseToPharmaceuticalRole(currentRole.role),
+          _old_role: currentRole.role,
           _new_role: null,
           _facility_id: currentRole.facility_id,
           _reason: 'Facility role revocation',

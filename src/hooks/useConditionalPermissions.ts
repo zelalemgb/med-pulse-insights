@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -26,10 +25,10 @@ interface ConditionalPermission {
   profiles?: {
     full_name: string | null;
     email: string;
-  };
+  } | null;
   health_facilities?: {
     name: string;
-  };
+  } | null;
 }
 
 interface PermissionUsageEntry {
@@ -69,7 +68,23 @@ export const useConditionalPermissions = (facilityId?: string) => {
         throw new Error(`Failed to fetch conditional permissions: ${error.message}`);
       }
       
-      return data as ConditionalPermission[];
+      // Properly map and type the results
+      const mappedData: ConditionalPermission[] = (data || []).map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        facility_id: item.facility_id || '',
+        permission_name: item.permission_name,
+        conditions: (item.conditions as any) || {},
+        is_active: item.is_active,
+        granted_by: item.granted_by || undefined,
+        expires_at: item.expires_at || undefined,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles,
+        health_facilities: Array.isArray(item.health_facilities) ? item.health_facilities[0] : item.health_facilities
+      }));
+      
+      return mappedData;
     },
     enabled: true,
   });
@@ -95,7 +110,20 @@ export const usePermissionUsageLog = (facilityId?: string) => {
         throw new Error(`Failed to fetch permission usage log: ${error.message}`);
       }
       
-      return data as PermissionUsageEntry[];
+      const mappedData: PermissionUsageEntry[] = (data || []).map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        permission_name: item.permission_name,
+        resource_type: item.resource_type,
+        resource_id: item.resource_id || undefined,
+        facility_id: item.facility_id || undefined,
+        access_granted: item.access_granted,
+        access_method: item.access_method || 'global_role',
+        conditions_met: (item.conditions_met as Record<string, any>) || {},
+        created_at: item.created_at
+      }));
+      
+      return mappedData;
     },
     enabled: true,
   });

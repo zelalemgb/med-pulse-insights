@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
 import { Database } from '@/integrations/supabase/types';
@@ -129,7 +130,6 @@ export class FacilityRoleService {
     })) as FacilityRoleAssignment[];
   }
 
-  // Get all roles for a specific user
   async getUserFacilityRoles(userId: string): Promise<FacilityRoleAssignment[]> {
     const { data, error } = await supabase
       .from('facility_specific_roles')
@@ -156,7 +156,6 @@ export class FacilityRoleService {
     })) as FacilityRoleAssignment[];
   }
 
-  // Get effective role for user at facility (with inheritance)
   async getEffectiveRole(userId: string, facilityId: string): Promise<UserRole | null> {
     const { data, error } = await supabase.rpc('get_effective_role_for_facility', {
       _user_id: userId,
@@ -289,13 +288,16 @@ export class FacilityRoleService {
     metadata: Record<string, any> = {}
   ): Promise<void> {
     try {
+      const mappedOldRole = oldRole ? mapPharmaceuticalToSupabaseRole(oldRole) : undefined;
+      const mappedNewRole = newRole ? mapPharmaceuticalToSupabaseRole(newRole) : undefined;
+
       await supabase.rpc('log_role_change', {
         _user_id: userId,
         _target_user_id: targetUserId,
         _action: action,
         _role_type: roleType,
-        _old_role: oldRole,
-        _new_role: newRole,
+        _old_role: mappedOldRole,
+        _new_role: mappedNewRole,
         _facility_id: facilityId,
         _reason: reason,
         _metadata: {
