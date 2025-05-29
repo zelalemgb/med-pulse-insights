@@ -10,7 +10,8 @@ export type UserRole =
   | 'finance'
   | 'program_manager'
   | 'qa'
-  | 'data_analyst';
+  | 'data_analyst'
+  | 'viewer';
 
 export interface User {
   id: string;
