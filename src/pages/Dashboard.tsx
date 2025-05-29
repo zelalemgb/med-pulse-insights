@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConsumptionOverview } from '@/components/dashboard/ConsumptionOverview';
@@ -14,6 +15,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 
 const Dashboard = () => {
+  console.log('Dashboard component rendering');
+  
   const { profile } = useAuth();
   const { canAccess } = usePermissions();
 
