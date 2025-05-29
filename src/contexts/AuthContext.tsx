@@ -26,9 +26,26 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
+  updateUserRole: (userId: string, newRole: UserRole) => Promise<{ error: any }>;
+  validateRole: (role: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Valid roles for validation
+const VALID_ROLES: UserRole[] = [
+  'facility_officer',
+  'facility_manager',
+  'zonal',
+  'regional',
+  'national',
+  'procurement',
+  'finance',
+  'program_manager',
+  'qa',
+  'data_analyst',
+  'viewer'
+];
 
 // Updated role mapping to handle viewer role and fix default assignments
 const mapSupabaseRoleToPharmaceutical = (supabaseRole: SupabaseUserRole): UserRole => {
@@ -36,13 +53,21 @@ const mapSupabaseRoleToPharmaceutical = (supabaseRole: SupabaseUserRole): UserRo
     'admin': 'national',
     'manager': 'facility_manager',
     'analyst': 'data_analyst',
-    'viewer': 'viewer', // Keep viewer as viewer
+    'viewer': 'viewer',
     'zonal': 'zonal',
     'regional': 'regional',
     'national': 'national'
   };
   
-  return roleMapping[supabaseRole] || 'viewer';
+  const mappedRole = roleMapping[supabaseRole] || 'facility_officer';
+  
+  // Validate that the mapped role exists in our valid roles
+  if (!VALID_ROLES.includes(mappedRole)) {
+    console.warn(`Invalid role detected: ${mappedRole}, falling back to facility_officer`);
+    return 'facility_officer';
+  }
+  
+  return mappedRole;
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -101,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('Profile data:', data);
 
-      // Convert the Supabase role to pharmaceutical role
+      // Convert the Supabase role to pharmaceutical role with validation
       const pharmaceuticalProfile: UserProfile = {
         id: data.id,
         email: data.email,
@@ -148,6 +173,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return profile?.role === role;
   };
 
+  // Role validation function
+  const validateRole = (role: string): boolean => {
+    return VALID_ROLES.includes(role as UserRole);
+  };
+
+  // Role upgrade/downgrade function
+  const updateUserRole = async (userId: string, newRole: UserRole) => {
+    // Validate the new role
+    if (!validateRole(newRole)) {
+      return { error: { message: `Invalid role: ${newRole}` } };
+    }
+
+    // Check if current user has permission to change roles
+    if (!profile || !['national', 'regional', 'zonal'].includes(profile.role)) {
+      return { error: { message: 'Insufficient permissions to change user roles' } };
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error updating user role:', error);
+        return { error };
+      }
+
+      // If updating own role, refresh profile
+      if (userId === user?.id) {
+        await fetchUserProfile(userId);
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      return { error };
+    }
+  };
+
   const value: AuthContextType = {
     user,
     session,
@@ -157,6 +222,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signOut,
     hasRole,
+    updateUserRole,
+    validateRole,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -9,7 +9,8 @@ import { PendingAssociations } from './PendingAssociations';
 import { FacilitiesList } from './FacilitiesList';
 import { FacilityTestHelper } from './FacilityTestHelper';
 import { CrossFacilityAnalytics } from './CrossFacilityAnalytics';
-import { Shield, Users, Building, Clock, CheckCircle, TestTube, BarChart3, TrendingUp } from 'lucide-react';
+import { RoleManagement } from './RoleManagement';
+import { Shield, Users, Building, Clock, CheckCircle, TestTube, BarChart3, TrendingUp, Settings } from 'lucide-react';
 
 export const SuperAdminDashboard = () => {
   const { profile } = useAuth();
@@ -105,10 +106,14 @@ export const SuperAdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="analytics" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="analytics" className="flex items-center">
             <BarChart3 className="h-4 w-4 mr-2" />
             Analytics
+          </TabsTrigger>
+          <TabsTrigger value="roles" className="flex items-center">
+            <Settings className="h-4 w-4 mr-2" />
+            Roles
           </TabsTrigger>
           <TabsTrigger value="testing" className="flex items-center">
             <TestTube className="h-4 w-4 mr-2" />
@@ -139,6 +144,10 @@ export const SuperAdminDashboard = () => {
 
         <TabsContent value="analytics">
           <CrossFacilityAnalytics />
+        </TabsContent>
+
+        <TabsContent value="roles">
+          <RoleManagement />
         </TabsContent>
 
         <TabsContent value="testing">
