@@ -4,6 +4,12 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
 import { Database } from '@/integrations/supabase/types';
+import { 
+  mapSupabaseToPharmaceuticalRole, 
+  mapPharmaceuticalToSupabaseRole,
+  isValidPharmaceuticalRole,
+  VALID_PHARMACEUTICAL_ROLES 
+} from '@/utils/roleMapping';
 
 type SupabaseUserRole = Database['public']['Enums']['user_role'];
 
@@ -35,75 +41,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Valid roles for validation
-const VALID_ROLES: UserRole[] = [
-  'facility_officer',
-  'facility_manager',
-  'zonal',
-  'regional',
-  'national',
-  'procurement',
-  'finance',
-  'program_manager',
-  'qa',
-  'data_analyst',
-  'viewer'
-];
-
-// Enhanced role mapping to ensure national role is properly recognized
-const mapSupabaseRoleToPharmaceutical = (supabaseRole: SupabaseUserRole): UserRole => {
-  console.log('🔄 Mapping Supabase role to pharmaceutical role:', supabaseRole);
-  
-  switch (supabaseRole) {
-    case 'national':
-      console.log('✅ Mapped to national role');
-      return 'national';
-    case 'regional':
-      return 'regional';
-    case 'zonal':
-      return 'zonal';
-    case 'admin':
-      console.log('✅ Mapped legacy admin to national role');
-      return 'national'; // Map legacy admin to national
-    case 'manager':
-      return 'facility_manager';
-    case 'analyst':
-      return 'data_analyst';
-    case 'viewer':
-      return 'viewer';
-    default:
-      console.warn(`⚠️ Unmapped Supabase role: ${supabaseRole}, defaulting to viewer`);
-      return 'viewer'; // Changed default to viewer instead of facility_officer
-  }
-};
-
-// Map pharmaceutical roles back to Supabase roles for updates
-const mapPharmaceuticalToSupabaseRole = (pharmaceuticalRole: UserRole): SupabaseUserRole => {
-  switch (pharmaceuticalRole) {
-    case 'national':
-      return 'national';
-    case 'regional':
-      return 'regional';
-    case 'zonal':
-      return 'zonal';
-    case 'facility_manager':
-      return 'manager';
-    case 'data_analyst':
-      return 'analyst';
-    case 'viewer':
-      return 'viewer';
-    case 'facility_officer':
-    case 'procurement':
-    case 'finance':
-    case 'program_manager':
-    case 'qa':
-    default:
-      return 'viewer';
-  }
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  console.log('🔧 AuthProvider rendering');
+  console.log('🔧 AuthProvider initializing...');
   
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -114,12 +53,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log(`🔍 Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
       
-      // Add a small delay on retries to allow for database consistency
+      // Add delay on retries for database consistency
       if (retryCount > 0) {
         await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
       }
       
-      // First check if profile exists
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -128,8 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('❌ Error fetching profile:', error);
-        if (retryCount < 2) {
-          console.log(`🔄 Retrying profile fetch... (${retryCount + 1}/3)`);
+        if (retryCount < 3) {
+          console.log(`🔄 Retrying profile fetch... (${retryCount + 1}/4)`);
           return fetchUserProfile(userId, retryCount + 1);
         }
         setProfile(null);
@@ -138,18 +76,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!data) {
         console.log('⚠️ No profile found for user:', userId);
-        if (retryCount < 2) {
-          console.log(`🔄 Retrying profile fetch... (${retryCount + 1}/3)`);
+        if (retryCount < 3) {
+          console.log(`🔄 Retrying profile fetch... (${retryCount + 1}/4)`);
           return fetchUserProfile(userId, retryCount + 1);
         }
-        setProfile(null);
+        
+        // Create a default profile if none exists
+        console.log('🔧 Creating default profile for user');
+        const defaultProfile: UserProfile = {
+          id: userId,
+          email: user?.email || '',
+          full_name: null,
+          role: 'viewer',
+          facility_id: null,
+          department: null,
+          is_active: true
+        };
+        setProfile(defaultProfile);
         return;
       }
 
       console.log('📋 Raw profile data from database:', data);
 
-      // Convert the Supabase role to pharmaceutical role with enhanced logging
-      const pharmaceuticalRole = mapSupabaseRoleToPharmaceutical(data.role);
+      // Enhanced role mapping with validation
+      let pharmaceuticalRole: UserRole;
+      if (data.role && typeof data.role === 'string') {
+        pharmaceuticalRole = mapSupabaseToPharmaceuticalRole(data.role as SupabaseUserRole);
+      } else {
+        console.warn('⚠️ Invalid or missing role in profile, defaulting to viewer');
+        pharmaceuticalRole = 'viewer';
+      }
+
+      // Double-check role validity
+      if (!isValidPharmaceuticalRole(pharmaceuticalRole)) {
+        console.warn(`⚠️ Invalid pharmaceutical role: ${pharmaceuticalRole}, using viewer`);
+        pharmaceuticalRole = 'viewer';
+      }
       
       const pharmaceuticalProfile: UserProfile = {
         id: data.id,
@@ -162,12 +124,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       console.log('✅ Final mapped pharmaceutical profile:', pharmaceuticalProfile);
-      console.log(`🎯 User role set to: ${pharmaceuticalRole}`);
+      console.log(`🎯 User role confirmed as: ${pharmaceuticalRole}`);
       setProfile(pharmaceuticalProfile);
     } catch (error) {
-      console.error('💥 Error fetching profile:', error);
-      if (retryCount < 2) {
-        console.log(`🔄 Retrying profile fetch... (${retryCount + 1}/3)`);
+      console.error('💥 Unexpected error fetching profile:', error);
+      if (retryCount < 3) {
+        console.log(`🔄 Retrying profile fetch... (${retryCount + 1}/4)`);
         return fetchUserProfile(userId, retryCount + 1);
       }
       setProfile(null);
@@ -190,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Use setTimeout to defer the profile fetch and avoid blocking the auth state change
+          // Defer profile fetch to avoid blocking auth state change
           setTimeout(async () => {
             await fetchUserProfile(session.user.id);
             setLoading(false);
@@ -270,24 +232,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return hasRoleResult;
   };
 
-  // Role validation function
   const validateRole = (role: string): boolean => {
-    return VALID_ROLES.includes(role as UserRole);
+    const isValid = isValidPharmaceuticalRole(role);
+    console.log(`🔍 Validating role ${role}:`, isValid);
+    return isValid;
   };
 
-  // Enhanced role upgrade/downgrade function
   const updateUserRole = async (userId: string, newRole: UserRole) => {
-    // Validate the new role
+    // Enhanced validation
     if (!validateRole(newRole)) {
+      console.error(`❌ Invalid role: ${newRole}`);
       return { error: { message: `Invalid role: ${newRole}` } };
     }
 
-    // Check if current user has permission to change roles
+    // Enhanced permission check
     if (!profile || !['national', 'regional', 'zonal'].includes(profile.role)) {
+      console.error('❌ Insufficient permissions to change user roles');
       return { error: { message: 'Insufficient permissions to change user roles' } };
     }
 
     try {
+      console.log(`🔄 Updating user ${userId} role to ${newRole}`);
+      
       // Convert pharmaceutical role to Supabase role for database update
       const supabaseRole = mapPharmaceuticalToSupabaseRole(newRole);
       
@@ -301,6 +267,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
       }
 
+      console.log('✅ User role updated successfully');
+
       // If updating own role, refresh profile
       if (userId === user?.id) {
         await fetchUserProfile(userId);
@@ -308,12 +276,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return { error: null };
     } catch (error) {
-      console.error('💥 Error updating user role:', error);
+      console.error('💥 Unexpected error updating user role:', error);
       return { error };
     }
   };
 
-  // Get effective role for a specific facility (includes inheritance)
   const getEffectiveRoleForFacility = async (userId: string, facilityId: string): Promise<UserRole | null> => {
     try {
       const { data, error } = await supabase.rpc('get_effective_role_for_facility', {
@@ -326,14 +293,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
 
-      return mapSupabaseRoleToPharmaceutical(data);
+      return data ? mapSupabaseToPharmaceuticalRole(data) : null;
     } catch (error) {
       console.error('💥 Error getting effective role:', error);
       return null;
     }
   };
 
-  // Check if user has specific role for a facility
   const hasFacilityRole = async (facilityId: string, role: UserRole): Promise<boolean> => {
     if (!user) return false;
 
