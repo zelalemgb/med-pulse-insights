@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +27,8 @@ interface AuthContextType {
   hasRole: (role: UserRole) => boolean;
   updateUserRole: (userId: string, newRole: UserRole) => Promise<{ error: any }>;
   validateRole: (role: string) => boolean;
+  getEffectiveRoleForFacility: (userId: string, facilityId: string) => Promise<UserRole | null>;
+  hasFacilityRole: (facilityId: string, role: UserRole) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -206,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return VALID_ROLES.includes(role as UserRole);
   };
 
-  // Role upgrade/downgrade function
+  // Enhanced role upgrade/downgrade function
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     // Validate the new role
     if (!validateRole(newRole)) {
@@ -244,6 +245,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Get effective role for a specific facility (includes inheritance)
+  const getEffectiveRoleForFacility = async (userId: string, facilityId: string): Promise<UserRole | null> => {
+    try {
+      const { data, error } = await supabase.rpc('get_effective_role_for_facility', {
+        _user_id: userId,
+        _facility_id: facilityId
+      });
+
+      if (error) {
+        console.error('Error getting effective role:', error);
+        return null;
+      }
+
+      return mapSupabaseRoleToPharmaceutical(data);
+    } catch (error) {
+      console.error('Error getting effective role:', error);
+      return null;
+    }
+  };
+
+  // Check if user has specific role for a facility
+  const hasFacilityRole = async (facilityId: string, role: UserRole): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const effectiveRole = await getEffectiveRoleForFacility(user.id, facilityId);
+      return effectiveRole === role;
+    } catch (error) {
+      console.error('Error checking facility role:', error);
+      return false;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     session,
@@ -255,6 +289,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasRole,
     updateUserRole,
     validateRole,
+    getEffectiveRoleForFacility,
+    hasFacilityRole,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      facility_specific_roles: {
+        Row: {
+          facility_id: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          facility_id: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          facility_id?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facility_specific_roles_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "health_facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_facilities: {
         Row: {
           capacity: number | null
@@ -229,6 +267,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bulk_assign_facility_roles: {
+        Args: {
+          _user_ids: string[]
+          _facility_id: string
+          _role: Database["public"]["Enums"]["user_role"]
+          _granted_by: string
+        }
+        Returns: number
+      }
       can_approve_associations: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -236,6 +283,10 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_effective_role_for_facility: {
+        Args: { _user_id: string; _facility_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
       }
       get_user_role: {
         Args: { _user_id: string }

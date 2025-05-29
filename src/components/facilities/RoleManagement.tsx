@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types/pharmaceutical';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Shield, CheckCircle, AlertCircle } from 'lucide-react';
+import { FacilityRoleManager } from './FacilityRoleManager';
+import { Users, Shield, CheckCircle, AlertCircle, Building } from 'lucide-react';
 
 export const RoleManagement = () => {
   const { updateUserRole, validateRole, profile } = useAuth();
@@ -34,7 +36,7 @@ export const RoleManagement = () => {
 
   const canManageRoles = profile?.role && ['national', 'regional', 'zonal'].includes(profile.role);
 
-  const handleRoleUpdate = async () => {
+  const handleGlobalRoleUpdate = async () => {
     if (!selectedUserId || !selectedRole) {
       toast({
         title: "Error",
@@ -56,7 +58,7 @@ export const RoleManagement = () => {
     } else {
       toast({
         title: "Success",
-        description: `User role updated to ${selectedRole}`,
+        description: `Global user role updated to ${selectedRole}`,
       });
       setSelectedUserId('');
       setSelectedRole('facility_officer');
@@ -88,108 +90,129 @@ export const RoleManagement = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Users className="h-5 w-5 mr-2" />
-          Role Management
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Role Update Section */}
-          <div className="space-y-4">
-            <h4 className="font-semibold flex items-center">
-              <Shield className="h-4 w-4 mr-2" />
-              Update User Role
-            </h4>
-            
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="userId">User ID</Label>
-                <Input
-                  id="userId"
-                  placeholder="Enter user UUID"
-                  value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(e.target.value)}
-                />
-              </div>
+    <Tabs defaultValue="global" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="global" className="flex items-center">
+          <Users className="h-4 w-4 mr-2" />
+          Global Roles
+        </TabsTrigger>
+        <TabsTrigger value="facility" className="flex items-center">
+          <Building className="h-4 w-4 mr-2" />
+          Facility-Specific Roles
+        </TabsTrigger>
+      </TabsList>
 
-              <div>
-                <Label htmlFor="role">New Role</Label>
-                <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((role) => (
-                      <SelectItem key={role.value} value={role.value}>
-                        <div className="flex flex-col">
-                          <span>{role.label}</span>
-                          <span className="text-xs text-gray-500">{role.description}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      <TabsContent value="global">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Users className="h-5 w-5 mr-2" />
+              Global Role Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Role Update Section */}
+              <div className="space-y-4">
+                <h4 className="font-semibold flex items-center">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Update Global User Role
+                </h4>
+                
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="userId">User ID</Label>
+                    <Input
+                      id="userId"
+                      placeholder="Enter user UUID"
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                    />
+                  </div>
 
-              <Button 
-                onClick={handleRoleUpdate} 
-                disabled={loading || !selectedUserId || !selectedRole}
-                className="w-full"
-              >
-                {loading ? "Updating..." : "Update Role"}
-              </Button>
-            </div>
-          </div>
+                  <div>
+                    <Label htmlFor="role">New Global Role</Label>
+                    <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roles.map((role) => (
+                          <SelectItem key={role.value} value={role.value}>
+                            <div className="flex flex-col">
+                              <span>{role.label}</span>
+                              <span className="text-xs text-gray-500">{role.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-          {/* Role Validation Section */}
-          <div className="space-y-4">
-            <h4 className="font-semibold flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Role Validation
-            </h4>
-            
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">
-                Valid roles in the system:
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {roles.map((role) => (
-                  <Badge 
-                    key={role.value} 
-                    variant={validateRoleInput(role.value) ? "default" : "destructive"}
-                    className="text-xs"
+                  <Button 
+                    onClick={handleGlobalRoleUpdate} 
+                    disabled={loading || !selectedUserId || !selectedRole}
+                    className="w-full"
                   >
-                    {role.label}
-                  </Badge>
-                ))}
+                    {loading ? "Updating..." : "Update Global Role"}
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <div className="flex items-start">
-                <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 mr-2" />
-                <div className="text-xs text-blue-800">
-                  <p className="font-medium mb-1">Role Hierarchy:</p>
-                  <p>National → Regional → Zonal → Facility Manager → Facility Officer</p>
+              {/* Role Validation Section */}
+              <div className="space-y-4">
+                <h4 className="font-semibold flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Role Validation
+                </h4>
+                
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">
+                    Valid roles in the system:
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {roles.map((role) => (
+                      <Badge 
+                        key={role.value} 
+                        variant={validateRoleInput(role.value) ? "default" : "destructive"}
+                        className="text-xs"
+                      >
+                        {role.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-start">
+                    <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 mr-2" />
+                    <div className="text-xs text-blue-800">
+                      <p className="font-medium mb-1">Global Role Hierarchy:</p>
+                      <p>National → Regional → Zonal → Facility Manager → Facility Officer</p>
+                      <p className="mt-2 font-medium">Role Inheritance:</p>
+                      <p>Higher-level roles inherit access to lower-level data and functions.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Current User Info */}
-        <div className="pt-4 border-t">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Your current role:</span>
-            <Badge variant="outline">
-              {profile?.role?.replace('_', ' ').toUpperCase()}
-            </Badge>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+            {/* Current User Info */}
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Your current global role:</span>
+                <Badge variant="outline">
+                  {profile?.role?.replace('_', ' ').toUpperCase()}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="facility">
+        <FacilityRoleManager />
+      </TabsContent>
+    </Tabs>
   );
 };
