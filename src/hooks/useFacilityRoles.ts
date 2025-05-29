@@ -164,10 +164,24 @@ export const useAssignFacilityRole = () => {
         throw new Error(`Failed to assign role: ${error.message}`);
       }
 
+      // Log the role assignment
+      await supabase.rpc('log_role_change', {
+        _user_id: user.id,
+        _target_user_id: userId,
+        _action: 'assign',
+        _role_type: 'facility_specific',
+        _old_role: null,
+        _new_role: role,
+        _facility_id: facilityId,
+        _reason: 'Facility role assignment',
+        _metadata: { source: 'facility_roles_hook' }
+      });
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['facility-roles'] });
+      queryClient.invalidateQueries({ queryKey: ['role-audit'] });
       toast({
         title: "Success",
         description: "Role assigned successfully",
@@ -238,6 +252,16 @@ export const useRevokeFacilityRole = () => {
 
   return useMutation({
     mutationFn: async (roleId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Get the current role before revoking for audit logging
+      const { data: currentRole } = await supabase
+        .from('facility_specific_roles')
+        .select('user_id, facility_id, role')
+        .eq('id', roleId)
+        .single();
+
       const { error } = await supabase
         .from('facility_specific_roles')
         .update({ is_active: false })
@@ -246,9 +270,25 @@ export const useRevokeFacilityRole = () => {
       if (error) {
         throw new Error(`Failed to revoke role: ${error.message}`);
       }
+
+      // Log the role revocation
+      if (currentRole) {
+        await supabase.rpc('log_role_change', {
+          _user_id: user.id,
+          _target_user_id: currentRole.user_id,
+          _action: 'revoke',
+          _role_type: 'facility_specific',
+          _old_role: mapSupabaseToPharmaceuticalRole(currentRole.role),
+          _new_role: null,
+          _facility_id: currentRole.facility_id,
+          _reason: 'Facility role revocation',
+          _metadata: { source: 'facility_roles_hook' }
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['facility-roles'] });
+      queryClient.invalidateQueries({ queryKey: ['role-audit'] });
       toast({
         title: "Success",
         description: "Role revoked successfully",

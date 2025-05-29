@@ -9,6 +9,53 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      conditional_permissions: {
+        Row: {
+          conditions: Json
+          created_at: string
+          expires_at: string | null
+          facility_id: string | null
+          granted_by: string | null
+          id: string
+          is_active: boolean
+          permission_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conditions?: Json
+          created_at?: string
+          expires_at?: string | null
+          facility_id?: string | null
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          permission_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conditions?: Json
+          created_at?: string
+          expires_at?: string | null
+          facility_id?: string | null
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          permission_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conditional_permissions_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "health_facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facility_specific_roles: {
         Row: {
           facility_id: string
@@ -124,6 +171,62 @@ export type Database = {
           },
         ]
       }
+      permission_usage_log: {
+        Row: {
+          access_granted: boolean
+          access_method: string | null
+          conditions_met: Json | null
+          created_at: string
+          facility_id: string | null
+          id: string
+          ip_address: unknown | null
+          permission_name: string
+          resource_id: string | null
+          resource_type: string
+          session_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          access_granted?: boolean
+          access_method?: string | null
+          conditions_met?: Json | null
+          created_at?: string
+          facility_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          permission_name: string
+          resource_id?: string | null
+          resource_type: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          access_granted?: boolean
+          access_method?: string | null
+          conditions_met?: Json | null
+          created_at?: string
+          facility_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          permission_name?: string
+          resource_id?: string | null
+          resource_type?: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_usage_log_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "health_facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           can_approve_associations: boolean
@@ -171,6 +274,62 @@ export type Database = {
           {
             foreignKeyName: "profiles_primary_facility_id_fkey"
             columns: ["primary_facility_id"]
+            isOneToOne: false
+            referencedRelation: "health_facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      role_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          facility_id: string | null
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          new_role: Database["public"]["Enums"]["user_role"] | null
+          old_role: Database["public"]["Enums"]["user_role"] | null
+          reason: string | null
+          role_type: string
+          target_user_id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          facility_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          new_role?: Database["public"]["Enums"]["user_role"] | null
+          old_role?: Database["public"]["Enums"]["user_role"] | null
+          reason?: string | null
+          role_type: string
+          target_user_id: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          facility_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          new_role?: Database["public"]["Enums"]["user_role"] | null
+          old_role?: Database["public"]["Enums"]["user_role"] | null
+          reason?: string | null
+          role_type?: string
+          target_user_id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_audit_log_facility_id_fkey"
+            columns: ["facility_id"]
             isOneToOne: false
             referencedRelation: "health_facilities"
             referencedColumns: ["id"]
@@ -280,6 +439,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      check_conditional_permissions: {
+        Args: {
+          _user_id: string
+          _facility_id: string
+          _permission_name: string
+          _current_time?: string
+          _user_location?: Json
+        }
+        Returns: boolean
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -287,6 +456,10 @@ export type Database = {
       get_effective_role_for_facility: {
         Args: { _user_id: string; _facility_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_role_audit_analytics: {
+        Args: { _start_date?: string; _end_date?: string }
+        Returns: Json
       }
       get_user_role: {
         Args: { _user_id: string }
@@ -302,6 +475,34 @@ export type Database = {
       is_super_admin: {
         Args: { user_uuid: string }
         Returns: boolean
+      }
+      log_permission_usage: {
+        Args: {
+          _user_id: string
+          _permission_name: string
+          _resource_type: string
+          _resource_id?: string
+          _facility_id?: string
+          _access_granted?: boolean
+          _access_method?: string
+          _conditions_met?: Json
+          _session_id?: string
+        }
+        Returns: string
+      }
+      log_role_change: {
+        Args: {
+          _user_id: string
+          _target_user_id: string
+          _action: string
+          _role_type: string
+          _old_role?: Database["public"]["Enums"]["user_role"]
+          _new_role?: Database["public"]["Enums"]["user_role"]
+          _facility_id?: string
+          _reason?: string
+          _metadata?: Json
+        }
+        Returns: string
       }
       user_has_facility_access: {
         Args: {

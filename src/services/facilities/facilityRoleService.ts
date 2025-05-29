@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
 import { Database } from '@/integrations/supabase/types';
@@ -96,6 +95,9 @@ export class FacilityRoleService {
       throw new Error(`Failed to assign facility role: ${error.message}`);
     }
 
+    // Log the role assignment
+    await this.logRoleChange(user.id, userId, 'assign', 'facility_specific', undefined, role, facilityId);
+
     return {
       ...data,
       role: mapSupabaseToPharmaceuticalRole(data.role)
@@ -170,6 +172,19 @@ export class FacilityRoleService {
 
   // Revoke a facility role
   async revokeFacilityRole(roleId: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Get the current role before revoking for audit logging
+    const { data: currentRole } = await supabase
+      .from('facility_specific_roles')
+      .select('user_id, facility_id, role')
+      .eq('id', roleId)
+      .single();
+
     const { error } = await supabase
       .from('facility_specific_roles')
       .update({ is_active: false })
@@ -177,6 +192,19 @@ export class FacilityRoleService {
 
     if (error) {
       throw new Error(`Failed to revoke facility role: ${error.message}`);
+    }
+
+    // Log the role revocation
+    if (currentRole) {
+      await this.logRoleChange(
+        user.id,
+        currentRole.user_id,
+        'revoke',
+        'facility_specific',
+        mapSupabaseToPharmaceuticalRole(currentRole.role),
+        undefined,
+        currentRole.facility_id
+      );
     }
   }
 
@@ -204,6 +232,19 @@ export class FacilityRoleService {
     if (error) {
       throw new Error(`Failed to bulk assign roles: ${error.message}`);
     }
+
+    // Log bulk assignment
+    await this.logRoleChange(
+      user.id,
+      userIds[0], // Use first user as representative for bulk action
+      'bulk_assign',
+      'facility_specific',
+      undefined,
+      role,
+      facilityId,
+      `Bulk assigned to ${userIds.length} users`,
+      { user_ids: userIds, total_users: userIds.length }
+    );
 
     return data as number;
   }
@@ -233,6 +274,70 @@ export class FacilityRoleService {
     });
 
     return hasAccess || false;
+  }
+
+  // Private method to log role changes
+  private async logRoleChange(
+    userId: string,
+    targetUserId: string,
+    action: string,
+    roleType: string,
+    oldRole?: UserRole,
+    newRole?: UserRole,
+    facilityId?: string,
+    reason?: string,
+    metadata: Record<string, any> = {}
+  ): Promise<void> {
+    try {
+      await supabase.rpc('log_role_change', {
+        _user_id: userId,
+        _target_user_id: targetUserId,
+        _action: action,
+        _role_type: roleType,
+        _old_role: oldRole,
+        _new_role: newRole,
+        _facility_id: facilityId,
+        _reason: reason,
+        _metadata: {
+          ...metadata,
+          timestamp: new Date().toISOString(),
+          source: 'facility_role_service'
+        }
+      });
+    } catch (error) {
+      console.error('Failed to log role change:', error);
+      // Don't throw here to avoid breaking the main operation
+    }
+  }
+
+  // New method to log permission usage
+  async logPermissionUsage(
+    permissionName: string,
+    resourceType: string,
+    resourceId?: string,
+    facilityId?: string,
+    accessGranted: boolean = true,
+    accessMethod: string = 'facility_role'
+  ): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return;
+
+    try {
+      await supabase.rpc('log_permission_usage', {
+        _user_id: user.id,
+        _permission_name: permissionName,
+        _resource_type: resourceType,
+        _resource_id: resourceId,
+        _facility_id: facilityId,
+        _access_granted: accessGranted,
+        _access_method: accessMethod,
+        _conditions_met: {},
+        _session_id: null
+      });
+    } catch (error) {
+      console.error('Failed to log permission usage:', error);
+    }
   }
 }
 

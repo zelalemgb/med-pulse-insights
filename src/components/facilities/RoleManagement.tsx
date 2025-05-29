@@ -10,14 +10,19 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types/pharmaceutical';
 import { useToast } from '@/hooks/use-toast';
+import { useLogRoleChange } from '@/hooks/useRoleAudit';
 import { FacilityRoleManager } from './FacilityRoleManager';
-import { Users, Shield, CheckCircle, AlertCircle, Building } from 'lucide-react';
+import { AuditTrailTab } from './AuditTrailTab';
+import { ConditionalPermissionsTab } from './ConditionalPermissionsTab';
+import { Users, Shield, CheckCircle, AlertCircle, Building, History, Settings } from 'lucide-react';
 
 export const RoleManagement = () => {
   const { updateUserRole, validateRole, profile } = useAuth();
   const { toast } = useToast();
+  const logRoleChange = useLogRoleChange();
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole>('facility_officer');
+  const [changeReason, setChangeReason] = useState('');
   const [loading, setLoading] = useState(false);
 
   const roles: { value: UserRole; label: string; description: string }[] = [
@@ -47,6 +52,10 @@ export const RoleManagement = () => {
     }
 
     setLoading(true);
+    
+    // Get current role for audit logging
+    const currentRole = profile?.role;
+    
     const { error } = await updateUserRole(selectedUserId, selectedRole);
     
     if (error) {
@@ -56,12 +65,27 @@ export const RoleManagement = () => {
         variant: "destructive"
       });
     } else {
+      // Log the role change
+      await logRoleChange.mutateAsync({
+        targetUserId: selectedUserId,
+        action: 'modify',
+        roleType: 'global',
+        oldRole: currentRole,
+        newRole: selectedRole,
+        reason: changeReason || 'Global role update',
+        metadata: {
+          interface: 'role_management',
+          timestamp: new Date().toISOString()
+        }
+      });
+
       toast({
         title: "Success",
         description: `Global user role updated to ${selectedRole}`,
       });
       setSelectedUserId('');
       setSelectedRole('facility_officer');
+      setChangeReason('');
     }
     setLoading(false);
   };
@@ -91,14 +115,26 @@ export const RoleManagement = () => {
 
   return (
     <Tabs defaultValue="global" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="global" className="flex items-center">
           <Users className="h-4 w-4 mr-2" />
           Global Roles
         </TabsTrigger>
         <TabsTrigger value="facility" className="flex items-center">
           <Building className="h-4 w-4 mr-2" />
-          Facility-Specific Roles
+          Facility-Specific
+        </TabsTrigger>
+        <TabsTrigger value="audit" className="flex items-center">
+          <History className="h-4 w-4 mr-2" />
+          Audit Trail
+        </TabsTrigger>
+        <TabsTrigger value="conditional" className="flex items-center">
+          <Settings className="h-4 w-4 mr-2" />
+          Conditional Access
+        </TabsTrigger>
+        <TabsTrigger value="analytics" className="flex items-center">
+          <CheckCircle className="h-4 w-4 mr-2" />
+          Analytics
         </TabsTrigger>
       </TabsList>
 
@@ -147,6 +183,16 @@ export const RoleManagement = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="reason">Reason for Change (Optional)</Label>
+                    <Input
+                      id="reason"
+                      placeholder="Why is this role being changed?"
+                      value={changeReason}
+                      onChange={(e) => setChangeReason(e.target.value)}
+                    />
                   </div>
 
                   <Button 
@@ -212,6 +258,29 @@ export const RoleManagement = () => {
 
       <TabsContent value="facility">
         <FacilityRoleManager />
+      </TabsContent>
+
+      <TabsContent value="audit">
+        <AuditTrailTab />
+      </TabsContent>
+
+      <TabsContent value="conditional">
+        <ConditionalPermissionsTab />
+      </TabsContent>
+
+      <TabsContent value="analytics">
+        <Card>
+          <CardHeader>
+            <CardTitle>Permission Analytics Dashboard</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8 text-gray-600">
+              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p>Advanced permission analytics coming soon...</p>
+              <p className="text-sm mt-2">This will include usage patterns, compliance reports, and security insights.</p>
+            </div>
+          </CardContent>
+        </Card>
       </TabsContent>
     </Tabs>
   );
