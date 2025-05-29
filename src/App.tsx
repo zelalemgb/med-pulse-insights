@@ -25,16 +25,19 @@ const LoadingSpinner = () => (
   </div>
 );
 
-const App = () => {
-  // Create QueryClient inside component to ensure proper React context
-  const [queryClient] = React.useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000, // 10 minutes
-      },
+// Create QueryClient outside component to avoid recreation
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
     },
-  }));
+  },
+});
+
+const App = () => {
+  console.log('App component React instance:', React);
+  console.log('App component React.useEffect:', React.useEffect);
 
   return (
     <QueryClientProvider client={queryClient}>
