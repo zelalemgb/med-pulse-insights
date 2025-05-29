@@ -3,14 +3,12 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useHasNationalUsers } from '@/hooks/useFirstAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RefreshCw, Database, Users, Shield, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
 export const FirstAdminTestPanel = () => {
   const { user, profile } = useAuth();
-  const { data: hasNationalUsers, isLoading, refetch } = useHasNationalUsers();
   const [testResults, setTestResults] = useState<any[]>([]);
   const [isRunningTests, setIsRunningTests] = useState(false);
 
@@ -28,39 +26,7 @@ export const FirstAdminTestPanel = () => {
     setTestResults([]);
 
     try {
-      // Test 1: Check database function exists
-      addTestResult('Database Function Check', 'pass', 'Testing has_national_users function...');
-      
-      try {
-        const { data, error } = await supabase.rpc('has_national_users');
-        if (error) {
-          addTestResult('has_national_users RPC', 'fail', { error: error.message });
-        } else {
-          addTestResult('has_national_users RPC', 'pass', { result: data });
-        }
-      } catch (err: any) {
-        addTestResult('has_national_users RPC', 'fail', { error: err.message });
-      }
-
-      // Test 2: Check create_first_admin function
-      addTestResult('create_first_admin Function', 'pass', 'Checking function accessibility...');
-      
-      try {
-        // Just check if we can call it (will fail with valid error if function exists)
-        await supabase.rpc('create_first_admin', {
-          _user_id: '00000000-0000-0000-0000-000000000000',
-          _email: 'test@test.com',
-          _full_name: 'Test User'
-        });
-      } catch (err: any) {
-        if (err.message.includes('function') && err.message.includes('does not exist')) {
-          addTestResult('create_first_admin Function', 'fail', { error: 'Function does not exist' });
-        } else {
-          addTestResult('create_first_admin Function', 'pass', { note: 'Function exists (expected error)' });
-        }
-      }
-
-      // Test 3: Check profiles table structure
+      // Test 1: Check profiles table structure
       addTestResult('Profiles Table', 'pass', 'Checking table structure...');
       
       try {
@@ -78,11 +44,11 @@ export const FirstAdminTestPanel = () => {
         addTestResult('Profiles Table Structure', 'fail', { error: err.message });
       }
 
-      // Test 4: Check current user authentication
+      // Test 2: Check current user authentication
       if (user) {
         addTestResult('User Authentication', 'pass', { userId: user.id, email: user.email });
         
-        // Test 5: Check user profile
+        // Test 3: Check user profile
         try {
           const { data: userProfile, error } = await supabase
             .from('profiles')
@@ -104,7 +70,7 @@ export const FirstAdminTestPanel = () => {
         addTestResult('User Authentication', 'warning', { note: 'No user currently logged in' });
       }
 
-      // Test 6: Check user_roles table
+      // Test 4: Check user_roles table
       addTestResult('User Roles Table', 'pass', 'Checking user_roles table...');
       
       try {
@@ -122,7 +88,7 @@ export const FirstAdminTestPanel = () => {
         addTestResult('User Roles Table', 'fail', { error: err.message });
       }
 
-      // Test 7: Check role_audit_log table
+      // Test 5: Check role_audit_log table
       try {
         const { data, error } = await supabase
           .from('role_audit_log')
@@ -138,7 +104,7 @@ export const FirstAdminTestPanel = () => {
         addTestResult('Role Audit Log Table', 'fail', { error: err.message });
       }
 
-      // Test 8: Test enum values
+      // Test 6: Test enum values
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -179,31 +145,13 @@ export const FirstAdminTestPanel = () => {
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center">
             <Shield className="w-5 h-5 mr-2" />
-            First Admin Feature Test Panel
+            Database Test Panel
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Current Status */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="font-medium">National Users</span>
-              <Badge variant={hasNationalUsers ? "default" : "secondary"}>
-                {isLoading ? "Checking..." : hasNationalUsers ? "Exist" : "None"}
-              </Badge>
-            </div>
-          </div>
-          
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="flex items-center justify-between">
               <span className="font-medium">Current User</span>
@@ -231,7 +179,7 @@ export const FirstAdminTestPanel = () => {
             className="w-full"
           >
             <Database className="w-4 h-4 mr-2" />
-            {isRunningTests ? "Running Tests..." : "Run Comprehensive Tests"}
+            {isRunningTests ? "Running Tests..." : "Run Database Tests"}
           </Button>
         </div>
 
