@@ -30,3 +30,21 @@ export interface RoleChangeLogEntry {
   reason?: string;
   metadata?: Record<string, any>;
 }
+
+export interface FacilitySpecificRole {
+  id: string;
+  user_id: string;
+  facility_id: string;
+  role: UserRole;
+  granted_by: string | null;
+  granted_at: string;
+  is_active: boolean;
+  profiles?: {
+    full_name: string | null;
+    email: string;
+  } | null;
+  health_facilities?: {
+    name: string;
+    facility_type: string;
+  } | null;
+}
