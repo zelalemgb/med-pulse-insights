@@ -27,18 +27,27 @@ const LoadingSpinner = () => (
 );
 
 // Create QueryClient outside component to avoid recreation
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    },
-  },
-});
+let queryClient: QueryClient;
 
-const App = () => {
+const getQueryClient = () => {
+  if (!queryClient) {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 5 * 60 * 1000, // 5 minutes
+          gcTime: 10 * 60 * 1000, // 10 minutes
+        },
+      },
+    });
+  }
+  return queryClient;
+};
+
+const App: React.FC = () => {
+  console.log('App component rendering');
+  
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={getQueryClient()}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
