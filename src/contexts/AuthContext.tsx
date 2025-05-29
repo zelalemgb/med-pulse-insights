@@ -47,27 +47,55 @@ const VALID_ROLES: UserRole[] = [
   'viewer'
 ];
 
-// Updated role mapping to handle viewer role and fix default assignments
+// Updated role mapping to handle the mismatch between Supabase and pharmaceutical roles
 const mapSupabaseRoleToPharmaceutical = (supabaseRole: SupabaseUserRole): UserRole => {
-  const roleMapping: Record<SupabaseUserRole, UserRole> = {
-    'admin': 'national',
-    'manager': 'facility_manager',
-    'analyst': 'data_analyst',
-    'viewer': 'viewer',
-    'zonal': 'zonal',
-    'regional': 'regional',
-    'national': 'national'
-  };
-  
-  const mappedRole = roleMapping[supabaseRole] || 'facility_officer';
-  
-  // Validate that the mapped role exists in our valid roles
-  if (!VALID_ROLES.includes(mappedRole)) {
-    console.warn(`Invalid role detected: ${mappedRole}, falling back to facility_officer`);
-    return 'facility_officer';
+  // Handle cases where Supabase roles don't directly map to pharmaceutical roles
+  switch (supabaseRole) {
+    case 'admin':
+      return 'national';
+    case 'manager':
+      return 'facility_manager';
+    case 'analyst':
+      return 'data_analyst';
+    case 'viewer':
+      return 'viewer';
+    case 'zonal':
+      return 'zonal';
+    case 'regional':
+      return 'regional';
+    case 'national':
+      return 'national';
+    default:
+      // For any unmapped roles, default to facility_officer
+      console.warn(`Unmapped Supabase role: ${supabaseRole}, defaulting to facility_officer`);
+      return 'facility_officer';
   }
-  
-  return mappedRole;
+};
+
+// Map pharmaceutical roles back to Supabase roles for updates
+const mapPharmaceuticalToSupabaseRole = (pharmaceuticalRole: UserRole): SupabaseUserRole => {
+  switch (pharmaceuticalRole) {
+    case 'national':
+      return 'national';
+    case 'facility_manager':
+      return 'manager';
+    case 'data_analyst':
+      return 'analyst';
+    case 'viewer':
+      return 'viewer';
+    case 'zonal':
+      return 'zonal';
+    case 'regional':
+      return 'regional';
+    case 'facility_officer':
+    case 'procurement':
+    case 'finance':
+    case 'program_manager':
+    case 'qa':
+    default:
+      // For pharmaceutical roles that don't exist in Supabase, we'll use 'viewer' as default
+      return 'viewer';
+  }
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -191,9 +219,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      // Convert pharmaceutical role to Supabase role for database update
+      const supabaseRole = mapPharmaceuticalToSupabaseRole(newRole);
+      
       const { error } = await supabase
         .from('profiles')
-        .update({ role: newRole })
+        .update({ role: supabaseRole })
         .eq('id', userId);
 
       if (error) {
