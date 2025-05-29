@@ -3,16 +3,52 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Crown, Users, Shield } from 'lucide-react';
+import { Crown, Users, Shield, AlertCircle } from 'lucide-react';
 import { useHasNationalUsers } from '@/hooks/useFirstAdmin';
 
 const AdminSetupPrompt = () => {
-  const { data: hasNationalUsers, isLoading } = useHasNationalUsers();
+  const { data: hasNationalUsers, isLoading, error } = useHasNationalUsers();
 
-  // Don't show if still loading or if national users already exist
-  if (isLoading || hasNationalUsers) {
+  console.log('🔍 AdminSetupPrompt render:', { hasNationalUsers, isLoading, error });
+
+  // Show loading state
+  if (isLoading) {
+    console.log('⏳ AdminSetupPrompt: Still loading...');
+    return (
+      <Card className="w-full max-w-md mx-auto mb-6 border-2 border-dashed border-gray-300">
+        <CardContent className="pt-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Checking system status...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    console.error('❌ AdminSetupPrompt error:', error);
+    return (
+      <Card className="w-full max-w-md mx-auto mb-6 border-2 border-dashed border-red-300 bg-red-50/50">
+        <CardContent className="pt-6">
+          <div className="text-center">
+            <AlertCircle className="w-8 h-8 text-red-600 mx-auto mb-4" />
+            <p className="text-red-700 font-medium">Unable to check system status</p>
+            <p className="text-red-600 text-sm mt-2">{error.message}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Don't show if national users already exist
+  if (hasNationalUsers) {
+    console.log('✅ AdminSetupPrompt: National users exist, hiding prompt');
     return null;
   }
+
+  console.log('🚀 AdminSetupPrompt: Showing setup prompt');
 
   return (
     <Card className="w-full max-w-md mx-auto mb-6 border-2 border-dashed border-blue-300 bg-blue-50/50">
