@@ -26,68 +26,71 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Create QueryClient instance outside component to avoid re-creation
+// Create QueryClient instance
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: 1,
     },
   },
 });
 
-const App = () => {
+const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AuthProvider>
-          <BrowserRouter>
-            <React.Suspense fallback={<LoadingSpinner />}>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/admin-setup" element={<AdminSetup />} />
-                <Route 
-                  path="/dashboard" 
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/data-entry" 
-                  element={
-                    <ProtectedRoute>
-                      <DataEntry />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/import" 
-                  element={
-                    <ProtectedRoute>
-                      <Import />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/facilities" 
-                  element={
-                    <ProtectedRoute>
-                      <Facilities />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </React.Suspense>
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AuthProvider>
+            <BrowserRouter>
+              <React.Suspense fallback={<LoadingSpinner />}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/admin-setup" element={<AdminSetup />} />
+                  <Route 
+                    path="/dashboard" 
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/data-entry" 
+                    element={
+                      <ProtectedRoute>
+                        <DataEntry />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/import" 
+                    element={
+                      <ProtectedRoute>
+                        <Import />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/facilities" 
+                    element={
+                      <ProtectedRoute>
+                        <Facilities />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </React.Suspense>
+            </BrowserRouter>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
   );
 };
 
