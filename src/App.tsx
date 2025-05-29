@@ -1,5 +1,5 @@
 
-import * as React from "react";
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,7 +26,7 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Create QueryClient instance
+// Create QueryClient instance with React reference
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -36,8 +36,9 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+const App = () => {
   console.log('App component rendering');
+  console.log('React object:', React); // Debug log to check React availability
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -91,6 +92,6 @@ function App() {
       </TooltipProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;
