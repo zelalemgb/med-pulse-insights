@@ -15,6 +15,7 @@ const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 const DataEntry = React.lazy(() => import("./pages/DataEntry"));
 const Import = React.lazy(() => import("./pages/Import"));
 const Auth = React.lazy(() => import("./pages/Auth"));
+const AdminSetup = React.lazy(() => import("./pages/AdminSetup"));
 const Facilities = React.lazy(() => import("./pages/Facilities"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
@@ -51,6 +52,7 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/admin-setup" element={<AdminSetup />} />
                 <Route 
                   path="/dashboard" 
                   element={
