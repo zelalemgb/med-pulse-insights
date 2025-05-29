@@ -26,19 +26,19 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Create QueryClient instance with React reference
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    },
-  },
-});
-
 const App = () => {
   console.log('App component rendering');
   console.log('React object:', React); // Debug log to check React availability
+  
+  // Create QueryClient instance inside component to ensure React is available
+  const queryClient = React.useMemo(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        gcTime: 10 * 60 * 1000, // 10 minutes
+      },
+    },
+  }), []);
   
   return (
     <QueryClientProvider client={queryClient}>
