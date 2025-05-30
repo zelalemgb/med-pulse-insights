@@ -49,88 +49,82 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserProfile = useCallback(async (userId: string, userEmail?: string) => {
-    try {
-      console.log(`🔍 Fetching profile for user: ${userId}`);
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('❌ Error fetching profile:', error);
-        setProfile(null);
-        return;
-      }
-
-      if (!data) {
-        console.log('⚠️ No profile found for user:', userId);
-        
-        // Create a default profile if none exists
-        console.log('🔧 Creating default profile for user');
-        const defaultProfile: UserProfile = {
-          id: userId,
-          email: userEmail || '',
-          full_name: null,
-          role: 'viewer',
-          facility_id: null,
-          department: null,
-          is_active: true
-        };
-        setProfile(defaultProfile);
-        return;
-      }
-
-      console.log('📋 Raw profile data from database:', data);
-
-      // Enhanced role mapping with validation
-      let pharmaceuticalRole: UserRole;
-      if (data.role && typeof data.role === 'string') {
-        pharmaceuticalRole = mapSupabaseToPharmaceuticalRole(data.role as SupabaseUserRole);
-      } else {
-        console.warn('⚠️ Invalid or missing role in profile, defaulting to viewer');
-        pharmaceuticalRole = 'viewer';
-      }
-
-      // Double-check role validity
-      if (!isValidPharmaceuticalRole(pharmaceuticalRole)) {
-        console.warn(`⚠️ Invalid pharmaceutical role: ${pharmaceuticalRole}, using viewer`);
-        pharmaceuticalRole = 'viewer';
-      }
-      
-      const pharmaceuticalProfile: UserProfile = {
-        id: data.id,
-        email: data.email,
-        full_name: data.full_name,
-        role: pharmaceuticalRole,
-        facility_id: data.facility_id,
-        department: data.department,
-        is_active: data.is_active
-      };
-
-      console.log('✅ Final mapped pharmaceutical profile:', pharmaceuticalProfile);
-      console.log(`🎯 User role confirmed as: ${pharmaceuticalRole}`);
-      setProfile(pharmaceuticalProfile);
-    } catch (error) {
-      console.error('💥 Unexpected error fetching profile:', error);
-      setProfile(null);
-    }
-  }, []);
-
-  const refreshProfile = useCallback(async () => {
-    if (user) {
-      await fetchUserProfile(user.id, user.email);
-    }
-  }, [user, fetchUserProfile]);
-
   // Set up auth state listener and get initial session
   useEffect(() => {
     let isMounted = true;
     
     console.log('🔧 Setting up auth state change listener...');
     
+    const fetchUserProfile = async (userId: string, userEmail?: string) => {
+      try {
+        console.log(`🔍 Fetching profile for user: ${userId}`);
+        
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (error) {
+          console.error('❌ Error fetching profile:', error);
+          if (isMounted) setProfile(null);
+          return;
+        }
+
+        if (!data) {
+          console.log('⚠️ No profile found for user:', userId);
+          
+          // Create a default profile if none exists
+          console.log('🔧 Creating default profile for user');
+          const defaultProfile: UserProfile = {
+            id: userId,
+            email: userEmail || '',
+            full_name: null,
+            role: 'viewer',
+            facility_id: null,
+            department: null,
+            is_active: true
+          };
+          if (isMounted) setProfile(defaultProfile);
+          return;
+        }
+
+        console.log('📋 Raw profile data from database:', data);
+
+        // Enhanced role mapping with validation
+        let pharmaceuticalRole: UserRole;
+        if (data.role && typeof data.role === 'string') {
+          pharmaceuticalRole = mapSupabaseToPharmaceuticalRole(data.role as SupabaseUserRole);
+        } else {
+          console.warn('⚠️ Invalid or missing role in profile, defaulting to viewer');
+          pharmaceuticalRole = 'viewer';
+        }
+
+        // Double-check role validity
+        if (!isValidPharmaceuticalRole(pharmaceuticalRole)) {
+          console.warn(`⚠️ Invalid pharmaceutical role: ${pharmaceuticalRole}, using viewer`);
+          pharmaceuticalRole = 'viewer';
+        }
+        
+        const pharmaceuticalProfile: UserProfile = {
+          id: data.id,
+          email: data.email,
+          full_name: data.full_name,
+          role: pharmaceuticalRole,
+          facility_id: data.facility_id,
+          department: data.department,
+          is_active: data.is_active
+        };
+
+        console.log('✅ Final mapped pharmaceutical profile:', pharmaceuticalProfile);
+        console.log(`🎯 User role confirmed as: ${pharmaceuticalRole}`);
+        if (isMounted) setProfile(pharmaceuticalProfile);
+      } catch (error) {
+        console.error('💥 Unexpected error fetching profile:', error);
+        if (isMounted) setProfile(null);
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return;
@@ -173,7 +167,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('🧹 Cleaning up auth subscription');
       subscription.unsubscribe();
     };
-  }, [fetchUserProfile]);
+  }, []); // Empty dependency array to prevent re-running
+
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      try {
+        console.log(`🔍 Refreshing profile for user: ${user.id}`);
+        
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('❌ Error refreshing profile:', error);
+          return;
+        }
+
+        if (!data) {
+          console.log('⚠️ No profile found during refresh');
+          return;
+        }
+
+        let pharmaceuticalRole: UserRole;
+        if (data.role && typeof data.role === 'string') {
+          pharmaceuticalRole = mapSupabaseToPharmaceuticalRole(data.role as SupabaseUserRole);
+        } else {
+          pharmaceuticalRole = 'viewer';
+        }
+
+        if (!isValidPharmaceuticalRole(pharmaceuticalRole)) {
+          pharmaceuticalRole = 'viewer';
+        }
+        
+        const pharmaceuticalProfile: UserProfile = {
+          id: data.id,
+          email: data.email,
+          full_name: data.full_name,
+          role: pharmaceuticalRole,
+          facility_id: data.facility_id,
+          department: data.department,
+          is_active: data.is_active
+        };
+
+        setProfile(pharmaceuticalProfile);
+      } catch (error) {
+        console.error('💥 Error refreshing profile:', error);
+      }
+    }
+  }, [user?.id]); // Only depend on user ID
 
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
@@ -263,7 +306,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // If updating own role, refresh profile
       if (userId === user?.id) {
-        await fetchUserProfile(userId, user?.email);
+        await refreshProfile();
       }
 
       return { error: null };
@@ -271,7 +314,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('💥 Unexpected error updating user role:', error);
       return { error };
     }
-  }, [profile, user?.id, user?.email, fetchUserProfile]);
+  }, [profile, user?.id, refreshProfile]);
 
   const getEffectiveRoleForFacility = useCallback(async (userId: string, facilityId: string): Promise<UserRole | null> => {
     try {
