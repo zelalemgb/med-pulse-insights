@@ -117,57 +117,63 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('💥 Unexpected error fetching profile:', error);
       setProfile(null);
     }
-  }, []); // Stable function - no dependencies
+  }, []);
 
   const refreshProfile = useCallback(async () => {
     if (user) {
       await fetchUserProfile(user.id, user.email);
     }
-  }, [user?.id, user?.email, fetchUserProfile]);
+  }, [user, fetchUserProfile]);
 
-  // Set up auth state listener
+  // Set up auth state listener and get initial session
   useEffect(() => {
+    let isMounted = true;
+    
     console.log('🔧 Setting up auth state change listener...');
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        if (!isMounted) return;
+        
         console.log('🔄 Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Reset profile when user changes
-        if (!session?.user) {
+        if (session?.user) {
+          // Fetch profile for authenticated user
+          await fetchUserProfile(session.user.id, session.user.email);
+        } else {
+          // Clear profile for unauthenticated user
           setProfile(null);
-          setLoading(false);
         }
+        
+        setLoading(false);
       }
     );
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      
       console.log('🔍 Initial session check:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (!session?.user) {
+      if (session?.user) {
+        fetchUserProfile(session.user.id, session.user.email).finally(() => {
+          if (isMounted) setLoading(false);
+        });
+      } else {
         setLoading(false);
       }
     });
 
     return () => {
+      isMounted = false;
       console.log('🧹 Cleaning up auth subscription');
       subscription.unsubscribe();
     };
-  }, []);
-
-  // Fetch profile when user changes
-  useEffect(() => {
-    if (user && !profile) {
-      fetchUserProfile(user.id, user.email).finally(() => setLoading(false));
-    } else if (!user) {
-      setLoading(false);
-    }
-  }, [user?.id, user?.email, profile, fetchUserProfile]);
+  }, [fetchUserProfile]);
 
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
