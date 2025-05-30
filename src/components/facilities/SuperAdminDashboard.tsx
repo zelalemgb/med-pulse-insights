@@ -11,6 +11,7 @@ import { FacilityTestHelper } from './FacilityTestHelper';
 import { CrossFacilityAnalytics } from './CrossFacilityAnalytics';
 import { RoleManagement } from './RoleManagement';
 import { RoleTestingDashboard } from './RoleTestingDashboard';
+import { RoleJourneyTester } from '@/components/testing/RoleJourneyTester';
 import { Shield, Users, Building, Clock, CheckCircle, TestTube, BarChart3, TrendingUp, Settings, UserCheck } from 'lucide-react';
 
 export const SuperAdminDashboard = () => {
