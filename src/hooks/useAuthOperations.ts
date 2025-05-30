@@ -4,7 +4,7 @@ import { UserRole } from '@/types/pharmaceutical';
 import { UserProfile } from '@/types/auth';
 import { AuthService } from '@/services/auth/authService';
 import { ProfileService } from '@/services/auth/profileService';
-import { isValidPharmaceuticalRole } from '@/utils/roleMapping';
+import { isValidPharmaceuticalRole, mapSupabaseToPharmaceuticalRole } from '@/utils/roleMapping';
 
 export const useAuthOperations = (
   profile: UserProfile | null,
@@ -35,7 +35,8 @@ export const useAuthOperations = (
   }, [profile, user?.id, refreshProfile]);
 
   const getEffectiveRoleForFacility = useCallback(async (userId: string, facilityId: string): Promise<UserRole | null> => {
-    return await AuthService.getEffectiveRoleForFacility(userId, facilityId);
+    const supabaseRole = await AuthService.getEffectiveRoleForFacility(userId, facilityId);
+    return supabaseRole ? mapSupabaseToPharmaceuticalRole(supabaseRole) : null;
   }, []);
 
   const hasFacilityRole = useCallback(async (facilityId: string, role: UserRole): Promise<boolean> => {
