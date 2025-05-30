@@ -75,17 +75,7 @@ const Index = () => {
         </div>
 
         <div className="text-center space-y-4">
-          {user ? (
-            <div className="space-y-4">
-              <p className="text-gray-600">Welcome back! Access your dashboard to continue.</p>
-              <Link to="/dashboard">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-                  <Shield className="mr-2 h-5 w-5" />
-                  Go to Dashboard
-                </Button>
-              </Link>
-            </div>
-          ) : (
+          {!user && (
             <div className="space-y-4">
               <p className="text-gray-600">Sign in to access the pharmaceutical analytics platform.</p>
               <Link to="/auth">
