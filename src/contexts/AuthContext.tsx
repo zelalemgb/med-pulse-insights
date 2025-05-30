@@ -49,6 +49,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Create a stable reference to the profile refresh function
+  const refreshProfile = useCallback(async () => {
+    const currentUser = user;
+    if (!currentUser) return;
+
+    try {
+      console.log(`🔍 Refreshing profile for user: ${currentUser.id}`);
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('❌ Error refreshing profile:', error);
+        return;
+      }
+
+      if (!data) {
+        console.log('⚠️ No profile found during refresh');
+        return;
+      }
+
+      let pharmaceuticalRole: UserRole;
+      if (data.role && typeof data.role === 'string') {
+        pharmaceuticalRole = mapSupabaseToPharmaceuticalRole(data.role as SupabaseUserRole);
+      } else {
+        pharmaceuticalRole = 'viewer';
+      }
+
+      if (!isValidPharmaceuticalRole(pharmaceuticalRole)) {
+        pharmaceuticalRole = 'viewer';
+      }
+      
+      const pharmaceuticalProfile: UserProfile = {
+        id: data.id,
+        email: data.email,
+        full_name: data.full_name,
+        role: pharmaceuticalRole,
+        facility_id: data.facility_id,
+        department: data.department,
+        is_active: data.is_active
+      };
+
+      setProfile(pharmaceuticalProfile);
+    } catch (error) {
+      console.error('💥 Error refreshing profile:', error);
+    }
+  }, [user]); // Only depend on user, not user?.id
+
   // Set up auth state listener and get initial session
   useEffect(() => {
     let isMounted = true;
@@ -168,55 +219,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       subscription.unsubscribe();
     };
   }, []); // Empty dependency array to prevent re-running
-
-  const refreshProfile = useCallback(async () => {
-    if (user) {
-      try {
-        console.log(`🔍 Refreshing profile for user: ${user.id}`);
-        
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error('❌ Error refreshing profile:', error);
-          return;
-        }
-
-        if (!data) {
-          console.log('⚠️ No profile found during refresh');
-          return;
-        }
-
-        let pharmaceuticalRole: UserRole;
-        if (data.role && typeof data.role === 'string') {
-          pharmaceuticalRole = mapSupabaseToPharmaceuticalRole(data.role as SupabaseUserRole);
-        } else {
-          pharmaceuticalRole = 'viewer';
-        }
-
-        if (!isValidPharmaceuticalRole(pharmaceuticalRole)) {
-          pharmaceuticalRole = 'viewer';
-        }
-        
-        const pharmaceuticalProfile: UserProfile = {
-          id: data.id,
-          email: data.email,
-          full_name: data.full_name,
-          role: pharmaceuticalRole,
-          facility_id: data.facility_id,
-          department: data.department,
-          is_active: data.is_active
-        };
-
-        setProfile(pharmaceuticalProfile);
-      } catch (error) {
-        console.error('💥 Error refreshing profile:', error);
-      }
-    }
-  }, [user?.id]); // Only depend on user ID
 
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
