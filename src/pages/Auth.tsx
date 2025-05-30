@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, User } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Auth = () => {
@@ -26,12 +26,15 @@ const Auth = () => {
     fullName: '',
   });
 
-  if (user) {
+  // Early return for authenticated users
+  if (user && !loading) {
     return <Navigate to="/dashboard" replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
+    
     setIsLoading(true);
 
     try {
@@ -51,6 +54,7 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     
     if (signUpData.password !== signUpData.confirmPassword) {
       toast.error('Passwords do not match');
@@ -117,7 +121,8 @@ const Auth = () => {
                     type="email"
                     placeholder="Enter your email"
                     value={signInData.email}
-                    onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
+                    onChange={(e) => setSignInData(prev => ({ ...prev, email: e.target.value }))}
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -128,7 +133,8 @@ const Auth = () => {
                     type="password"
                     placeholder="Enter your password"
                     value={signInData.password}
-                    onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                    onChange={(e) => setSignInData(prev => ({ ...prev, password: e.target.value }))}
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -147,7 +153,8 @@ const Auth = () => {
                     type="text"
                     placeholder="Enter your full name"
                     value={signUpData.fullName}
-                    onChange={(e) => setSignUpData({ ...signUpData, fullName: e.target.value })}
+                    onChange={(e) => setSignUpData(prev => ({ ...prev, fullName: e.target.value }))}
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -157,7 +164,8 @@ const Auth = () => {
                     type="email"
                     placeholder="Enter your email"
                     value={signUpData.email}
-                    onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                    onChange={(e) => setSignUpData(prev => ({ ...prev, email: e.target.value }))}
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -168,7 +176,8 @@ const Auth = () => {
                     type="password"
                     placeholder="Enter your password"
                     value={signUpData.password}
-                    onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+                    onChange={(e) => setSignUpData(prev => ({ ...prev, password: e.target.value }))}
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -179,7 +188,8 @@ const Auth = () => {
                     type="password"
                     placeholder="Confirm your password"
                     value={signUpData.confirmPassword}
-                    onChange={(e) => setSignUpData({ ...signUpData, confirmPassword: e.target.value })}
+                    onChange={(e) => setSignUpData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    disabled={isLoading}
                     required
                   />
                 </div>

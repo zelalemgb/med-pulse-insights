@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Create a stable reference to the profile refresh function
   const refreshProfile = useCallback(async () => {
@@ -30,59 +31,87 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user]);
 
+  // Centralized profile fetching function
+  const fetchUserProfile = useCallback(async (userId: string, userEmail?: string) => {
+    try {
+      console.log('🔍 Fetching profile for user:', userId);
+      const userProfile = await ProfileService.fetchUserProfile(userId, userEmail);
+      setProfile(userProfile);
+    } catch (error) {
+      console.error('💥 Error fetching profile:', error);
+      // Set a default profile on error to prevent hanging
+      setProfile({
+        id: userId,
+        email: userEmail || '',
+        full_name: null,
+        role: 'viewer',
+        facility_id: null,
+        department: null,
+        is_active: true
+      });
+    }
+  }, []);
+
   // Set up auth state listener and get initial session
   useEffect(() => {
+    if (isInitialized) return;
+    
     let isMounted = true;
     
     console.log('🔧 Setting up auth state change listener...');
 
+    const initializeAuth = async () => {
+      try {
+        // Get initial session first
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
+        console.log('🔍 Initial session check:', initialSession?.user?.id);
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        
+        if (initialSession?.user) {
+          await fetchUserProfile(initialSession.user.id, initialSession.user.email);
+        }
+        
+        setLoading(false);
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('💥 Error during auth initialization:', error);
+        setLoading(false);
+        setIsInitialized(true);
+      }
+    };
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!isMounted) return;
+        if (!isMounted || !isInitialized) return;
         
         console.log('🔄 Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Fetch profile for authenticated user
-          const userProfile = await ProfileService.fetchUserProfile(session.user.id, session.user.email);
-          if (isMounted) setProfile(userProfile);
-        } else {
+        if (session?.user && event !== 'TOKEN_REFRESHED') {
+          // Only fetch profile for meaningful auth events, not token refreshes
+          await fetchUserProfile(session.user.id, session.user.email);
+        } else if (!session?.user) {
           // Clear profile for unauthenticated user
           setProfile(null);
         }
-        
-        setLoading(false);
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!isMounted) return;
-      
-      console.log('🔍 Initial session check:', session?.user?.id);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        ProfileService.fetchUserProfile(session.user.id, session.user.email).then((userProfile) => {
-          if (isMounted) {
-            setProfile(userProfile);
-            setLoading(false);
-          }
-        });
-      } else {
-        setLoading(false);
-      }
-    });
+    // Initialize auth
+    initializeAuth();
 
     return () => {
       isMounted = false;
       console.log('🧹 Cleaning up auth subscription');
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isInitialized, fetchUserProfile]);
 
   // Get auth operations from custom hook
   const authOperations = useAuthOperations(profile, user, refreshProfile);
