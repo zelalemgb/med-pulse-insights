@@ -15,7 +15,6 @@ interface NavigationItemsProps {
 
 const navigationItems: NavigationItem[] = [
   { path: '/dashboard', label: 'Dashboard' },
-  { path: '/facilities', label: 'Facilities' },
   { path: '/analytics', label: 'Analytics' },
   { path: '/profile', label: 'Profile' },
 ];
