@@ -28,7 +28,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
       <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Authentication Card */}
         <AuthCard />

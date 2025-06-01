@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
+import MainNavigation from "@/components/layout/MainNavigation";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
@@ -21,27 +22,30 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <NavigationProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/import" element={<Import />} />
-                <Route path="/data-entry" element={<DataEntry />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/facilities" element={<Facilities />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </NavigationProvider>
-      </AuthProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <NavigationProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <div className="min-h-screen bg-gray-50">
+                <MainNavigation />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/import" element={<Import />} />
+                  <Route path="/data-entry" element={<DataEntry />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/facilities" element={<Facilities />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            </TooltipProvider>
+          </NavigationProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }
