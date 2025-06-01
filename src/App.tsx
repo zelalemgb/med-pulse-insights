@@ -6,6 +6,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Facilities from "./pages/Facilities";
 import { AuthProvider } from "./contexts/AuthContext";
+import { NavigationProvider } from "./contexts/NavigationContext";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import MainNavigation from "./components/layout/MainNavigation";
@@ -21,17 +22,19 @@ function App() {
     <Router>
       <div className="min-h-screen bg-background">
         <AuthProvider>
-          <QueryClientProvider client={queryClient}>
-            <MainNavigation />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/facilities" element={<Facilities />} />
-              <Route path="/role-testing" element={<RoleTestingPage />} />
-            </Routes>
-            <Toaster />
-          </QueryClientProvider>
+          <NavigationProvider>
+            <QueryClientProvider client={queryClient}>
+              <MainNavigation />
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/facilities" element={<Facilities />} />
+                <Route path="/role-testing" element={<RoleTestingPage />} />
+              </Routes>
+              <Toaster />
+            </QueryClientProvider>
+          </NavigationProvider>
         </AuthProvider>
       </div>
     </Router>

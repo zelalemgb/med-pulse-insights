@@ -1,8 +1,8 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigation } from '@/contexts/NavigationContext';
 import { LogOut, User, Shield, Menu, X } from 'lucide-react';
 import {
   DropdownMenu,
@@ -17,8 +17,8 @@ import { cn } from '@/lib/utils';
 
 const MainNavigation = () => {
   const { user, profile, signOut } = useAuth();
+  const { isMobileMenuOpen, toggleMobileMenu } = useNavigation();
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigationItems = [
     { path: '/dashboard', label: 'Dashboard' },
@@ -46,10 +46,6 @@ const MainNavigation = () => {
 
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   return (
@@ -160,7 +156,6 @@ const MainNavigation = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
                     "block px-3 py-2 rounded-md text-base font-medium transition-colors",
                     isActiveRoute(item.path)
