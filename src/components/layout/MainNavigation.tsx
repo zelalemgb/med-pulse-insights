@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ const MainNavigation = () => {
     { path: '/facilities', label: 'Facilities' },
     { path: '/analytics', label: 'Analytics' },
     { path: '/role-testing', label: 'Role Testing' },
+    { path: '/comprehensive-testing', label: 'System Testing' },
   ];
 
   const getRoleBadgeColor = (role: string) => {
