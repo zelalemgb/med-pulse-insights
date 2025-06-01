@@ -590,6 +590,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      create_default_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       create_first_admin: {
         Args: { _user_id: string; _email: string; _full_name: string }
         Returns: boolean
