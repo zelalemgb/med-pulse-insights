@@ -114,9 +114,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Get auth operations from custom hook
   const authOperations = useAuthOperations(profile, user, refreshProfile);
 
+  const signIn = async (email: string, password: string) => {
+    const { data, error } = await AuthService.signIn(email, password);
+    if (!error) {
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      if (currentSession?.user) {
+        await fetchUserProfile(currentSession.user.id, currentSession.user.email);
+      }
+    }
+    return { error };
+  };
+
   const signOut = async () => {
     console.log('🚪 Signing out...');
     setProfile(null);
+    setUser(null);
+    setSession(null);
     await AuthService.signOut();
   };
 
@@ -125,7 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     profile,
     loading,
-    signIn: AuthService.signIn,
+    signIn,
     signUp: AuthService.signUp,
     signOut,
     refreshProfile,
