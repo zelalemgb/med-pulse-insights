@@ -21,12 +21,12 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <NavigationProvider>
+      <AuthProvider>
+        <NavigationProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -38,10 +38,10 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </NavigationProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </NavigationProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
