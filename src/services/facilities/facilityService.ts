@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { HealthFacility, CreateFacilityRequest } from '@/types/healthFacilities';
+import { logger } from '@/utils/logger';
 
 export class FacilityService {
   // Create a new health facility
@@ -102,7 +103,7 @@ export class FacilityService {
     });
 
     if (error) {
-      console.error('Error checking facility access:', error);
+      logger.error('Error checking facility access:', error);
       return false;
     }
 

@@ -1,5 +1,6 @@
 
 import { useEffect } from "react";
+import { logger } from '@/utils/logger';
 
 function useServiceWorker() {
   useEffect(() => {
@@ -7,10 +8,10 @@ function useServiceWorker() {
       navigator.serviceWorker
         .register("/sw.js")
         .then((registration) => {
-          console.log("Service worker registered", registration);
+          logger.log("Service worker registered", registration);
         })
         .catch((err) => {
-          console.error("Service worker registration failed", err);
+          logger.error("Service worker registration failed", err);
         });
     }
   }, []);

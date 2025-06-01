@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/pharmaceutical';
 import { Database } from '@/integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 type SupabaseUserRole = Database['public']['Enums']['user_role'];
 
@@ -216,7 +217,7 @@ export const useLogRoleChange = () => {
       queryClient.invalidateQueries({ queryKey: ['role-audit-analytics'] });
     },
     onError: (error: Error) => {
-      console.error('Role audit logging failed:', error);
+      logger.error('Role audit logging failed:', error);
     },
   });
 };
