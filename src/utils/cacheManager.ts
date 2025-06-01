@@ -1,9 +1,51 @@
 
 import { CacheEntry, CacheStats } from '@/types/aggregation';
 
+export interface CacheManagerConfig {
+  /**
+   * How often the cache should be scanned for expired entries (in milliseconds)
+   */
+  cleanupInterval: number;
+}
+
 export class CacheManager {
   private cache: Map<string, CacheEntry> = new Map();
   private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
+  private config: CacheManagerConfig;
+  private cleanupTimer: NodeJS.Timeout | null = null;
+
+  constructor(config: Partial<CacheManagerConfig> = {}) {
+    this.config = {
+      cleanupInterval: 60 * 1000,
+      ...config
+    };
+    this.startCleanupTask();
+  }
+
+  /**
+   * Update the cleanup interval and restart the background task
+   */
+  setCleanupInterval(interval: number): void {
+    this.config.cleanupInterval = interval;
+    this.startCleanupTask();
+  }
+
+  private startCleanupTask(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+    }
+    this.cleanupTimer = setInterval(
+      () => this.cleanupExpired(),
+      this.config.cleanupInterval
+    );
+  }
+
+  private stopCleanupTask(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+  }
 
   /**
    * Set cache entry with TTL
