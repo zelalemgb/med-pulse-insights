@@ -117,8 +117,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const authOperations = useAuthOperations(profile, user, refreshProfile);
 
   const signOut = async () => {
+    console.log('🚪 Signing out and redirecting to home...');
     await AuthService.signOut();
     setProfile(null);
+    // Redirect to home page after successful logout
+    window.location.href = '/';
   };
 
   const value: AuthContextType = {
