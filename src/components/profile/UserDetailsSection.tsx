@@ -7,20 +7,35 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { ProfileService } from '@/services/auth/profileService';
 import { Edit, Save, X, User, Mail, MapPin, Calendar, Shield } from 'lucide-react';
 import { getRoleDisplayName } from '@/utils/roleMapping';
 
 export const UserDetailsSection = () => {
-  const { profile, user } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
     department: profile?.department || '',
   });
 
-  const handleSave = () => {
-    // TODO: Implement profile update functionality
-    console.log('Saving profile data:', formData);
+  const { toast } = useToast();
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    const { error } = await ProfileService.updateProfile(user.id, formData);
+
+    if (error) {
+      console.error('Error updating profile:', error);
+      toast({ title: 'Error', description: 'Failed to update profile', variant: 'destructive' });
+      return;
+    }
+
+    toast({ title: 'Profile Updated', description: 'Your changes have been saved' });
+
+    await refreshProfile();
     setIsEditing(false);
   };
 
