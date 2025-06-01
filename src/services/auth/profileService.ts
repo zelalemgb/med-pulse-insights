@@ -116,4 +116,28 @@ export class ProfileService {
       return { error };
     }
   }
+
+  static async updateProfile(userId: string, updates: Partial<Pick<UserProfile, 'full_name' | 'department'>>) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error updating profile:', error);
+        return { data: null, error };
+      }
+
+      return { data: data as UserProfile, error: null };
+    } catch (error) {
+      console.error('💥 Unexpected error updating profile:', error);
+      return { data: null, error };
+    }
+  }
 }
