@@ -5,36 +5,36 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { 
   Upload, 
-  TrendingUp, 
   BarChart3,
+  Database,
   ArrowRight
 } from "lucide-react";
 
 const QuickActionCards = () => {
   const quickActions = [
     {
-      title: "Import Data",
-      description: "Upload and manage your pharmaceutical inventory data",
+      title: "Import Forecast Data",
+      description: "Upload consumption data and forecasting files to enhance analytics",
       icon: Upload,
       path: "/import",
       color: "text-blue-600",
       bgColor: "bg-blue-50"
     },
     {
-      title: "Conduct Forecast",
-      description: "Generate demand forecasts and consumption predictions",
-      icon: TrendingUp,
-      path: "/dashboard?tab=analytics",
-      color: "text-green-600",
-      bgColor: "bg-green-50"
-    },
-    {
       title: "View Analytics",
-      description: "Access comprehensive analytics and insights",
+      description: "Access comprehensive analytics and insights from your data",
       icon: BarChart3,
       path: "/analytics",
       color: "text-purple-600",
       bgColor: "bg-purple-50"
+    },
+    {
+      title: "Manage Your Data",
+      description: "View and manage facilities, products, and inventory data",
+      icon: Database,
+      path: "/data-management",
+      color: "text-green-600",
+      bgColor: "bg-green-50"
     }
   ];
 

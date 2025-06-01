@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import Import from "./pages/Import";
 import DataEntry from "./pages/DataEntry";
+import DataManagement from "./pages/DataManagement";
 import Auth from "./pages/Auth";
 import Facilities from "./pages/Facilities";
 import Products from "./pages/Products";
@@ -37,6 +38,7 @@ function App() {
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/import" element={<Import />} />
                   <Route path="/data-entry" element={<DataEntry />} />
+                  <Route path="/data-management" element={<DataManagement />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/facilities" element={<Facilities />} />
                   <Route path="/products" element={<Products />} />
