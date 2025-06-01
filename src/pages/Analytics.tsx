@@ -2,7 +2,7 @@
 import React from 'react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import PageHeader from '@/components/layout/PageHeader';
-import { AdvancedAnalytics } from '@/components/analytics/AdvancedAnalytics';
+import AdvancedAnalytics from '@/components/analytics/AdvancedAnalytics';
 
 const Analytics = () => {
   const breadcrumbItems = [
