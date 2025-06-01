@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'pharma-supply-v1';
+const CACHE_NAME = 'pharma-supply-v2'; // Updated version number
 const STATIC_ASSETS = [
   '/',
   '/static/js/bundle.js',
@@ -31,11 +31,36 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache with network fallback
+// Fetch event - network first strategy for HTML, cache first for assets
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
+  // Network first strategy for HTML pages to get fresh content
+  if (event.request.mode === 'navigate' || event.request.headers.get('accept').includes('text/html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Cache successful responses
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME)
+              .then((cache) => cache.put(event.request, responseClone));
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache if network fails
+          return caches.match(event.request)
+            .then((cachedResponse) => {
+              return cachedResponse || caches.match('/');
+            });
+        })
+    );
+    return;
+  }
+
+  // Cache first strategy for static assets
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
