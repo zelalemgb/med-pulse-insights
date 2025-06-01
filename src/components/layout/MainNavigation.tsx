@@ -16,7 +16,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { useNavigationAnalytics } from '@/hooks/useNavigationAnalytics';
 import { toast } from 'sonner';
 
 const MainNavigation = () => {
@@ -25,15 +24,11 @@ const MainNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Initialize navigation analytics tracking
-  useNavigationAnalytics();
-
   const navigationItems = [
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/facilities', label: 'Facilities' },
     { path: '/analytics', label: 'Analytics' },
-    { path: '/role-testing', label: 'Role Testing' },
-    { path: '/comprehensive-testing', label: 'System Testing' },
+    { path: '/profile', label: 'Profile' },
   ];
 
   const getRoleBadgeColor = (role: string) => {
