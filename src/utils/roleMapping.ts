@@ -52,8 +52,8 @@ export const mapSupabaseToPharmaceuticalRole = (supabaseRole: SupabaseUserRole):
     return 'viewer';
   }
 
-  // Complete mapping that includes all possible SupabaseUserRole values
-  const roleMap: Record<SupabaseUserRole, UserRole> = {
+  // Complete mapping that includes all valid SupabaseUserRole values
+  const roleMap: Partial<Record<SupabaseUserRole, UserRole>> = {
     'national': 'national',
     'regional': 'regional',
     'zonal': 'zonal',
