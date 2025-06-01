@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Shield, Users, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface UserWithRole {
   id: string;
@@ -28,6 +29,8 @@ export const AdminStatusChecker = () => {
     setError(null);
     
     try {
+      console.log('🔍 Checking admin status...');
+      
       // Check if national users exist using the database function
       const { data: nationalCheck, error: nationalError } = await supabase.rpc('has_national_users');
       
@@ -37,6 +40,7 @@ export const AdminStatusChecker = () => {
         return;
       }
       
+      console.log('📊 National users exist:', nationalCheck);
       setHasNationalUsers(nationalCheck);
       
       // Get all admin users (national, regional, zonal)
@@ -53,6 +57,7 @@ export const AdminStatusChecker = () => {
         return;
       }
       
+      console.log('👥 Admin users found:', users?.length || 0);
       setAdminUsers(users || []);
       
     } catch (err) {
@@ -65,6 +70,7 @@ export const AdminStatusChecker = () => {
 
   const createFirstAdmin = async () => {
     if (!user) {
+      toast.error('You must be logged in to create first admin');
       setError('You must be logged in to create first admin');
       return;
     }
@@ -73,6 +79,8 @@ export const AdminStatusChecker = () => {
     setError(null);
     
     try {
+      console.log('🚀 Creating first admin for user:', user.id);
+      
       const { data, error } = await supabase.rpc('create_first_admin', {
         _user_id: user.id,
         _email: user.email || '',
@@ -81,16 +89,22 @@ export const AdminStatusChecker = () => {
       
       if (error) {
         console.error('Error creating first admin:', error);
+        toast.error(`Error creating first admin: ${error.message}`);
         setError(`Error creating first admin: ${error.message}`);
         return;
       }
+      
+      console.log('✅ First admin created successfully');
+      toast.success('First admin created successfully! You are now a National Administrator.');
       
       // Refresh the status after creating admin
       await checkAdminStatus();
       
     } catch (err) {
       console.error('Unexpected error creating admin:', err);
-      setError('An unexpected error occurred while creating admin');
+      const errorMessage = 'An unexpected error occurred while creating admin';
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -109,6 +123,8 @@ export const AdminStatusChecker = () => {
     }
   };
 
+  const showCreateButton = hasNationalUsers === false && user;
+
   return (
     <div className="space-y-6">
       <Card>
@@ -119,13 +135,18 @@ export const AdminStatusChecker = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <Button onClick={checkAdminStatus} disabled={loading}>
               {loading ? 'Checking...' : 'Refresh Status'}
             </Button>
             
-            {hasNationalUsers === false && user && (
-              <Button onClick={createFirstAdmin} disabled={loading} variant="outline">
+            {showCreateButton && (
+              <Button 
+                onClick={createFirstAdmin} 
+                disabled={loading} 
+                variant="outline"
+                className="bg-green-50 hover:bg-green-100 border-green-200"
+              >
                 {loading ? 'Creating...' : 'Create First Admin'}
               </Button>
             )}
@@ -133,8 +154,8 @@ export const AdminStatusChecker = () => {
 
           {error && (
             <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
-              <span className="text-red-700">{error}</span>
+              <AlertCircle className="h-4 w-4 text-red-600 mr-2 flex-shrink-0" />
+              <span className="text-red-700 text-sm">{error}</span>
             </div>
           )}
 
@@ -145,13 +166,27 @@ export const AdminStatusChecker = () => {
               ) : hasNationalUsers === false ? (
                 <AlertCircle className="h-4 w-4 text-orange-600 mr-2" />
               ) : (
-                <div className="h-4 w-4 mr-2" />
+                <div className="h-4 w-4 mr-2 animate-pulse bg-gray-300 rounded-full" />
               )}
               <span className="font-medium">
                 National Users Exist: {' '}
-                {hasNationalUsers === null ? 'Checking...' : hasNationalUsers ? 'Yes' : 'No'}
+                {hasNationalUsers === null ? (
+                  <span className="text-gray-500">Checking...</span>
+                ) : hasNationalUsers ? (
+                  <span className="text-green-600">Yes</span>
+                ) : (
+                  <span className="text-orange-600">No - You can create the first admin!</span>
+                )}
               </span>
             </div>
+
+            {user && (
+              <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                <strong>Current User:</strong> {user.email}
+                <br />
+                <strong>User ID:</strong> <code className="text-xs">{user.id}</code>
+              </div>
+            )}
 
             <div>
               <h4 className="font-medium mb-2 flex items-center">
@@ -160,7 +195,14 @@ export const AdminStatusChecker = () => {
               </h4>
               
               {adminUsers.length === 0 ? (
-                <p className="text-gray-600 text-sm">No admin users found</p>
+                <div className="text-center py-6 bg-gray-50 rounded-lg">
+                  <p className="text-gray-600 text-sm mb-2">No admin users found</p>
+                  {showCreateButton && (
+                    <p className="text-green-600 text-sm font-medium">
+                      👆 Click "Create First Admin" above to get started!
+                    </p>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-2">
                   {adminUsers.map((adminUser) => (
