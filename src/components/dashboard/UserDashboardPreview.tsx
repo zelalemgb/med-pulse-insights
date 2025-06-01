@@ -191,72 +191,84 @@ const UserDashboardPreview = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Welcome back, {profile?.full_name || 'User'}!
-          </h1>
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <p className="text-xl text-gray-600">
-              You're logged in as
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Hero Section with improved spacing */}
+        <div className="text-center mb-16">
+          <div className="space-y-6">
+            <h1 className="text-5xl font-bold text-gray-900 leading-tight">
+              Welcome back, {profile?.full_name || 'User'}!
+            </h1>
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <p className="text-xl text-gray-600">
+                You're logged in as
+              </p>
+              {profile?.role && (
+                <Badge className="px-4 py-2 bg-blue-100 text-blue-800 text-base font-medium">
+                  {getRoleDisplayName(profile.role)}
+                </Badge>
+              )}
+            </div>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              Access your pharmaceutical analytics dashboard and manage your supply chain data with confidence.
             </p>
-            {profile?.role && (
-              <Badge className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium">
-                {getRoleDisplayName(profile.role)}
-              </Badge>
-            )}
           </div>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Access your pharmaceutical analytics dashboard and manage your supply chain data.
-          </p>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {quickActions.map((action) => (
-            <Card key={action.path} className="hover:shadow-lg transition-shadow group">
-              <CardHeader>
-                <div className={`w-12 h-12 ${action.bgColor} rounded-lg flex items-center justify-center mb-4`}>
-                  <action.icon className={`w-6 h-6 ${action.color}`} />
-                </div>
-                <CardTitle className="flex items-center justify-between">
-                  {action.title}
-                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                </CardTitle>
-                <CardDescription>{action.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link to={action.path}>
-                  <Button className="w-full" variant="outline">
-                    Go to {action.title}
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Quick Actions Section */}
+        <div className="mb-16">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Quick Actions</h2>
+            <p className="text-gray-600 text-lg">Jump straight to your most-used features</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {quickActions.map((action) => (
+              <Card key={action.path} className="hover:shadow-xl transition-all duration-300 group border-0 shadow-lg">
+                <CardHeader className="pb-4">
+                  <div className={`w-16 h-16 ${action.bgColor} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                    <action.icon className={`w-8 h-8 ${action.color}`} />
+                  </div>
+                  <CardTitle className="flex items-center justify-between text-xl">
+                    {action.title}
+                    <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all duration-300" />
+                  </CardTitle>
+                  <CardDescription className="text-base leading-relaxed">{action.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Link to={action.path}>
+                    <Button className="w-full h-12 text-base font-medium" variant="outline">
+                      Go to {action.title}
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
 
-        {/* Pending Tasks & Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Information Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-16">
           {/* Pending Tasks */}
           {pendingTasks.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-orange-600" />
+            <Card className="shadow-lg border-0">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-orange-600" />
+                  </div>
                   Pending Tasks
                 </CardTitle>
-                <CardDescription>Items requiring your attention</CardDescription>
+                <CardDescription className="text-base">Items requiring your immediate attention</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 {pendingTasks.map((task, index) => (
                   <Link key={index} to={task.path}>
-                    <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <AlertCircle className="w-4 h-4 text-orange-500" />
-                        <span className="font-medium">{task.title}</span>
+                    <div className="flex items-center justify-between p-4 rounded-xl border-2 border-gray-100 hover:border-orange-200 hover:bg-orange-50 transition-all duration-200">
+                      <div className="flex items-center gap-4">
+                        <AlertCircle className="w-5 h-5 text-orange-500" />
+                        <span className="font-medium text-base">{task.title}</span>
                       </div>
-                      <Badge variant="secondary">{task.count}</Badge>
+                      <Badge variant="secondary" className="px-3 py-1 text-sm">{task.count}</Badge>
                     </div>
                   </Link>
                 ))}
@@ -265,29 +277,31 @@ const UserDashboardPreview = () => {
           )}
 
           {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="w-5 h-5 text-blue-600" />
+          <Card className="shadow-lg border-0">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-blue-600" />
+                </div>
                 Recent Activity
               </CardTitle>
-              <CardDescription>Your latest actions and updates</CardDescription>
+              <CardDescription className="text-base">Your latest actions and system updates</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-3">
+                <div key={index} className="flex items-center justify-between p-4 rounded-xl border-2 border-gray-100">
+                  <div className="flex items-center gap-4">
                     {activity.status === 'completed' ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <CheckCircle className="w-5 h-5 text-green-500" />
                     ) : (
-                      <Clock className="w-4 h-4 text-orange-500" />
+                      <Clock className="w-5 h-5 text-orange-500" />
                     )}
-                    <div>
-                      <p className="font-medium">{activity.title}</p>
+                    <div className="space-y-1">
+                      <p className="font-medium text-base">{activity.title}</p>
                       <p className="text-sm text-gray-500">{activity.time}</p>
                     </div>
                   </div>
-                  <Badge variant={activity.status === 'completed' ? 'default' : 'secondary'}>
+                  <Badge variant={activity.status === 'completed' ? 'default' : 'secondary'} className="px-3 py-1">
                     {activity.status}
                   </Badge>
                 </div>
@@ -296,44 +310,47 @@ const UserDashboardPreview = () => {
           </Card>
         </div>
 
-        {/* Quick Stats & Action Button */}
+        {/* Stats & CTA Section */}
         <div className="text-center">
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-center gap-2">
-                <Zap className="w-5 h-5 text-blue-600" />
-                Quick Stats Overview
+          <Card className="max-w-4xl mx-auto shadow-xl border-0">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center justify-center gap-3 text-2xl">
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <Zap className="w-6 h-6 text-blue-600" />
+                </div>
+                System Overview
               </CardTitle>
-              <CardDescription>
-                Get a quick overview of your key metrics and recent activity
+              <CardDescription className="text-lg">
+                Get a comprehensive view of your pharmaceutical analytics platform
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-6">
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">24</div>
-                  <div className="text-sm text-gray-600">Active Facilities</div>
+            <CardContent className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                <div className="space-y-2">
+                  <div className="text-4xl font-bold text-blue-600">24</div>
+                  <div className="text-base text-gray-600">Active Facilities</div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-600">98.5%</div>
-                  <div className="text-sm text-gray-600">System Uptime</div>
+                <div className="space-y-2">
+                  <div className="text-4xl font-bold text-green-600">98.5%</div>
+                  <div className="text-base text-gray-600">System Uptime</div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-purple-600">156</div>
-                  <div className="text-sm text-gray-600">Reports Generated</div>
+                <div className="space-y-2">
+                  <div className="text-4xl font-bold text-purple-600">156</div>
+                  <div className="text-base text-gray-600">Reports Generated</div>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                 <Link to="/dashboard">
-                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 h-12 px-8 text-base font-medium">
                     View Full Dashboard
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
                 {canAccess.viewReports && (
                   <Link to="/dashboard?tab=reports">
-                    <Button size="lg" variant="outline">
-                      <FileText className="mr-2 h-4 w-4" />
+                    <Button size="lg" variant="outline" className="h-12 px-8 text-base font-medium">
+                      <FileText className="mr-2 h-5 w-5" />
                       Generate Report
                     </Button>
                   </Link>

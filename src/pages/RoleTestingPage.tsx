@@ -2,19 +2,26 @@
 import React from 'react';
 import { RoleJourneyTester } from '@/components/testing/RoleJourneyTester';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import PageHeader from '@/components/layout/PageHeader';
+import { Users, TestTube } from 'lucide-react';
 
 const RoleTestingPage = () => {
+  const breadcrumbItems = [
+    { label: 'Home', path: '/' },
+    { label: 'Role Testing' }
+  ];
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <div className="p-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">Role Testing & Validation</h1>
-              <p className="text-gray-600 mt-2">
-                Comprehensive testing suite for user roles and permissions validation
-              </p>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <PageHeader
+            title="Role Testing & Validation"
+            description="Comprehensive testing suite for user roles and permissions validation"
+            breadcrumbItems={breadcrumbItems}
+          />
+          
+          <div className="mt-8">
             <RoleJourneyTester />
           </div>
         </div>
