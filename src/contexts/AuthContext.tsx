@@ -126,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await fetchUserProfile(currentSession.user.id, currentSession.user.email);
       }
     }
-    return { error };
+    return { data, error };
   };
 
   const signOut = async () => {
