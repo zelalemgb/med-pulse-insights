@@ -2,226 +2,81 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { 
-  BarChart3, 
-  Building2, 
+  Upload, 
   TrendingUp, 
-  Users, 
-  ArrowRight, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle,
-  FileText,
-  Settings,
-  Upload,
-  Download,
-  Bell,
-  Calendar,
-  Zap
+  BarChart3,
+  ArrowRight
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePermissions } from "@/hooks/usePermissions";
 
 const UserDashboardPreview = () => {
   const { profile } = useAuth();
-  const { canAccess, userRole } = usePermissions();
 
-  const getRoleDisplayName = (role: string) => {
-    const roleNames = {
-      'facility_officer': 'Facility Officer',
-      'facility_manager': 'Facility Manager',
-      'zonal': 'Zonal',
-      'regional': 'Regional',
-      'national': 'National',
-      'data_analyst': 'Data Analyst',
-      'program_manager': 'Program Manager',
-      'procurement': 'Procurement',
-      'finance': 'Finance',
-      'qa': 'Quality Assurance'
-    };
-    return roleNames[role] || role.charAt(0).toUpperCase() + role.slice(1);
-  };
-
-  // Role-based quick actions
-  const getQuickActions = () => {
-    const baseActions = [
-      {
-        title: "View Dashboard",
-        description: "Access your personalized analytics dashboard",
-        icon: BarChart3,
-        path: "/dashboard",
-        color: "text-blue-600",
-        bgColor: "bg-blue-50",
-        priority: 1
-      }
-    ];
-
-    const roleSpecificActions = [];
-
-    // Facility management actions
-    if (canAccess.manageFacilities || userRole === 'facility_manager') {
-      roleSpecificActions.push({
-        title: "Manage Facilities",
-        description: "View and manage facility information",
-        icon: Building2,
-        path: "/facilities",
-        color: "text-green-600",
-        bgColor: "bg-green-50",
-        priority: 2
-      });
+  const quickActions = [
+    {
+      title: "Import Data",
+      description: "Upload and manage your pharmaceutical inventory data",
+      icon: Upload,
+      path: "/import",
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
+    },
+    {
+      title: "Conduct Forecast",
+      description: "Generate demand forecasts and consumption predictions",
+      icon: TrendingUp,
+      path: "/dashboard?tab=analytics",
+      color: "text-green-600",
+      bgColor: "bg-green-50"
+    },
+    {
+      title: "View Analytics",
+      description: "Access comprehensive analytics and insights",
+      icon: BarChart3,
+      path: "/analytics",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
     }
+  ];
 
-    // Analytics actions for authorized roles
-    if (canAccess.dataAnalysis) {
-      roleSpecificActions.push({
-        title: "Advanced Analytics",
-        description: "Deep dive into consumption and performance metrics",
-        icon: TrendingUp,
-        path: "/analytics",
-        color: "text-purple-600",
-        bgColor: "bg-purple-50",
-        priority: 3
-      });
+  const featureDescriptions = [
+    {
+      title: "Import Data",
+      description: "Easily upload your pharmaceutical inventory data from Excel files or CSV formats. Our intelligent system automatically maps your data fields and validates entries to ensure accuracy. Support for batch uploads and real-time data synchronization keeps your inventory information up-to-date.",
+      benefits: ["Excel/CSV file support", "Automatic data validation", "Batch processing", "Real-time sync"]
+    },
+    {
+      title: "Conduct Forecast",
+      description: "Leverage advanced AI algorithms to predict future demand patterns and consumption trends. Our forecasting engine analyzes historical data, seasonal patterns, and external factors to provide accurate predictions that help optimize your inventory levels and prevent stockouts.",
+      benefits: ["AI-powered predictions", "Seasonal analysis", "Historical trend analysis", "Stockout prevention"]
+    },
+    {
+      title: "View Analytics",
+      description: "Access comprehensive dashboards and interactive visualizations that transform your data into actionable insights. Monitor key performance indicators, track consumption patterns, identify trends, and make data-driven decisions to optimize your pharmaceutical supply chain.",
+      benefits: ["Interactive dashboards", "Real-time monitoring", "Trend identification", "Performance tracking"]
     }
-
-    // Import/Export for officers and managers
-    if (canAccess.importData || canAccess.exportData) {
-      roleSpecificActions.push({
-        title: "Data Management",
-        description: "Import and export pharmaceutical data",
-        icon: Upload,
-        path: "/import",
-        color: "text-orange-600",
-        bgColor: "bg-orange-50",
-        priority: 4
-      });
-    }
-
-    // Role testing for all authenticated users
-    roleSpecificActions.push({
-      title: "Role Testing",
-      description: "Test and validate user roles and permissions",
-      icon: Users,
-      path: "/role-testing",
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-50",
-      priority: 5
-    });
-
-    return [...baseActions, ...roleSpecificActions].sort((a, b) => a.priority - b.priority).slice(0, 4);
-  };
-
-  // Role-based pending tasks
-  const getPendingTasks = () => {
-    const tasks = [];
-
-    if (canAccess.approveAssociations) {
-      tasks.push({
-        title: "Pending Facility Requests",
-        count: 3,
-        type: "approval",
-        path: "/facilities?tab=pending"
-      });
-    }
-
-    if (canAccess.viewReports) {
-      tasks.push({
-        title: "Reports to Review",
-        count: 7,
-        type: "review",
-        path: "/dashboard?tab=reports"
-      });
-    }
-
-    if (canAccess.auditTrail) {
-      tasks.push({
-        title: "Audit Items",
-        count: 2,
-        type: "audit",
-        path: "/facilities?tab=audit"
-      });
-    }
-
-    return tasks;
-  };
-
-  // Recent activity based on role
-  const getRecentActivity = () => {
-    const activities = [
-      {
-        title: "Consumption Report Generated",
-        time: "2 hours ago",
-        type: "report",
-        status: "completed"
-      },
-      {
-        title: "Facility Data Updated",
-        time: "5 hours ago",
-        type: "data",
-        status: "completed"
-      }
-    ];
-
-    if (canAccess.dataAnalysis) {
-      activities.unshift({
-        title: "Analytics Model Updated",
-        time: "1 hour ago",
-        type: "analytics",
-        status: "completed"
-      });
-    }
-
-    if (canAccess.manageUsers) {
-      activities.push({
-        title: "User Role Assignment",
-        time: "1 day ago",
-        type: "user",
-        status: "pending"
-      });
-    }
-
-    return activities.slice(0, 3);
-  };
-
-  const quickActions = getQuickActions();
-  const pendingTasks = getPendingTasks();
-  const recentActivity = getRecentActivity();
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Hero Section with improved spacing */}
+        {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="space-y-6">
             <h1 className="text-5xl font-bold text-gray-900 leading-tight">
               Welcome back, {profile?.full_name || 'User'}!
             </h1>
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <p className="text-xl text-gray-600">
-                You're logged in as
-              </p>
-              {profile?.role && (
-                <Badge className="px-4 py-2 bg-blue-100 text-blue-800 text-base font-medium">
-                  {getRoleDisplayName(profile.role)}
-                </Badge>
-              )}
-            </div>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Access your pharmaceutical analytics dashboard and manage your supply chain data with confidence.
+              Access your pharmaceutical analytics platform and manage your supply chain data with confidence.
             </p>
           </div>
         </div>
 
-        {/* Quick Actions Section */}
+        {/* Main Action Cards */}
         <div className="mb-16">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Quick Actions</h2>
-            <p className="text-gray-600 text-lg">Jump straight to your most-used features</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {quickActions.map((action) => (
               <Card key={action.path} className="hover:shadow-xl transition-all duration-300 group border-0 shadow-lg">
                 <CardHeader className="pb-4">
@@ -237,7 +92,7 @@ const UserDashboardPreview = () => {
                 <CardContent>
                   <Link to={action.path}>
                     <Button className="w-full h-12 text-base font-medium" variant="outline">
-                      Go to {action.title}
+                      {action.title}
                     </Button>
                   </Link>
                 </CardContent>
@@ -246,115 +101,71 @@ const UserDashboardPreview = () => {
           </div>
         </div>
 
-        {/* Information Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-16">
-          {/* Pending Tasks */}
-          {pendingTasks.length > 0 && (
-            <Card className="shadow-lg border-0">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-orange-600" />
-                  </div>
-                  Pending Tasks
-                </CardTitle>
-                <CardDescription className="text-base">Items requiring your immediate attention</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {pendingTasks.map((task, index) => (
-                  <Link key={index} to={task.path}>
-                    <div className="flex items-center justify-between p-4 rounded-xl border-2 border-gray-100 hover:border-orange-200 hover:bg-orange-50 transition-all duration-200">
-                      <div className="flex items-center gap-4">
-                        <AlertCircle className="w-5 h-5 text-orange-500" />
-                        <span className="font-medium text-base">{task.title}</span>
+        {/* Feature Descriptions */}
+        <div className="mb-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Powerful Features at Your Fingertips</h2>
+            <p className="text-gray-600 text-lg">Explore what each feature can do for your pharmaceutical operations</p>
+          </div>
+          
+          <div className="space-y-8">
+            {featureDescriptions.map((feature, index) => (
+              <Card key={feature.title} className="shadow-lg border-0">
+                <CardContent className="p-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+                    <div className="lg:col-span-2">
+                      <h3 className="text-2xl font-semibold text-gray-900 mb-4">{feature.title}</h3>
+                      <p className="text-gray-600 text-base leading-relaxed mb-6">
+                        {feature.description}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {feature.benefits.map((benefit) => (
+                          <span key={benefit} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                            {benefit}
+                          </span>
+                        ))}
                       </div>
-                      <Badge variant="secondary" className="px-3 py-1 text-sm">{task.count}</Badge>
                     </div>
-                  </Link>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Recent Activity */}
-          <Card className="shadow-lg border-0">
-            <CardHeader className="pb-6">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-blue-600" />
-                </div>
-                Recent Activity
-              </CardTitle>
-              <CardDescription className="text-base">Your latest actions and system updates</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-4 rounded-xl border-2 border-gray-100">
-                  <div className="flex items-center gap-4">
-                    {activity.status === 'completed' ? (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <Clock className="w-5 h-5 text-orange-500" />
-                    )}
-                    <div className="space-y-1">
-                      <p className="font-medium text-base">{activity.title}</p>
-                      <p className="text-sm text-gray-500">{activity.time}</p>
+                    <div className="text-center lg:text-right">
+                      <Link to={quickActions[index].path}>
+                        <Button size="lg" className="h-12 px-8 text-base font-medium">
+                          Get Started
+                          <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
-                  <Badge variant={activity.status === 'completed' ? 'default' : 'secondary'} className="px-3 py-1">
-                    {activity.status}
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
 
-        {/* Stats & CTA Section */}
+        {/* System Overview */}
         <div className="text-center">
           <Card className="max-w-4xl mx-auto shadow-xl border-0">
             <CardHeader className="pb-6">
-              <CardTitle className="flex items-center justify-center gap-3 text-2xl">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <Zap className="w-6 h-6 text-blue-600" />
-                </div>
-                System Overview
+              <CardTitle className="text-2xl">
+                Ready to optimize your pharmaceutical supply chain?
               </CardTitle>
               <CardDescription className="text-lg">
-                Get a comprehensive view of your pharmaceutical analytics platform
+                Start with any of the three core features above and unlock the power of data-driven decision making
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
                 <div className="space-y-2">
-                  <div className="text-4xl font-bold text-blue-600">24</div>
-                  <div className="text-base text-gray-600">Active Facilities</div>
+                  <div className="text-4xl font-bold text-blue-600">500+</div>
+                  <div className="text-base text-gray-600">Healthcare Facilities</div>
                 </div>
                 <div className="space-y-2">
                   <div className="text-4xl font-bold text-green-600">98.5%</div>
-                  <div className="text-base text-gray-600">System Uptime</div>
+                  <div className="text-base text-gray-600">Data Accuracy</div>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-4xl font-bold text-purple-600">156</div>
-                  <div className="text-base text-gray-600">Reports Generated</div>
+                  <div className="text-4xl font-bold text-purple-600">25%</div>
+                  <div className="text-base text-gray-600">Cost Reduction</div>
                 </div>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                <Link to="/dashboard">
-                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 h-12 px-8 text-base font-medium">
-                    View Full Dashboard
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-                {canAccess.viewReports && (
-                  <Link to="/dashboard?tab=reports">
-                    <Button size="lg" variant="outline" className="h-12 px-8 text-base font-medium">
-                      <FileText className="mr-2 h-5 w-5" />
-                      Generate Report
-                    </Button>
-                  </Link>
-                )}
               </div>
             </CardContent>
           </Card>
