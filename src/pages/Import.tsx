@@ -9,6 +9,8 @@ import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Download } from 'luc
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
+import { secureSet } from '@/utils/secureStorage';
+import { serialize } from '@/utils/serialization';
 
 interface ExcelData {
   [key: string]: any;
@@ -265,7 +267,7 @@ const Import = () => {
     setStep('preview');
   };
 
-  const importData = () => {
+  const importData = async () => {
     // Transform Excel data to the required format
     const transformedData = excelData.map((row, index) => {
       const productData = {
@@ -372,8 +374,8 @@ const Import = () => {
       return productData;
     });
 
-    // Store the data (you can implement localStorage or pass to parent component)
-    localStorage.setItem('importedPharmaceuticalData', JSON.stringify(transformedData));
+    // Persist the data using secure storage
+    await secureSet('importedPharmaceuticalData', serialize(transformedData));
     
     toast({
       title: "Data Imported Successfully",

@@ -1,5 +1,7 @@
 
 import { ProductData, ImportSummary } from '@/types/pharmaceutical';
+import { secureSet, secureGet, secureRemove } from './secureStorage';
+import { serialize, deserialize } from './serialization';
 
 const STORAGE_KEYS = {
   PRODUCTS: 'pharmaceutical_products',
@@ -7,75 +9,66 @@ const STORAGE_KEYS = {
   USER_PREFERENCES: 'user_preferences'
 };
 
-export const saveProductsToStorage = (products: ProductData[]): void => {
+export const saveProductsToStorage = async (products: ProductData[]): Promise<void> => {
   try {
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+    await secureSet(STORAGE_KEYS.PRODUCTS, serialize(products));
     console.log(`Saved ${products.length} products to storage`);
   } catch (error) {
     console.error('Failed to save products to storage:', error);
-    throw new Error('Failed to save data to local storage');
+    throw new Error('Failed to save data to storage');
   }
 };
 
-export const loadProductsFromStorage = (): ProductData[] => {
+export const loadProductsFromStorage = async (): Promise<ProductData[]> => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+    const stored = await secureGet<string>(STORAGE_KEYS.PRODUCTS);
     if (!stored) return [];
-    
-    const products = JSON.parse(stored);
-    return products.map((p: any) => ({
-      ...p,
-      createdAt: new Date(p.createdAt),
-      updatedAt: new Date(p.updatedAt)
-    }));
+
+    const products = deserialize<ProductData[]>(stored);
+    return products;
   } catch (error) {
     console.error('Failed to load products from storage:', error);
     return [];
   }
 };
 
-export const addProductsToStorage = (newProducts: ProductData[]): ProductData[] => {
-  const existing = loadProductsFromStorage();
+export const addProductsToStorage = async (newProducts: ProductData[]): Promise<ProductData[]> => {
+  const existing = await loadProductsFromStorage();
   const combined = [...existing, ...newProducts];
-  saveProductsToStorage(combined);
+  await saveProductsToStorage(combined);
   return combined;
 };
 
-export const saveImportSummary = (summary: ImportSummary): void => {
+export const saveImportSummary = async (summary: ImportSummary): Promise<void> => {
   try {
-    const existing = getImportHistory();
+    const existing = await getImportHistory();
     const updated = [summary, ...existing].slice(0, 50); // Keep last 50 imports
-    localStorage.setItem(STORAGE_KEYS.IMPORT_HISTORY, JSON.stringify(updated));
+    await secureSet(STORAGE_KEYS.IMPORT_HISTORY, serialize(updated));
   } catch (error) {
     console.error('Failed to save import summary:', error);
   }
 };
 
-export const getImportHistory = (): ImportSummary[] => {
+export const getImportHistory = async (): Promise<ImportSummary[]> => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEYS.IMPORT_HISTORY);
+    const stored = await secureGet<string>(STORAGE_KEYS.IMPORT_HISTORY);
     if (!stored) return [];
-    
-    return JSON.parse(stored).map((s: any) => ({
-      ...s,
-      timestamp: new Date(s.timestamp)
-    }));
+
+    return deserialize<ImportSummary[]>(stored);
   } catch (error) {
     console.error('Failed to load import history:', error);
     return [];
   }
 };
 
-export const clearAllData = (): void => {
-  Object.values(STORAGE_KEYS).forEach(key => {
-    localStorage.removeItem(key);
-  });
+export const clearAllData = async (): Promise<void> => {
+  await Promise.all(Object.values(STORAGE_KEYS).map(key => secureRemove(key)));
 };
 
-export const getStorageStats = () => {
-  const products = loadProductsFromStorage();
-  const importHistory = getImportHistory();
-  
+export const getStorageStats = async () => {
+  const products = await loadProductsFromStorage();
+  const importHistory = await getImportHistory();
+
   return {
     totalProducts: products.length,
     lastImport: importHistory[0]?.timestamp,
