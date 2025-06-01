@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types/pharmaceutical';
 import { hasHigherOrEqualRole, ROLE_HIERARCHY } from '@/utils/roleMapping';
@@ -53,11 +52,11 @@ const rolePermissions: Record<UserRole, Permissions> = {
     viewProducts: true,
     importData: true,
     exportData: true,
-    viewAnalytics: false,
+    viewAnalytics: true,
     dataAnalysis: false,
     systemIntegration: false,
     auditTrail: false,
-    scenarioPlanning: false,
+    scenarioPlanning: true,
     manageUsers: false,
     viewReports: true,
     manageSystem: false,
