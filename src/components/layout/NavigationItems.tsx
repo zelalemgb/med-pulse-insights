@@ -2,10 +2,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavigationItem {
   path: string;
   label: string;
+  roles?: string[];
 }
 
 interface NavigationItemsProps {
@@ -16,19 +18,29 @@ interface NavigationItemsProps {
 const navigationItems: NavigationItem[] = [
   { path: '/dashboard', label: 'Dashboard' },
   { path: '/analytics', label: 'Analytics' },
+  { path: '/facilities', label: 'Facilities', roles: ['national', 'regional', 'zonal'] },
+  { path: '/products', label: 'Products', roles: ['national', 'regional', 'zonal', 'facility_manager'] },
   { path: '/profile', label: 'Profile' },
 ];
 
 export const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
   const location = useLocation();
+  const { profile } = useAuth();
 
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
   };
 
+  const hasAccessToRoute = (item: NavigationItem) => {
+    if (!item.roles) return true;
+    return profile?.role && item.roles.includes(profile.role);
+  };
+
+  const filteredItems = navigationItems.filter(hasAccessToRoute);
+
   return (
     <div className={className}>
-      {navigationItems.map((item) => (
+      {filteredItems.map((item) => (
         <Link
           key={item.path}
           to={item.path}

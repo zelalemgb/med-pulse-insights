@@ -14,6 +14,7 @@ import Import from "./pages/Import";
 import DataEntry from "./pages/DataEntry";
 import Auth from "./pages/Auth";
 import Facilities from "./pages/Facilities";
+import Products from "./pages/Products";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +39,7 @@ function App() {
                   <Route path="/data-entry" element={<DataEntry />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/facilities" element={<Facilities />} />
+                  <Route path="/products" element={<Products />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
