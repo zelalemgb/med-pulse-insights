@@ -5,7 +5,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
 import MainNavigation from "@/components/layout/MainNavigation";
-import { useServiceWorker } from "@/hooks/useServiceWorker";
 import { Toaster } from "@/components/ui/toaster";
 
 // Import components directly instead of lazy loading to identify the problematic import
@@ -29,8 +28,6 @@ const queryClient = new QueryClient({
 function App() {
   console.log("App component rendering");
   
-  // Register service worker
-  useServiceWorker();
 
   return (
     <QueryClientProvider client={queryClient}>
