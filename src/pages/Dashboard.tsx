@@ -1,7 +1,7 @@
 
 import React from 'react';
 import MainNavigation from '@/components/layout/MainNavigation';
-import { RoleBasedDashboard } from '@/components/dashboard/RoleBasedDashboard';
+import RoleBasedDashboard from '@/components/dashboard/RoleBasedDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 

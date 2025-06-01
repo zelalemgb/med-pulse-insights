@@ -2,7 +2,7 @@
 import React from 'react';
 import MainNavigation from '@/components/layout/MainNavigation';
 import PageHeader from '@/components/layout/PageHeader';
-import { AdvancedAnalytics } from '@/components/analytics/AdvancedAnalytics';
+import AdvancedAnalytics from '@/components/analytics/AdvancedAnalytics';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { BarChart, Home } from 'lucide-react';

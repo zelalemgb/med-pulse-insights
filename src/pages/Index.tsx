@@ -1,9 +1,9 @@
 
 import React from 'react';
 import MainNavigation from '@/components/layout/MainNavigation';
-import { HeroSection } from '@/components/dashboard/HeroSection';
-import { FeatureDescriptions } from '@/components/dashboard/FeatureDescriptions';
-import { WelcomeSection } from '@/components/welcome/WelcomeSection';
+import HeroSection from '@/components/dashboard/HeroSection';
+import FeatureDescriptions from '@/components/dashboard/FeatureDescriptions';
+import WelcomeSection from '@/components/welcome/WelcomeSection';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
