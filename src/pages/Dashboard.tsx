@@ -9,7 +9,6 @@ import { SeasonalityTrends } from '@/components/dashboard/SeasonalityTrends';
 import { WastageAnalysis } from '@/components/dashboard/WastageAnalysis';
 import { StockOutAnalysis } from '@/components/dashboard/StockOutAnalysis';
 import RoleBasedDashboard from '@/components/dashboard/RoleBasedDashboard';
-import Header from '@/components/layout/Header';
 import RoleGuard from '@/components/auth/RoleGuard';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -38,7 +37,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">

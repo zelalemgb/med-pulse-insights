@@ -1,14 +1,12 @@
 
 import React from 'react';
 import { RoleJourneyTester } from '@/components/testing/RoleJourneyTester';
-import Header from '@/components/layout/Header';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 const RoleTestingPage = () => {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <div className="p-6">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">

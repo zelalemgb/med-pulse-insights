@@ -8,6 +8,7 @@ import Facilities from "./pages/Facilities";
 import { AuthProvider } from "./contexts/AuthContext";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
+import MainNavigation from "./components/layout/MainNavigation";
 
 import RoleTestingPage from "./pages/RoleTestingPage";
 
@@ -21,6 +22,7 @@ function App() {
       <div className="min-h-screen bg-background">
         <AuthProvider>
           <QueryClientProvider client={queryClient}>
+            <MainNavigation />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
