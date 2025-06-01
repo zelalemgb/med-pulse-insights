@@ -1,31 +1,35 @@
 
-import React from 'react';
-import MainNavigation from '@/components/layout/MainNavigation';
-import HeroSection from '@/components/dashboard/HeroSection';
-import FeatureDescriptions from '@/components/dashboard/FeatureDescriptions';
-import WelcomeSection from '@/components/welcome/WelcomeSection';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useEffect } from 'react';
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from 'react-router-dom';
+import WelcomeSection from "@/components/welcome/WelcomeSection";
+import UserDashboardPreview from "@/components/dashboard/UserDashboardPreview";
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <MainNavigation />
-      <main>
-        {user ? (
-          <div className="container mx-auto px-4 py-8">
-            <WelcomeSection />
-          </div>
-        ) : (
-          <>
-            <HeroSection />
-            <FeatureDescriptions />
-          </>
-        )}
-      </main>
-    </div>
-  );
+  // Handle redirect for unauthenticated users who try to access protected content
+  useEffect(() => {
+    if (!loading && !user) {
+      console.log('❌ No user found, staying on welcome page');
+    } else if (!loading && user) {
+      console.log('✅ User found, showing dashboard');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return user ? <UserDashboardPreview /> : <WelcomeSection />;
 };
 
 export default Index;
