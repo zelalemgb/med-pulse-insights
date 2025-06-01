@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 export class RolePermissionService {
   // Check if user can manage roles for a facility
@@ -55,7 +56,7 @@ export class RolePermissionService {
         _session_id: null
       });
     } catch (error) {
-      console.error('Failed to log permission usage:', error);
+      logger.error('Failed to log permission usage:', error);
     }
   }
 }

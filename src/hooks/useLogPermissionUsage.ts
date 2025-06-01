@@ -1,6 +1,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 export const useLogPermissionUsage = () => {
   return useMutation({
@@ -39,7 +40,7 @@ export const useLogPermissionUsage = () => {
       });
 
       if (error) {
-        console.error('Permission usage logging failed:', error);
+        logger.error('Permission usage logging failed:', error);
       }
 
       return data;

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 
 export const useNavigationAnalytics = () => {
   const { user } = useAuth();
@@ -69,7 +70,7 @@ export const useNavigationAnalytics = () => {
       const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
       if (timeSpent > 5) { // Only track if spent more than 5 seconds
         // This would be handled by a separate mutation if needed
-        console.log(`Time spent on ${currentPage}: ${timeSpent} seconds`);
+        logger.log(`Time spent on ${currentPage}: ${timeSpent} seconds`);
       }
     };
   }, [location.pathname, user, trackNavigationMutation.mutate]);
