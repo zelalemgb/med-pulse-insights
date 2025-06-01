@@ -1,7 +1,6 @@
 
 import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -35,38 +34,36 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <NavigationProvider>
-            <BrowserRouter>
-              <div className="min-h-screen bg-background">
-                <MainNavigation />
-                <Suspense 
-                  fallback={
-                    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600">Loading...</p>
-                      </div>
+      <AuthProvider>
+        <NavigationProvider>
+          <BrowserRouter>
+            <div className="min-h-screen bg-background">
+              <MainNavigation />
+              <Suspense 
+                fallback={
+                  <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="mt-4 text-gray-600">Loading...</p>
                     </div>
-                  }
-                >
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/facilities" element={<Facilities />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/role-testing" element={<RoleTestingPage />} />
-                    <Route path="/comprehensive-testing" element={<ComprehensiveTestingPage />} />
-                  </Routes>
-                </Suspense>
-              </div>
-              <Toaster />
-            </BrowserRouter>
-          </NavigationProvider>
-        </AuthProvider>
-      </TooltipProvider>
+                  </div>
+                }
+              >
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/facilities" element={<Facilities />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/role-testing" element={<RoleTestingPage />} />
+                  <Route path="/comprehensive-testing" element={<ComprehensiveTestingPage />} />
+                </Routes>
+              </Suspense>
+            </div>
+            <Toaster />
+          </BrowserRouter>
+        </NavigationProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

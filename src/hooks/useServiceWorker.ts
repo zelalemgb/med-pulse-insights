@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
 export const useServiceWorker = () => {
   useEffect(() => {
