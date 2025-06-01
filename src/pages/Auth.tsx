@@ -1,43 +1,37 @@
 
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { AdminStatusChecker } from '@/components/admin/AdminStatusChecker';
+import React from 'react';
+import MainNavigation from '@/components/layout/MainNavigation';
 import { AuthCard } from '@/components/auth/AuthCard';
-import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 const Auth = () => {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  // Handle redirect for authenticated users
-  useEffect(() => {
-    if (user && !loading) {
-      console.log('✅ User authenticated, redirecting to home');
-      navigate('/', { replace: true });
-    }
-  }, [user, loading, navigate]);
 
   if (loading) {
-    return <AuthLoadingScreen />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MainNavigation />
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2">Loading...</span>
+          </div>
+        </main>
+      </div>
+    );
   }
 
-  // Don't render anything if user is authenticated (redirect is in progress)
   if (user) {
-    return null;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Authentication Card */}
+    <div className="min-h-screen bg-gray-50">
+      <MainNavigation />
+      <main className="flex items-center justify-center min-h-[calc(100vh-4rem)] py-8">
         <AuthCard />
-
-        {/* Admin Status Card */}
-        <div className="w-full">
-          <AdminStatusChecker />
-        </div>
-      </div>
+      </main>
     </div>
   );
 };

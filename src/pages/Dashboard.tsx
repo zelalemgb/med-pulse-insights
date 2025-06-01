@@ -1,33 +1,38 @@
 
 import React from 'react';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import PageHeader from '@/components/layout/PageHeader';
-import { DashboardStatsCards } from '@/components/dashboard/DashboardStatsCards';
-import RoleBasedDashboard from '@/components/dashboard/RoleBasedDashboard';
+import MainNavigation from '@/components/layout/MainNavigation';
+import { RoleBasedDashboard } from '@/components/dashboard/RoleBasedDashboard';
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const breadcrumbItems = [
-    { label: 'Home', path: '/' },
-    { label: 'Dashboard' }
-  ];
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MainNavigation />
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2">Loading...</span>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <PageHeader
-            title="Dashboard"
-            description="Overview of your pharmaceutical analytics and facility management"
-            breadcrumbItems={breadcrumbItems}
-          />
-          
-          <div className="mt-8 space-y-8">
-            <DashboardStatsCards />
-            <RoleBasedDashboard />
-          </div>
-        </div>
-      </div>
-    </ProtectedRoute>
+    <div className="min-h-screen bg-gray-50">
+      <MainNavigation />
+      <main className="container mx-auto px-4 py-8">
+        <RoleBasedDashboard />
+      </main>
+    </div>
   );
 };
 

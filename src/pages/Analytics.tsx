@@ -1,31 +1,50 @@
 
 import React from 'react';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import MainNavigation from '@/components/layout/MainNavigation';
 import PageHeader from '@/components/layout/PageHeader';
-import AdvancedAnalytics from '@/components/analytics/AdvancedAnalytics';
+import { AdvancedAnalytics } from '@/components/analytics/AdvancedAnalytics';
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
+import { BarChart, Home } from 'lucide-react';
 
 const Analytics = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MainNavigation />
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2">Loading...</span>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
   const breadcrumbItems = [
-    { label: 'Home', path: '/' },
-    { label: 'Analytics' }
+    { label: 'Home', path: '/', icon: Home },
+    { label: 'Analytics', icon: BarChart }
   ];
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <PageHeader
-            title="Advanced Analytics"
-            description="Comprehensive analytics and insights for pharmaceutical supply chain management"
-            breadcrumbItems={breadcrumbItems}
-          />
-          
-          <div className="mt-8">
-            <AdvancedAnalytics />
-          </div>
-        </div>
-      </div>
-    </ProtectedRoute>
+    <div className="min-h-screen bg-gray-50">
+      <MainNavigation />
+      <main className="container mx-auto px-4 py-8">
+        <PageHeader
+          title="Advanced Analytics"
+          description="Deep insights into pharmaceutical supply chain performance, forecasting, and optimization"
+          breadcrumbItems={breadcrumbItems}
+        />
+        <AdvancedAnalytics />
+      </main>
+    </div>
   );
 };
 
