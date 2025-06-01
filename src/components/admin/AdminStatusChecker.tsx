@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, Users, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { AdminActionButtons } from './AdminActionButtons';
+import { AdminStatusDisplay } from './AdminStatusDisplay';
+import { AdminUsersList } from './AdminUsersList';
+import { AdminErrorDisplay } from './AdminErrorDisplay';
 
 interface UserWithRole {
   id: string;
@@ -117,15 +119,6 @@ export const AdminStatusChecker = () => {
     }
   }, [authLoading]);
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'national': return 'bg-red-100 text-red-800';
-      case 'regional': return 'bg-orange-100 text-orange-800';
-      case 'zonal': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   // More explicit logic for showing the create button
   const showCreateButton = hasNationalUsers === false && user !== null && !authLoading;
 
@@ -159,105 +152,25 @@ export const AdminStatusChecker = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <Button onClick={checkAdminStatus} disabled={loading}>
-              {loading ? 'Checking...' : 'Refresh Status'}
-            </Button>
-            
-            {showCreateButton && (
-              <Button 
-                onClick={createFirstAdmin} 
-                disabled={loading} 
-                variant="outline"
-                className="bg-green-50 hover:bg-green-100 border-green-200"
-              >
-                {loading ? 'Creating...' : 'Create First Admin'}
-              </Button>
-            )}
-          </div>
+          <AdminActionButtons
+            loading={loading}
+            showCreateButton={showCreateButton}
+            onRefresh={checkAdminStatus}
+            onCreateFirstAdmin={createFirstAdmin}
+          />
 
-          {error && (
-            <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="h-4 w-4 text-red-600 mr-2 flex-shrink-0" />
-              <span className="text-red-700 text-sm">{error}</span>
-            </div>
-          )}
+          {error && <AdminErrorDisplay error={error} />}
 
-          <div className="space-y-3">
-            <div className="flex items-center">
-              {hasNationalUsers === true ? (
-                <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-              ) : hasNationalUsers === false ? (
-                <AlertCircle className="h-4 w-4 text-orange-600 mr-2" />
-              ) : (
-                <div className="h-4 w-4 mr-2 animate-pulse bg-gray-300 rounded-full" />
-              )}
-              <span className="font-medium">
-                National Users Exist: {' '}
-                {hasNationalUsers === null ? (
-                  <span className="text-gray-500">Checking...</span>
-                ) : hasNationalUsers ? (
-                  <span className="text-green-600">Yes</span>
-                ) : (
-                  <span className="text-orange-600">No - You can create the first admin!</span>
-                )}
-              </span>
-            </div>
+          <AdminStatusDisplay 
+            hasNationalUsers={hasNationalUsers}
+            user={user}
+          />
 
-            {user && (
-              <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-                <strong>Current User:</strong> {user.email}
-                <br />
-                <strong>User ID:</strong> <code className="text-xs">{user.id}</code>
-              </div>
-            )}
-
-            {!user && (
-              <div className="text-sm text-orange-600 bg-orange-50 p-3 rounded-lg">
-                <strong>Not logged in:</strong> Please sign in to create the first admin.
-              </div>
-            )}
-
-            <div>
-              <h4 className="font-medium mb-2 flex items-center">
-                <Users className="h-4 w-4 mr-2" />
-                Current Admin Users ({adminUsers.length})
-              </h4>
-              
-              {adminUsers.length === 0 ? (
-                <div className="text-center py-6 bg-gray-50 rounded-lg">
-                  <p className="text-gray-600 text-sm mb-2">No admin users found</p>
-                  {showCreateButton && (
-                    <p className="text-green-600 text-sm font-medium">
-                      👆 Click "Create First Admin" above to get started!
-                    </p>
-                  )}
-                  {!user && (
-                    <p className="text-orange-600 text-sm font-medium">
-                      Please sign in first to create the first admin.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {adminUsers.map((adminUser) => (
-                    <div key={adminUser.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <div className="font-medium">{adminUser.full_name || 'Unnamed User'}</div>
-                        <div className="text-sm text-gray-600">{adminUser.email}</div>
-                        <div className="text-xs text-gray-400">
-                          Created: {new Date(adminUser.created_at).toLocaleDateString()}
-                        </div>
-                      </div>
-                      <Badge className={getRoleBadgeColor(adminUser.role)}>
-                        {adminUser.role.toUpperCase()}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <AdminUsersList
+            adminUsers={adminUsers}
+            user={user}
+            showCreateButton={showCreateButton}
+          />
         </CardContent>
       </Card>
     </div>
