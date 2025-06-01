@@ -2,18 +2,10 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Users } from 'lucide-react';
-
-interface UserWithRole {
-  id: string;
-  email: string;
-  full_name: string | null;
-  role: string;
-  is_active: boolean;
-  created_at: string;
-}
+import { AdminUser } from '@/services/admin/adminService';
 
 interface AdminUsersListProps {
-  adminUsers: UserWithRole[];
+  adminUsers: AdminUser[];
   user: any;
   showCreateButton: boolean;
 }

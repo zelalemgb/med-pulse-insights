@@ -71,3 +71,12 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Authentication and First Admin Setup
+
+1. **Registration**: New users can create an account via the Sign Up form. The supplied name is stored in Supabase user metadata.
+2. **Login / Logout**: Use the Sign In form to authenticate and the Sign Out option to end the session. Authentication state is provided by `AuthContext` and integrates with Supabase.
+3. **Creating the First Admin**: When no `national` users exist, an authenticated user can promote themselves to the first administrator. The app calls the `create_first_admin` Supabase function which sets the user's role to `national` and creates the profile record if needed.
+4. **Managing Admin Users**: Admin status and user lists are fetched through the new `adminService` and related hooks.
+
+These steps ensure the full authentication flow from initial admin creation through regular user registration and login.
