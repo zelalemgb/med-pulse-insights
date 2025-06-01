@@ -210,7 +210,7 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
     }
   }, [sheetMapping, columnMapping, excelData]);
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!excelData || !canProceed()) return;
     
     try {
@@ -285,8 +285,8 @@ const DataMappingDialog: React.FC<DataMappingDialogProps> = ({
         timestamp: new Date()
       };
 
-      saveImportSummary(importSummary);
-      addProductsToStorage(finalProducts);
+      await saveImportSummary(importSummary);
+      await addProductsToStorage(finalProducts);
       
       onMappingComplete(finalProducts, finalMapping);
       onOpenChange(false);
