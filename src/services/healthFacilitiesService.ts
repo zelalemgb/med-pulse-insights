@@ -21,6 +21,10 @@ export class HealthFacilitiesService {
     return facilityService.updateFacility(facilityId, updates);
   }
 
+  async deleteFacility(facilityId: string) {
+    return facilityService.deleteFacility(facilityId);
+  }
+
   async checkFacilityAccess(facilityId: string, requiredType?: string) {
     return facilityService.checkFacilityAccess(facilityId, requiredType);
   }
