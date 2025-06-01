@@ -16,7 +16,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // Create a stable reference to the profile refresh function
   const refreshProfile = useCallback(async () => {
@@ -52,20 +51,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Set up auth state listener and get initial session
+  // Set up auth state listener and get initial session - run only once
   useEffect(() => {
-    if (isInitialized) return;
-    
-    let isMounted = true;
-    
     console.log('🔧 Setting up auth state change listener...');
 
     const initializeAuth = async () => {
       try {
         // Get initial session first
         const { data: { session: initialSession } } = await supabase.auth.getSession();
-        
-        if (!isMounted) return;
         
         console.log('🔍 Initial session check:', initialSession?.user?.id);
         setSession(initialSession);
@@ -76,19 +69,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         
         setLoading(false);
-        setIsInitialized(true);
       } catch (error) {
         console.error('💥 Error during auth initialization:', error);
         setLoading(false);
-        setIsInitialized(true);
       }
     };
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!isMounted || !isInitialized) return;
-        
         console.log('🔄 Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
@@ -107,11 +96,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
 
     return () => {
-      isMounted = false;
       console.log('🧹 Cleaning up auth subscription');
       subscription.unsubscribe();
     };
-  }, [isInitialized, fetchUserProfile]);
+  }, []); // Empty dependency array to run only once
 
   // Get auth operations from custom hook
   const authOperations = useAuthOperations(profile, user, refreshProfile);
