@@ -60,10 +60,10 @@ function App() {
                 </Routes>
               </Suspense>
             </div>
-            <Toaster />
           </NavigationProvider>
         </BrowserRouter>
       </AuthProvider>
+      <Toaster />
     </QueryClientProvider>
   );
 }

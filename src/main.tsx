@@ -5,9 +5,6 @@ import React from 'react';
 import App from './App';
 import './index.css';
 
-// Ensure React is available globally for libraries that need it
-(window as any).React = React;
-
 console.log('main.tsx loading...');
 
 // Register PWA manifest with better update handling
