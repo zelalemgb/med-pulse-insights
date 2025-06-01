@@ -10,6 +10,7 @@ import { NavigationProvider } from "./contexts/NavigationContext";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import MainNavigation from "./components/layout/MainNavigation";
+import Footer from "./components/layout/Footer";
 
 import RoleTestingPage from "./pages/RoleTestingPage";
 
@@ -20,18 +21,21 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <AuthProvider>
           <NavigationProvider>
             <QueryClientProvider client={queryClient}>
               <MainNavigation />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/facilities" element={<Facilities />} />
-                <Route path="/role-testing" element={<RoleTestingPage />} />
-              </Routes>
+              <div className="flex-1">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/facilities" element={<Facilities />} />
+                  <Route path="/role-testing" element={<RoleTestingPage />} />
+                </Routes>
+              </div>
+              <Footer />
               <Toaster />
             </QueryClientProvider>
           </NavigationProvider>

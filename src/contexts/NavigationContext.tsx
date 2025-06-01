@@ -7,18 +7,54 @@ interface NavigationContextType {
   setIsMobileMenuOpen: (open: boolean) => void;
   toggleMobileMenu: () => void;
   closeMobileMenu: () => void;
+  isNavigating: boolean;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const location = useLocation();
 
-  // Close mobile menu when route changes
+  // Close mobile menu when route changes and handle navigation loading
   useEffect(() => {
+    setIsNavigating(true);
     setIsMobileMenuOpen(false);
+    
+    // Add a brief loading state for smooth transitions
+    const timer = setTimeout(() => {
+      setIsNavigating(false);
+    }, 150);
+
+    return () => clearTimeout(timer);
   }, [location.pathname]);
+
+  // Close mobile menu when clicking outside or on escape
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (isMobileMenuOpen && !target.closest('nav')) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(prev => !prev);
@@ -33,6 +69,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setIsMobileMenuOpen,
     toggleMobileMenu,
     closeMobileMenu,
+    isNavigating,
   };
 
   return (
