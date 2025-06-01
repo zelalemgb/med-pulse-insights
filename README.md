@@ -80,3 +80,14 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 4. **Managing Admin Users**: Admin status and user lists are fetched through the new `adminService` and related hooks.
 
 These steps ensure the full authentication flow from initial admin creation through regular user registration and login.
+
+## Environment Variables
+
+Create a `.env` file in the project root with the following keys:
+
+```
+VITE_SUPABASE_URL=<your-supabase-url>
+VITE_SUPABASE_PUBLISHABLE_KEY=<your-supabase-publishable-key>
+```
+
+These variables configure the Supabase client used by the application.
