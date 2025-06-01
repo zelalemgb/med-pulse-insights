@@ -35,8 +35,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <NavigationProvider>
-          <BrowserRouter>
+        <BrowserRouter>
+          <NavigationProvider>
             <div className="min-h-screen bg-background">
               <MainNavigation />
               <Suspense 
@@ -61,8 +61,8 @@ function App() {
               </Suspense>
             </div>
             <Toaster />
-          </BrowserRouter>
-        </NavigationProvider>
+          </NavigationProvider>
+        </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>
   );
