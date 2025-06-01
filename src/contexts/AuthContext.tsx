@@ -6,7 +6,6 @@ import { AuthContextType, UserProfile } from '@/types/auth';
 import { AuthService } from '@/services/auth/authService';
 import { ProfileService } from '@/services/auth/profileService';
 import { useAuthOperations } from '@/hooks/useAuthOperations';
-import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -114,9 +113,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     console.log('🚪 Signing out...');
-    await AuthService.signOut();
     setProfile(null);
-    // Don't force redirect here - let the auth state change handle it
+    await AuthService.signOut();
   };
 
   const value: AuthContextType = {
