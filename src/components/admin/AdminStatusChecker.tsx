@@ -1,7 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
 import { Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -9,115 +8,60 @@ import { AdminActionButtons } from './AdminActionButtons';
 import { AdminStatusDisplay } from './AdminStatusDisplay';
 import { AdminUsersList } from './AdminUsersList';
 import { AdminErrorDisplay } from './AdminErrorDisplay';
+import {
+  useAdminStatus,
+  useAdminUsers,
+  useCreateFirstAdmin,
+} from '@/hooks/useAdmin';
 
-interface UserWithRole {
-  id: string;
-  email: string;
-  full_name: string | null;
-  role: string;
-  is_active: boolean;
-  created_at: string;
-}
+
 
 export const AdminStatusChecker = () => {
   const { user, loading: authLoading } = useAuth();
-  const [adminUsers, setAdminUsers] = useState<UserWithRole[]>([]);
-  const [hasNationalUsers, setHasNationalUsers] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const checkAdminStatus = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      console.log('🔍 Checking admin status...');
-      
-      // Check if national users exist using the database function
-      const { data: nationalCheck, error: nationalError } = await supabase.rpc('has_national_users');
-      
-      if (nationalError) {
-        console.error('Error checking national users:', nationalError);
-        setError(`Error checking national users: ${nationalError.message}`);
-        return;
-      }
-      
-      console.log('📊 National users exist:', nationalCheck);
-      setHasNationalUsers(nationalCheck);
-      
-      // Get all admin users (national, regional, zonal)
-      const { data: users, error: usersError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, role, is_active, created_at')
-        .in('role', ['national', 'regional', 'zonal'])
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-      
-      if (usersError) {
-        console.error('Error fetching admin users:', usersError);
-        setError(`Error fetching admin users: ${usersError.message}`);
-        return;
-      }
-      
-      console.log('👥 Admin users found:', users?.length || 0);
-      setAdminUsers(users || []);
-      
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      setError('An unexpected error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data: hasNationalUsers,
+    refetch: refetchStatus,
+    isLoading: statusLoading,
+    error: statusError,
+  } = useAdminStatus();
+  const {
+    data: adminUsers,
+    refetch: refetchUsers,
+    isLoading: usersLoading,
+    error: usersError,
+  } = useAdminUsers();
+  const createFirstAdmin = useCreateFirstAdmin();
 
-  const createFirstAdmin = async () => {
+  const loading =
+    statusLoading ||
+    usersLoading ||
+    createFirstAdmin.isPending;
+  const error =
+    statusError?.message ||
+    usersError?.message ||
+    (createFirstAdmin.error as Error | undefined)?.message ||
+    null;
+
+  const handleCreateFirstAdmin = async () => {
     if (!user) {
       toast.error('You must be logged in to create first admin');
-      setError('You must be logged in to create first admin');
       return;
     }
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      console.log('🚀 Creating first admin for user:', user.id);
-      
-      const { data, error } = await supabase.rpc('create_first_admin', {
-        _user_id: user.id,
-        _email: user.email || '',
-        _full_name: user.user_metadata?.full_name || 'Admin User'
-      });
-      
-      if (error) {
-        console.error('Error creating first admin:', error);
-        toast.error(`Error creating first admin: ${error.message}`);
-        setError(`Error creating first admin: ${error.message}`);
-        return;
-      }
-      
-      console.log('✅ First admin created successfully');
-      toast.success('First admin created successfully! You are now a National Administrator.');
-      
-      // Refresh the status after creating admin
-      await checkAdminStatus();
-      
-    } catch (err) {
-      console.error('Unexpected error creating admin:', err);
-      const errorMessage = 'An unexpected error occurred while creating admin';
-      toast.error(errorMessage);
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    await createFirstAdmin.mutateAsync({
+      userId: user.id,
+      email: user.email || '',
+      fullName: user.user_metadata?.full_name || 'Admin User',
+    });
   };
 
-  // Only check admin status when auth is ready and user state is stable
+  // Refresh data when auth is ready
   useEffect(() => {
     if (!authLoading) {
-      checkAdminStatus();
+      refetchStatus();
+      refetchUsers();
     }
-  }, [authLoading]);
+  }, [authLoading, refetchStatus, refetchUsers]);
 
   // More explicit logic for showing the create button
   const showCreateButton = hasNationalUsers === false && user !== null && !authLoading;
@@ -155,8 +99,11 @@ export const AdminStatusChecker = () => {
           <AdminActionButtons
             loading={loading}
             showCreateButton={showCreateButton}
-            onRefresh={checkAdminStatus}
-            onCreateFirstAdmin={createFirstAdmin}
+            onRefresh={() => {
+              refetchStatus();
+              refetchUsers();
+            }}
+            onCreateFirstAdmin={handleCreateFirstAdmin}
           />
 
           {error && <AdminErrorDisplay error={error} />}
