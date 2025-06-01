@@ -1,17 +1,19 @@
 
-const CACHE_NAME = 'pharma-supply-v2'; // Updated version number
-const STATIC_ASSETS = [
+const CACHE_VERSION = 'v1';
+const CACHE_NAME = `pharma-supply-${CACHE_VERSION}`;
+
+// Only minimal assets are pre-cached. All other static files are cached
+// at runtime when requested.
+const PRECACHE_URLS = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json'
+  '/manifest.json',
 ];
 
-// Install event - cache static assets
+// Install event - cache critical assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then((cache) => cache.addAll(PRECACHE_URLS))
       .then(() => self.skipWaiting())
   );
 });
@@ -31,58 +33,43 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - network first strategy for HTML, cache first for assets
+// Only cache requests for static assets to avoid storing sensitive data
+const STATIC_TYPES = ['style', 'script', 'image', 'font', 'manifest'];
+
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
-  // Network first strategy for HTML pages to get fresh content
-  if (event.request.mode === 'navigate' || event.request.headers.get('accept').includes('text/html')) {
+  const { request } = event;
+
+  // Network-first for navigation requests
+  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
-      fetch(event.request)
+      fetch(request)
         .then((response) => {
-          // Cache successful responses
           if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME)
-              .then((cache) => cache.put(event.request, responseClone));
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return response;
         })
-        .catch(() => {
-          // Fallback to cache if network fails
-          return caches.match(event.request)
-            .then((cachedResponse) => {
-              return cachedResponse || caches.match('/');
-            });
-        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
     );
     return;
   }
 
-  // Cache first strategy for static assets
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request)
-          .then((fetchResponse) => {
-            // Cache successful responses
-            if (fetchResponse.status === 200) {
-              const responseClone = fetchResponse.clone();
-              caches.open(CACHE_NAME)
-                .then((cache) => cache.put(event.request, responseClone));
-            }
-            return fetchResponse;
-          });
-      })
-      .catch(() => {
-        // Return offline page for navigation requests
-        if (event.request.mode === 'navigate') {
-          return caches.match('/');
-        }
-      })
-  );
+  // Cache-first for static assets from the same origin
+  if (request.url.startsWith(self.location.origin) && STATIC_TYPES.includes(request.destination)) {
+    event.respondWith(
+      caches.match(request)
+        .then((cached) => cached || fetch(request).then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        }))
+    );
+  }
 });
 
 // Background sync for offline data
