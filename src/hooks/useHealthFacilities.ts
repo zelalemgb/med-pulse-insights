@@ -69,6 +69,31 @@ export const useUpdateFacility = () => {
   });
 };
 
+export const useDeleteFacility = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (facilityId: string) =>
+      healthFacilitiesService.deleteFacility(facilityId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['health-facilities'] });
+      queryClient.invalidateQueries({ queryKey: ['user-facility-associations'] });
+      toast({
+        title: 'Success',
+        description: 'Facility deleted successfully',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
 export const useUserAssociations = () => {
   return useQuery({
     queryKey: ['user-facility-associations'],

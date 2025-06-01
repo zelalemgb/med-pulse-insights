@@ -75,6 +75,18 @@ export class FacilityService {
     return data as HealthFacility;
   }
 
+  // Delete a facility (RLS will check ownership)
+  async deleteFacility(facilityId: string): Promise<void> {
+    const { error } = await supabase
+      .from('health_facilities')
+      .delete()
+      .eq('id', facilityId);
+
+    if (error) {
+      throw new Error(`Failed to delete facility: ${error.message}`);
+    }
+  }
+
   // Check if user has access to a facility (uses RLS function)
   async checkFacilityAccess(facilityId: string, requiredType: string = 'approved_user'): Promise<boolean> {
     const { data: { user } } = await supabase.auth.getUser();
