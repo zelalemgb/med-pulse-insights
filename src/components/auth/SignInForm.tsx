@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 interface SignInFormProps {
@@ -13,6 +14,7 @@ interface SignInFormProps {
 
 export const SignInForm = ({ isLoading, setIsLoading }: SignInFormProps) => {
   const { signIn } = useAuth();
+  const navigate = useNavigate();
   const [signInData, setSignInData] = useState({
     email: '',
     password: '',
@@ -31,6 +33,7 @@ export const SignInForm = ({ isLoading, setIsLoading }: SignInFormProps) => {
         toast.error(error.message || 'Failed to sign in');
       } else {
         toast.success('Signed in successfully');
+        // Navigation will be handled by Auth.tsx useEffect
       }
     } catch (error) {
       toast.error('An unexpected error occurred');

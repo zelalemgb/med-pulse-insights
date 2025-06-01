@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
@@ -17,11 +17,13 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useNavigationAnalytics } from '@/hooks/useNavigationAnalytics';
+import { toast } from 'sonner';
 
 const MainNavigation = () => {
   const { user, profile, signOut, loading } = useAuth();
   const { isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useNavigation();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Initialize navigation analytics tracking
   useNavigationAnalytics();
@@ -56,6 +58,16 @@ const MainNavigation = () => {
 
   const handleMobileNavClick = () => {
     closeMobileMenu();
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Signed out successfully');
+      navigate('/auth', { replace: true });
+    } catch (error) {
+      toast.error('Error signing out');
+    }
   };
 
   return (
@@ -153,7 +165,7 @@ const MainNavigation = () => {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
-                      onClick={signOut} 
+                      onClick={handleSignOut} 
                       className="text-red-600 focus:text-red-700 transition-colors duration-200"
                     >
                       <LogOut className="w-4 h-4 mr-2" />

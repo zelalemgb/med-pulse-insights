@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminStatusChecker } from '@/components/admin/AdminStatusChecker';
 import { AuthCard } from '@/components/auth/AuthCard';
@@ -8,14 +8,23 @@ import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 
 const Auth = () => {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
-  // Early return for authenticated users - redirect to home page
-  if (user && !loading) {
-    return <Navigate to="/" replace />;
-  }
+  // Handle redirect for authenticated users
+  useEffect(() => {
+    if (user && !loading) {
+      console.log('✅ User authenticated, redirecting to home');
+      navigate('/', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   if (loading) {
     return <AuthLoadingScreen />;
+  }
+
+  // Don't render anything if user is authenticated (redirect is in progress)
+  if (user) {
+    return null;
   }
 
   return (
