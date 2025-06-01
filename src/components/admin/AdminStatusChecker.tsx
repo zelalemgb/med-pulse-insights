@@ -30,6 +30,7 @@ export const AdminStatusChecker = () => {
     
     try {
       console.log('🔍 Checking admin status...');
+      console.log('🔍 Current user:', user);
       
       // Check if national users exist using the database function
       const { data: nationalCheck, error: nationalError } = await supabase.rpc('has_national_users');
@@ -58,6 +59,7 @@ export const AdminStatusChecker = () => {
       }
       
       console.log('👥 Admin users found:', users?.length || 0);
+      console.log('👥 Admin users data:', users);
       setAdminUsers(users || []);
       
     } catch (err) {
@@ -123,7 +125,13 @@ export const AdminStatusChecker = () => {
     }
   };
 
-  const showCreateButton = hasNationalUsers === false && user;
+  // More explicit logic for showing the create button
+  const showCreateButton = hasNationalUsers === false && user !== null;
+  
+  console.log('🔍 Debug info:');
+  console.log('  - hasNationalUsers:', hasNationalUsers);
+  console.log('  - user exists:', !!user);
+  console.log('  - showCreateButton:', showCreateButton);
 
   return (
     <div className="space-y-6">
@@ -150,6 +158,11 @@ export const AdminStatusChecker = () => {
                 {loading ? 'Creating...' : 'Create First Admin'}
               </Button>
             )}
+          </div>
+
+          {/* Debug information - remove this after testing */}
+          <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+            <strong>Debug:</strong> hasNationalUsers={String(hasNationalUsers)}, user={user ? 'exists' : 'null'}, showButton={String(showCreateButton)}
           </div>
 
           {error && (
@@ -188,6 +201,12 @@ export const AdminStatusChecker = () => {
               </div>
             )}
 
+            {!user && (
+              <div className="text-sm text-orange-600 bg-orange-50 p-3 rounded-lg">
+                <strong>Not logged in:</strong> Please sign in to create the first admin.
+              </div>
+            )}
+
             <div>
               <h4 className="font-medium mb-2 flex items-center">
                 <Users className="h-4 w-4 mr-2" />
@@ -200,6 +219,11 @@ export const AdminStatusChecker = () => {
                   {showCreateButton && (
                     <p className="text-green-600 text-sm font-medium">
                       👆 Click "Create First Admin" above to get started!
+                    </p>
+                  )}
+                  {!user && (
+                    <p className="text-orange-600 text-sm font-medium">
+                      Please sign in first to create the first admin.
                     </p>
                   )}
                 </div>
