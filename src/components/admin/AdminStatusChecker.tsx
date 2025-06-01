@@ -18,7 +18,7 @@ interface UserWithRole {
 }
 
 export const AdminStatusChecker = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [adminUsers, setAdminUsers] = useState<UserWithRole[]>([]);
   const [hasNationalUsers, setHasNationalUsers] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
@@ -30,7 +30,6 @@ export const AdminStatusChecker = () => {
     
     try {
       console.log('🔍 Checking admin status...');
-      console.log('🔍 Current user:', user);
       
       // Check if national users exist using the database function
       const { data: nationalCheck, error: nationalError } = await supabase.rpc('has_national_users');
@@ -59,7 +58,6 @@ export const AdminStatusChecker = () => {
       }
       
       console.log('👥 Admin users found:', users?.length || 0);
-      console.log('👥 Admin users data:', users);
       setAdminUsers(users || []);
       
     } catch (err) {
@@ -112,9 +110,12 @@ export const AdminStatusChecker = () => {
     }
   };
 
+  // Only check admin status when auth is ready and user state is stable
   useEffect(() => {
-    checkAdminStatus();
-  }, []);
+    if (!authLoading) {
+      checkAdminStatus();
+    }
+  }, [authLoading]);
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -126,12 +127,27 @@ export const AdminStatusChecker = () => {
   };
 
   // More explicit logic for showing the create button
-  const showCreateButton = hasNationalUsers === false && user !== null;
-  
-  console.log('🔍 Debug info:');
-  console.log('  - hasNationalUsers:', hasNationalUsers);
-  console.log('  - user exists:', !!user);
-  console.log('  - showCreateButton:', showCreateButton);
+  const showCreateButton = hasNationalUsers === false && user !== null && !authLoading;
+
+  // Show loading state while auth is initializing
+  if (authLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Shield className="h-5 w-5 mr-2" />
+            Admin Status Check
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading authentication...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -158,11 +174,6 @@ export const AdminStatusChecker = () => {
                 {loading ? 'Creating...' : 'Create First Admin'}
               </Button>
             )}
-          </div>
-
-          {/* Debug information - remove this after testing */}
-          <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-            <strong>Debug:</strong> hasNationalUsers={String(hasNationalUsers)}, user={user ? 'exists' : 'null'}, showButton={String(showCreateButton)}
           </div>
 
           {error && (

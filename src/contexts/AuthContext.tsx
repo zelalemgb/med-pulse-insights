@@ -10,12 +10,13 @@ import { useAuthOperations } from '@/hooks/useAuthOperations';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  console.log('🔧 AuthProvider initializing...');
-  
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authInitialized, setAuthInitialized] = useState(false);
+
+  console.log('🔧 AuthProvider initializing...');
 
   // Create a stable reference to the profile refresh function
   const refreshProfile = useCallback(async () => {
@@ -53,6 +54,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Set up auth state listener and get initial session - run only once
   useEffect(() => {
+    if (authInitialized) return;
+
     console.log('🔧 Setting up auth state change listener...');
 
     const initializeAuth = async () => {
@@ -69,15 +72,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         
         setLoading(false);
+        setAuthInitialized(true);
       } catch (error) {
         console.error('💥 Error during auth initialization:', error);
         setLoading(false);
+        setAuthInitialized(true);
       }
     };
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!authInitialized) return; // Skip events until initialized
+        
         console.log('🔄 Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
@@ -99,7 +106,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('🧹 Cleaning up auth subscription');
       subscription.unsubscribe();
     };
-  }, []); // Empty dependency array to run only once
+  }, [authInitialized, fetchUserProfile]); // Add authInitialized to dependencies
 
   // Get auth operations from custom hook
   const authOperations = useAuthOperations(profile, user, refreshProfile);
