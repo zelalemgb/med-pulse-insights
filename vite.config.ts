@@ -40,5 +40,7 @@ export default defineConfig(({ mode }) => ({
   // PWA optimizations
   define: {
     'process.env': {},
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL),
+    'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(process.env.VITE_SUPABASE_PUBLISHABLE_KEY),
   },
 }));
