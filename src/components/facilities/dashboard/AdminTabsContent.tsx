@@ -5,11 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PendingAssociations } from '../PendingAssociations';
 import { FacilitiesList } from '../FacilitiesList';
-import { FacilityTestHelper } from '../FacilityTestHelper';
 import { CrossFacilityAnalytics } from '../CrossFacilityAnalytics';
 import { RoleManagement } from '../RoleManagement';
-import { RoleTestingDashboard } from '../RoleTestingDashboard';
-import { AuthTester } from '@/components/testing/AuthTester';
 import { CheckCircle } from 'lucide-react';
 
 interface AdminTabsContentProps {
@@ -19,24 +16,12 @@ interface AdminTabsContentProps {
 export const AdminTabsContent = ({ pendingCount }: AdminTabsContentProps) => {
   return (
     <>
-      <TabsContent value="auth-testing">
-        <AuthTester />
-      </TabsContent>
-
       <TabsContent value="analytics">
         <CrossFacilityAnalytics />
       </TabsContent>
 
       <TabsContent value="roles">
         <RoleManagement />
-      </TabsContent>
-
-      <TabsContent value="role-testing">
-        <RoleTestingDashboard />
-      </TabsContent>
-
-      <TabsContent value="testing">
-        <FacilityTestHelper />
       </TabsContent>
 
       <TabsContent value="pending">

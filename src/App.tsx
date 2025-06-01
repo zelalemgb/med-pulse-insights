@@ -15,8 +15,6 @@ import Dashboard from "@/pages/Dashboard";
 import Facilities from "@/pages/Facilities";
 import Analytics from "@/pages/Analytics";
 import Import from "@/pages/Import";
-import RoleTestingPage from "@/pages/RoleTestingPage";
-import ComprehensiveTestingPage from "@/pages/ComprehensiveTestingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,11 +54,6 @@ function App() {
                   <Route path="/facilities" element={<Facilities />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/import" element={<Import />} />
-                  <Route path="/role-testing" element={<RoleTestingPage />} />
-                  <Route
-                    path="/comprehensive-testing"
-                    element={<ComprehensiveTestingPage />}
-                  />
                 </Routes>
               </Suspense>
             </div>
