@@ -12,7 +12,8 @@ import { CrossFacilityAnalytics } from './CrossFacilityAnalytics';
 import { RoleManagement } from './RoleManagement';
 import { RoleTestingDashboard } from './RoleTestingDashboard';
 import { RoleJourneyTester } from '@/components/testing/RoleJourneyTester';
-import { Shield, Users, Building, Clock, CheckCircle, TestTube, BarChart3, TrendingUp, Settings, UserCheck } from 'lucide-react';
+import { AuthTester } from '@/components/testing/AuthTester';
+import { Shield, Users, Building, Clock, CheckCircle, TestTube, BarChart3, TrendingUp, Settings, UserCheck, LogIn } from 'lucide-react';
 
 export const SuperAdminDashboard = () => {
   const { profile } = useAuth();
@@ -107,8 +108,12 @@ export const SuperAdminDashboard = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="analytics" className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
+      <Tabs defaultValue="auth-testing" className="w-full">
+        <TabsList className="grid w-full grid-cols-9">
+          <TabsTrigger value="auth-testing" className="flex items-center">
+            <LogIn className="h-4 w-4 mr-2" />
+            Auth Test
+          </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center">
             <BarChart3 className="h-4 w-4 mr-2" />
             Analytics
@@ -147,6 +152,10 @@ export const SuperAdminDashboard = () => {
             Optimization
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="auth-testing">
+          <AuthTester />
+        </TabsContent>
 
         <TabsContent value="analytics">
           <CrossFacilityAnalytics />
