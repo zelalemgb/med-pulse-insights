@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom';
 import { Shield, HelpCircle, FileText, ExternalLink, Mail, Phone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 const Footer = () => {
   const { user } = useAuth();
+  const { appVersion, systemStatus } = useSystemSettings();
   const currentYear = new Date().getFullYear();
 
   const footerSections = [
@@ -59,13 +61,17 @@ const Footer = () => {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs">
-                  v2.1.0
+                  v{appVersion}
                 </Badge>
                 <span className="text-xs text-gray-500">Production</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-xs text-gray-600">All systems operational</span>
+                <div className={`w-2 h-2 rounded-full ${
+                  systemStatus === 'operational' ? 'bg-green-500' : 'bg-yellow-500'
+                }`}></div>
+                <span className="text-xs text-gray-600 capitalize">
+                  {systemStatus === 'operational' ? 'All systems operational' : systemStatus}
+                </span>
               </div>
             </div>
           </div>

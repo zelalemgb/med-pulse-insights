@@ -15,11 +15,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { useNavigationAnalytics } from '@/hooks/useNavigationAnalytics';
 
 const MainNavigation = () => {
   const { user, profile, signOut, loading } = useAuth();
   const { isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useNavigation();
   const location = useLocation();
+
+  // Initialize navigation analytics tracking
+  useNavigationAnalytics();
 
   const navigationItems = [
     { path: '/dashboard', label: 'Dashboard' },
@@ -101,6 +106,9 @@ const MainNavigation = () => {
               </div>
             ) : user ? (
               <>
+                {/* Notification Bell */}
+                <NotificationBell />
+
                 {/* Mobile Menu Button */}
                 <Button
                   variant="ghost"

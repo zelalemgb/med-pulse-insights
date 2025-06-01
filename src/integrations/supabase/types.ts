@@ -171,6 +171,78 @@ export type Database = {
           },
         ]
       }
+      navigation_analytics: {
+        Row: {
+          created_at: string
+          device_type: string | null
+          id: string
+          page_visited: string
+          referrer_page: string | null
+          session_id: string | null
+          time_spent_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          page_visited: string
+          referrer_page?: string | null
+          session_id?: string | null
+          time_spent_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          page_visited?: string
+          referrer_page?: string | null
+          session_id?: string | null
+          time_spent_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       permission_usage_log: {
         Row: {
           access_granted: boolean
@@ -238,8 +310,12 @@ export type Database = {
           id: string
           is_active: boolean
           is_facility_owner: boolean | null
+          language: string | null
+          last_login_at: string | null
+          login_count: number | null
           primary_facility_id: string | null
           role: Database["public"]["Enums"]["user_role"]
+          timezone: string | null
           updated_at: string
         }
         Insert: {
@@ -252,8 +328,12 @@ export type Database = {
           id: string
           is_active?: boolean
           is_facility_owner?: boolean | null
+          language?: string | null
+          last_login_at?: string | null
+          login_count?: number | null
           primary_facility_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          timezone?: string | null
           updated_at?: string
         }
         Update: {
@@ -266,8 +346,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_facility_owner?: boolean | null
+          language?: string | null
+          last_login_at?: string | null
+          login_count?: number | null
           primary_facility_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          timezone?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -336,6 +420,33 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       user_facility_associations: {
         Row: {
           approval_status: string | null
@@ -393,6 +504,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          dashboard_layout: Json | null
+          id: string
+          notification_settings: Json | null
+          theme_preferences: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dashboard_layout?: Json | null
+          id?: string
+          notification_settings?: Json | null
+          theme_preferences?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dashboard_layout?: Json | null
+          id?: string
+          notification_settings?: Json | null
+          theme_preferences?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -453,6 +594,17 @@ export type Database = {
         Args: { _user_id: string; _email: string; _full_name: string }
         Returns: boolean
       }
+      create_notification: {
+        Args: {
+          _user_id: string
+          _title: string
+          _message: string
+          _type?: string
+          _action_url?: string
+          _expires_at?: string
+        }
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -463,6 +615,10 @@ export type Database = {
       }
       get_role_audit_analytics: {
         Args: { _start_date?: string; _end_date?: string }
+        Returns: Json
+      }
+      get_user_dashboard_stats: {
+        Args: { _user_id: string }
         Returns: Json
       }
       get_user_role: {
@@ -516,6 +672,16 @@ export type Database = {
         }
         Returns: string
       }
+      track_navigation: {
+        Args: {
+          _user_id: string
+          _page_visited: string
+          _referrer_page?: string
+          _session_id?: string
+          _device_type?: string
+        }
+        Returns: string
+      }
       user_has_facility_access: {
         Args: {
           _user_id: string
@@ -534,6 +700,13 @@ export type Database = {
         | "zonal"
         | "regional"
         | "national"
+        | "facility_officer"
+        | "facility_manager"
+        | "data_analyst"
+        | "program_manager"
+        | "procurement"
+        | "finance"
+        | "qa"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -657,6 +830,13 @@ export const Constants = {
         "zonal",
         "regional",
         "national",
+        "facility_officer",
+        "facility_manager",
+        "data_analyst",
+        "program_manager",
+        "procurement",
+        "finance",
+        "qa",
       ],
     },
   },
