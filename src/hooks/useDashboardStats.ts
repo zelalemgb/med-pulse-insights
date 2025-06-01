@@ -25,7 +25,7 @@ export const useDashboardStats = () => {
       });
 
       if (error) throw error;
-      return data as DashboardStats;
+      return data as unknown as DashboardStats;
     },
     enabled: !!user,
     refetchInterval: 60000, // Refresh every minute

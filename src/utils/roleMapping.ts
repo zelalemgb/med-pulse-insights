@@ -72,7 +72,7 @@ export const mapSupabaseToPharmaceuticalRole = (supabaseRole: SupabaseUserRole):
   return mappedRole;
 };
 
-// Enhanced reverse mapping
+// Enhanced reverse mapping with complete coverage
 export const mapPharmaceuticalToSupabaseRole = (pharmaceuticalRole: UserRole): SupabaseUserRole => {
   console.log('🔄 Reverse mapping - Pharmaceutical role:', pharmaceuticalRole);
   
@@ -91,7 +91,7 @@ export const mapPharmaceuticalToSupabaseRole = (pharmaceuticalRole: UserRole): S
     'facility_officer': 'viewer', // Map to viewer in Supabase
     'procurement': 'viewer',
     'finance': 'viewer',
-    'program_manager': 'viewer',
+    'program_manager': 'analyst', // Map to analyst for better permissions
     'qa': 'viewer'
   };
 

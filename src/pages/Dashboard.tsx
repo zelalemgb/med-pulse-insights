@@ -3,7 +3,7 @@ import React from 'react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import PageHeader from '@/components/layout/PageHeader';
 import { DashboardStatsCards } from '@/components/dashboard/DashboardStatsCards';
-import { RoleBasedDashboard } from '@/components/dashboard/RoleBasedDashboard';
+import RoleBasedDashboard from '@/components/dashboard/RoleBasedDashboard';
 
 const Dashboard = () => {
   const breadcrumbItems = [
