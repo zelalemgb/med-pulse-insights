@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Package, Edit, Trash2 } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import { usePermissions } from '@/hooks/usePermissions';
+import { CreateProductDialog } from '@/components/products/CreateProductDialog';
 
 // Mock data for now - this would come from Supabase later
-const mockProducts = [
+const initialMockProducts = [
   {
     id: '1',
     name: 'Amoxicillin 500mg',
@@ -35,12 +35,17 @@ const mockProducts = [
 
 const Products = () => {
   const { canAccess } = usePermissions();
-  const [products] = useState(mockProducts);
+  const [products, setProducts] = useState(initialMockProducts);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const breadcrumbItems = [
     { label: 'Home', path: '/' },
     { label: 'Products' }
   ];
+
+  const handleProductCreated = (newProduct: any) => {
+    setProducts(prev => [...prev, newProduct]);
+  };
 
   const getVenBadgeColor = (classification: string) => {
     switch (classification) {
@@ -92,7 +97,10 @@ const Products = () => {
             </div>
             
             {canAccess.createProducts && (
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={() => setShowCreateDialog(true)}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Product
               </Button>
@@ -170,7 +178,10 @@ const Products = () => {
                   Get started by creating your first pharmaceutical product.
                 </p>
                 {canAccess.createProducts && (
-                  <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Button 
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => setShowCreateDialog(true)}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Your First Product
                   </Button>
@@ -179,6 +190,12 @@ const Products = () => {
             </Card>
           )}
         </div>
+
+        <CreateProductDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          onSuccess={handleProductCreated}
+        />
       </div>
     </div>
   );
