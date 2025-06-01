@@ -5,7 +5,7 @@ import { Users } from 'lucide-react';
 import { AdminUser } from '@/services/admin/adminService';
 
 interface AdminUsersListProps {
-  adminUsers: AdminUser[];
+  adminUsers: AdminUser[] | undefined;
   user: any;
   showCreateButton: boolean;
 }
@@ -20,14 +20,18 @@ export const AdminUsersList = ({ adminUsers, user, showCreateButton }: AdminUser
     }
   };
 
+  // Safely handle undefined adminUsers
+  const safeAdminUsers = adminUsers || [];
+  const userCount = safeAdminUsers.length;
+
   return (
     <div>
       <h4 className="font-medium mb-2 flex items-center">
         <Users className="h-4 w-4 mr-2" />
-        Current Admin Users ({adminUsers.length})
+        Current Admin Users ({userCount})
       </h4>
       
-      {adminUsers.length === 0 ? (
+      {userCount === 0 ? (
         <div className="text-center py-6 bg-gray-50 rounded-lg">
           <p className="text-gray-600 text-sm mb-2">No admin users found</p>
           {showCreateButton && (
@@ -43,7 +47,7 @@ export const AdminUsersList = ({ adminUsers, user, showCreateButton }: AdminUser
         </div>
       ) : (
         <div className="space-y-2">
-          {adminUsers.map((adminUser) => (
+          {safeAdminUsers.map((adminUser) => (
             <div key={adminUser.id} className="flex items-center justify-between p-3 border rounded-lg">
               <div>
                 <div className="font-medium">{adminUser.full_name || 'Unnamed User'}</div>

@@ -14,8 +14,6 @@ import {
   useCreateFirstAdmin,
 } from '@/hooks/useAdmin';
 
-
-
 export const AdminStatusChecker = () => {
   const { user, loading: authLoading } = useAuth();
 
