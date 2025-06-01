@@ -80,3 +80,18 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 4. **Managing Admin Users**: Admin status and user lists are fetched through the new `adminService` and related hooks.
 
 These steps ensure the full authentication flow from initial admin creation through regular user registration and login.
+
+## Cache Manager Configuration
+
+`CacheManager` periodically removes expired entries in the background. The default cleanup interval is **60 seconds**, but it can be customised:
+
+```ts
+import { CacheManager } from '@/utils/cacheManager';
+
+const cache = new CacheManager({ cleanupInterval: 30_000 }); // 30 seconds
+
+// Change interval later
+cache.setCleanupInterval(120_000);
+```
+
+This background task runs even when no new cache entries are added, ensuring stale items do not accumulate.

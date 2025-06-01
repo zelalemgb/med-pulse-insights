@@ -1,14 +1,56 @@
 
 import { CacheEntry, CacheStats } from '@/types/aggregation';
 
+export interface CacheManagerConfig {
+  /**
+   * How often the cache should be scanned for expired entries (in milliseconds)
+   */
+  cleanupInterval: number;
+}
+
 export class CacheManager {
   private cache: Map<string, CacheEntry> = new Map();
   private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
+  private config: CacheManagerConfig;
+  private cleanupTimer: NodeJS.Timeout | null = null;
+
+  constructor(config: Partial<CacheManagerConfig> = {}) {
+    this.config = {
+      cleanupInterval: 60 * 1000,
+      ...config
+    };
+    this.startCleanupTask();
+  }
+
+  /**
+   * Update the cleanup interval and restart the background task
+   */
+  setCleanupInterval(interval: number): void {
+    this.config.cleanupInterval = interval;
+    this.startCleanupTask();
+  }
+
+  private startCleanupTask(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+    }
+    this.cleanupTimer = setInterval(
+      () => this.cleanupExpired(),
+      this.config.cleanupInterval
+    );
+  }
+
+  private stopCleanupTask(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+  }
 
   /**
    * Set cache entry with TTL
    */
-  set(key: string, data: any, ttl: number = this.DEFAULT_TTL): void {
+  set<T>(key: string, data: T, ttl: number = this.DEFAULT_TTL): void {
     const entry: CacheEntry = {
       key,
       data,
@@ -24,7 +66,7 @@ export class CacheManager {
   /**
    * Get cache entry if not expired
    */
-  get(key: string): any | null {
+  get<T>(key: string): T | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
@@ -36,7 +78,7 @@ export class CacheManager {
       return null;
     }
 
-    return entry.data;
+    return entry.data as T;
   }
 
   /**
