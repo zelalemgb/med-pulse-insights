@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
 import { RoleChangeLogEntry } from '@/types/facilityRoles';
 import { mapPharmaceuticalToSupabaseRole } from '@/utils/roleMapping';
+import { logger } from '@/utils/logger';
 
 export class RoleAuditService {
   // Log role changes for audit trail
@@ -37,7 +38,7 @@ export class RoleAuditService {
         }
       });
     } catch (error) {
-      console.error('Failed to log role change:', error);
+      logger.error('Failed to log role change:', error);
       // Don't throw here to avoid breaking the main operation
     }
   }

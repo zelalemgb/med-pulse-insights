@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
 import { UserProfile } from '@/types/auth';
 import { Database } from '@/integrations/supabase/types';
+import { logger } from '@/utils/logger';
 import { 
   mapSupabaseToPharmaceuticalRole, 
   mapPharmaceuticalToSupabaseRole,
@@ -14,7 +15,7 @@ type SupabaseUserRole = Database['public']['Enums']['user_role'];
 export class ProfileService {
   static async fetchUserProfile(userId: string, userEmail?: string): Promise<UserProfile | null> {
     try {
-      console.log(`🔍 Fetching profile for user: ${userId}`);
+      logger.log(`🔍 Fetching profile for user: ${userId}`);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -23,15 +24,15 @@ export class ProfileService {
         .maybeSingle();
 
       if (error) {
-        console.error('❌ Error fetching profile:', error);
+        logger.error('❌ Error fetching profile:', error);
         return null;
       }
 
       if (!data) {
-        console.log('⚠️ No profile found for user:', userId);
+        logger.log('⚠️ No profile found for user:', userId);
         
         // Create a default profile if none exists
-        console.log('🔧 Creating default profile for user');
+        logger.log('🔧 Creating default profile for user');
         return {
           id: userId,
           email: userEmail || '',
@@ -43,20 +44,20 @@ export class ProfileService {
         };
       }
 
-      console.log('📋 Raw profile data from database:', data);
+      logger.log('📋 Raw profile data from database:', data);
 
       // Enhanced role mapping with validation
       let pharmaceuticalRole: UserRole;
       if (data.role && typeof data.role === 'string') {
         pharmaceuticalRole = mapSupabaseToPharmaceuticalRole(data.role as SupabaseUserRole);
       } else {
-        console.warn('⚠️ Invalid or missing role in profile, defaulting to viewer');
+        logger.warn('⚠️ Invalid or missing role in profile, defaulting to viewer');
         pharmaceuticalRole = 'viewer';
       }
 
       // Double-check role validity
       if (!isValidPharmaceuticalRole(pharmaceuticalRole)) {
-        console.warn(`⚠️ Invalid pharmaceutical role: ${pharmaceuticalRole}, using viewer`);
+        logger.warn(`⚠️ Invalid pharmaceutical role: ${pharmaceuticalRole}, using viewer`);
         pharmaceuticalRole = 'viewer';
       }
       
@@ -70,12 +71,12 @@ export class ProfileService {
         is_active: data.is_active
       };
 
-      console.log('✅ Final mapped pharmaceutical profile:', pharmaceuticalProfile);
-      console.log(`🎯 User role confirmed as: ${pharmaceuticalRole}`);
+      logger.log('✅ Final mapped pharmaceutical profile:', pharmaceuticalProfile);
+      logger.log(`🎯 User role confirmed as: ${pharmaceuticalRole}`);
       
       return pharmaceuticalProfile;
     } catch (error) {
-      console.error('💥 Unexpected error fetching profile:', error);
+      logger.error('💥 Unexpected error fetching profile:', error);
       return null;
     }
   }
@@ -83,18 +84,18 @@ export class ProfileService {
   static async updateUserRole(userId: string, newRole: UserRole, currentUserProfile: UserProfile | null, currentUserId?: string) {
     // Enhanced validation
     if (!isValidPharmaceuticalRole(newRole)) {
-      console.error(`❌ Invalid role: ${newRole}`);
+      logger.error(`❌ Invalid role: ${newRole}`);
       return { error: { message: `Invalid role: ${newRole}` } };
     }
 
     // Enhanced permission check
     if (!currentUserProfile || !['national', 'regional', 'zonal'].includes(currentUserProfile.role)) {
-      console.error('❌ Insufficient permissions to change user roles');
+      logger.error('❌ Insufficient permissions to change user roles');
       return { error: { message: 'Insufficient permissions to change user roles' } };
     }
 
     try {
-      console.log(`🔄 Updating user ${userId} role to ${newRole}`);
+      logger.log(`🔄 Updating user ${userId} role to ${newRole}`);
       
       // Convert pharmaceutical role to Supabase role for database update
       const supabaseRole = mapPharmaceuticalToSupabaseRole(newRole);
@@ -105,14 +106,14 @@ export class ProfileService {
         .eq('id', userId);
 
       if (error) {
-        console.error('❌ Error updating user role:', error);
+        logger.error('❌ Error updating user role:', error);
         return { error };
       }
 
-      console.log('✅ User role updated successfully');
+      logger.log('✅ User role updated successfully');
       return { error: null };
     } catch (error) {
-      console.error('💥 Unexpected error updating user role:', error);
+      logger.error('💥 Unexpected error updating user role:', error);
       return { error };
     }
   }
