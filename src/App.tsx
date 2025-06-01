@@ -1,3 +1,4 @@
+
 import React, { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -13,6 +14,7 @@ import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import Facilities from "@/pages/Facilities";
 import Analytics from "@/pages/Analytics";
+import Import from "@/pages/Import";
 import RoleTestingPage from "@/pages/RoleTestingPage";
 import ComprehensiveTestingPage from "@/pages/ComprehensiveTestingPage";
 
@@ -53,6 +55,7 @@ function App() {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/facilities" element={<Facilities />} />
                   <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/import" element={<Import />} />
                   <Route path="/role-testing" element={<RoleTestingPage />} />
                   <Route
                     path="/comprehensive-testing"
