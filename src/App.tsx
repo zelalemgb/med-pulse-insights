@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy } from "react";
+import React, { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -28,7 +28,6 @@ const queryClient = new QueryClient({
 function App() {
   console.log("App component rendering");
   
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -57,10 +56,10 @@ function App() {
                 </Routes>
               </Suspense>
             </div>
-            <Toaster />
           </NavigationProvider>
         </BrowserRouter>
       </AuthProvider>
+      <Toaster />
     </QueryClientProvider>
   );
 }
