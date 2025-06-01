@@ -1,12 +1,12 @@
 
 import React, { Suspense, lazy } from "react";
-import { Toaster } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
 import MainNavigation from "@/components/layout/MainNavigation";
 import { useServiceWorker } from "@/hooks/useServiceWorker";
+import { Toaster } from "@/components/ui/toaster";
 
 // Import components directly instead of lazy loading to identify the problematic import
 import Index from "@/pages/Index";
@@ -60,10 +60,10 @@ function App() {
                 </Routes>
               </Suspense>
             </div>
+            <Toaster />
           </NavigationProvider>
         </BrowserRouter>
       </AuthProvider>
-      <Toaster />
     </QueryClientProvider>
   );
 }
