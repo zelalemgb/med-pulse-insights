@@ -9,13 +9,14 @@ import { NavigationProvider } from "@/contexts/NavigationContext";
 import MainNavigation from "@/components/layout/MainNavigation";
 import { useServiceWorker } from "@/hooks/useServiceWorker";
 
-const Index = lazy(() => import("@/pages/Index"));
-const Auth = lazy(() => import("@/pages/Auth"));
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
-const Facilities = lazy(() => import("@/pages/Facilities"));
-const Analytics = lazy(() => import("@/pages/Analytics"));
-const RoleTestingPage = lazy(() => import("@/pages/RoleTestingPage"));
-const ComprehensiveTestingPage = lazy(() => import("@/pages/ComprehensiveTestingPage"));
+// Import components directly instead of lazy loading to identify the problematic import
+import Index from "@/pages/Index";
+import Auth from "@/pages/Auth";
+import Dashboard from "@/pages/Dashboard";
+import Facilities from "@/pages/Facilities";
+import Analytics from "@/pages/Analytics";
+import RoleTestingPage from "@/pages/RoleTestingPage";
+import ComprehensiveTestingPage from "@/pages/ComprehensiveTestingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
