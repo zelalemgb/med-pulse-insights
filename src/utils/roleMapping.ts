@@ -43,7 +43,7 @@ export const VALID_SUPABASE_ROLES: SupabaseUserRole[] = [
   'viewer'
 ];
 
-// Enhanced mapping with better fallback handling
+// Enhanced mapping with better fallback handling - Complete mapping for all SupabaseUserRole values
 export const mapSupabaseToPharmaceuticalRole = (supabaseRole: SupabaseUserRole): UserRole => {
   console.log('🔄 Role mapping - Supabase role:', supabaseRole);
   
@@ -52,6 +52,7 @@ export const mapSupabaseToPharmaceuticalRole = (supabaseRole: SupabaseUserRole):
     return 'viewer';
   }
 
+  // Complete mapping that includes all possible SupabaseUserRole values
   const roleMap: Record<SupabaseUserRole, UserRole> = {
     'national': 'national',
     'regional': 'regional',
