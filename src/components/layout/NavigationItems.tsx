@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,6 @@ const navigationItems: NavigationItem[] = [
   { path: '/dashboard', label: 'Analytics' },
   { path: '/analytics', label: 'Forecast' },
   { path: '/data-management', label: 'Data Management', roles: ['national', 'regional', 'zonal', 'facility_manager'] },
-  { path: '/profile', label: 'Profile' },
 ];
 
 export const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
