@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BreadcrumbNavigation } from '@/components/navigation/BreadcrumbNavigation';
+import BreadcrumbNavigation from '@/components/navigation/BreadcrumbNavigation';
 
 interface BreadcrumbItem {
   label: string;
