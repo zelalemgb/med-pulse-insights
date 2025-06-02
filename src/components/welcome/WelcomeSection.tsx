@@ -126,7 +126,7 @@ const WelcomeSection = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Response Time</span>
-                    <span className="font-medium text-blue-600">< 24hrs</span>
+                    <span className="font-medium text-blue-600">&lt; 24hrs</span>
                   </div>
                 </div>
               </CardContent>
@@ -164,7 +164,7 @@ const WelcomeSection = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Emergency Response</span>
-                    <span className="font-medium text-green-600">< 6hrs</span>
+                    <span className="font-medium text-green-600">&lt; 6hrs</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Facilities Connected</span>
