@@ -1,13 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building2, MapPin, Users, Plus } from 'lucide-react';
+import { Building2, MapPin, Plus } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { FacilityRegistrationDialog } from '@/components/facilities/registration/FacilityRegistrationDialog';
+import { HealthFacility } from '@/types/healthFacilities';
 
 const FacilitiesDataTable = () => {
   const { userRole, canAccess } = usePermissions();
+  const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
 
   // Mock facilities data based on user role
   const getFacilitiesData = () => {
@@ -62,6 +65,11 @@ const FacilitiesDataTable = () => {
     }
   };
 
+  const handleFacilityCreated = (facility: HealthFacility) => {
+    console.log('New facility created:', facility);
+    // In a real app, this would update the facilities list
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -77,7 +85,7 @@ const FacilitiesDataTable = () => {
           </div>
           {canAccess.manageFacilities && (
             <Button 
-              onClick={() => window.location.href = '/facilities'}
+              onClick={() => setShowRegistrationDialog(true)}
               className="bg-blue-600 hover:bg-blue-700"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -133,7 +141,7 @@ const FacilitiesDataTable = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-2">No facilities found</h3>
             <p className="text-gray-500 mb-4">Start by adding your first facility</p>
             {canAccess.manageFacilities && (
-              <Button onClick={() => window.location.href = '/facilities'}>
+              <Button onClick={() => setShowRegistrationDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Facility
               </Button>
@@ -141,6 +149,12 @@ const FacilitiesDataTable = () => {
           </div>
         )}
       </CardContent>
+
+      <FacilityRegistrationDialog
+        open={showRegistrationDialog}
+        onOpenChange={setShowRegistrationDialog}
+        onSuccess={handleFacilityCreated}
+      />
     </Card>
   );
 };

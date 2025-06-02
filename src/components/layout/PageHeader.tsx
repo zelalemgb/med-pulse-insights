@@ -1,47 +1,42 @@
 
 import React from 'react';
-import { Separator } from "@/components/ui/separator";
-import BreadcrumbNavigation from "@/components/navigation/BreadcrumbNavigation";
+import { BreadcrumbNavigation } from '@/components/navigation/BreadcrumbNavigation';
+
+interface BreadcrumbItem {
+  label: string;
+  path?: string;
+}
 
 interface PageHeaderProps {
   title: string;
   description?: string;
-  children?: React.ReactNode;
-  breadcrumbItems?: Array<{ label: string; path?: string; icon?: React.ComponentType<any> }>;
-  className?: string;
+  breadcrumbItems?: BreadcrumbItem[];
+  action?: React.ReactNode;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({
-  title,
-  description,
-  children,
-  breadcrumbItems,
-  className = ""
-}) => {
+const PageHeader = ({ title, description, breadcrumbItems, action }: PageHeaderProps) => {
   return (
-    <div className={`space-y-6 ${className}`}>
-      <BreadcrumbNavigation items={breadcrumbItems} />
+    <div className="mb-8">
+      {breadcrumbItems && breadcrumbItems.length > 0 && (
+        <div className="mb-4">
+          <BreadcrumbNavigation items={breadcrumbItems} />
+        </div>
+      )}
       
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            {title}
-          </h1>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
           {description && (
-            <p className="text-lg text-gray-600 max-w-4xl">
-              {description}
-            </p>
+            <p className="text-lg text-gray-600 max-w-3xl">{description}</p>
           )}
         </div>
         
-        {children && (
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            {children}
+        {action && (
+          <div className="ml-4">
+            {action}
           </div>
         )}
       </div>
-      
-      <Separator className="bg-gray-200" />
     </div>
   );
 };
