@@ -13,15 +13,7 @@ import {
 const QuickActionCards = () => {
   const quickActions = [
     {
-      title: "Import Forecast Data",
-      description: "Upload consumption data and forecasting files to enhance analytics",
-      icon: Upload,
-      path: "/import",
-      color: "text-blue-600",
-      bgColor: "bg-blue-50"
-    },
-    {
-      title: "View Analytics",
+      title: "Advanced Analytics",
       description: "Access comprehensive analytics and insights from your data",
       icon: BarChart3,
       path: "/analytics",
@@ -29,12 +21,20 @@ const QuickActionCards = () => {
       bgColor: "bg-purple-50"
     },
     {
-      title: "Manage Your Data",
-      description: "View and manage facilities, products, and inventory data",
+      title: "Manage Facilities",
+      description: "View and manage health facilities and associations",
       icon: Database,
-      path: "/data-management",
+      path: "/facilities",
       color: "text-green-600",
       bgColor: "bg-green-50"
+    },
+    {
+      title: "Import Data",
+      description: "Upload consumption data and forecasting files",
+      icon: Upload,
+      path: "/import",
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
     }
   ];
 

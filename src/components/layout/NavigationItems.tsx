@@ -20,6 +20,7 @@ const navigationItems: NavigationItem[] = [
   { path: '/analytics', label: 'Analytics' },
   { path: '/facilities', label: 'Facilities', roles: ['national', 'regional', 'zonal'] },
   { path: '/products', label: 'Products', roles: ['national', 'regional', 'zonal', 'facility_manager'] },
+  { path: '/data-management', label: 'Data Management', roles: ['national', 'regional', 'zonal', 'facility_manager'] },
   { path: '/profile', label: 'Profile' },
 ];
 
