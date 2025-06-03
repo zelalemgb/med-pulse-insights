@@ -88,14 +88,14 @@ export class UserManagementService {
     // Check for users in auth who might not have profiles
     try {
       console.log('🔍 Checking auth users vs profiles...');
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      const { data: authResponse, error: authError } = await supabase.auth.admin.listUsers();
       
-      if (authData?.users) {
-        console.log('Auth users count:', authData.users.length);
+      if (authResponse?.users && Array.isArray(authResponse.users)) {
+        console.log('Auth users count:', authResponse.users.length);
         console.log('Profiles count:', data?.length || 0);
         
         // Find users in auth but not in profiles
-        const authUserIds = authData.users.map(u => u.id);
+        const authUserIds = authResponse.users.map(u => u.id);
         const profileUserIds = (data || []).map(p => p.id);
         const missingProfiles = authUserIds.filter(id => !profileUserIds.includes(id));
         
@@ -105,7 +105,7 @@ export class UserManagementService {
           
           // Attempt to create missing profiles
           for (const userId of missingProfiles) {
-            const authUser = authData.users.find(u => u.id === userId);
+            const authUser = authResponse.users.find(u => u.id === userId);
             if (authUser) {
               console.log('🔧 Creating missing profile for user:', authUser.email);
               const { error: insertError } = await supabase
