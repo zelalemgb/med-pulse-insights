@@ -59,15 +59,14 @@ export class UserManagementService {
 
     // Try to fetch all profiles with detailed logging
     console.log('🔍 Attempting to fetch all profiles...');
-    const { data, error, count } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
-      .select('*', { count: 'exact' })
+      .select('*')
       .order('created_at', { ascending: false });
 
     console.log('📊 Query results:');
     console.log('- Data:', data);
     console.log('- Error:', error);
-    console.log('- Count:', count);
     console.log('- Data length:', data?.length || 0);
 
     if (error) {
@@ -102,9 +101,13 @@ export class UserManagementService {
       // Let's check if there are users in auth.users but not in profiles
       console.log('🔍 Checking for potential data inconsistencies...');
       
-      // Try to get count of auth users (this might not work due to RLS)
-      const { count: authCount, error: authError } = await supabase.auth.admin.listUsers();
-      console.log('Auth users count attempt:', authCount, 'Error:', authError);
+      // Try to get auth users count - using the correct approach for auth.admin.listUsers()
+      try {
+        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+        console.log('Auth users data attempt:', authData?.users?.length || 0, 'Error:', authError);
+      } catch (err) {
+        console.log('Error accessing auth.admin.listUsers:', err);
+      }
     }
 
     // Map the data to ensure type compatibility
