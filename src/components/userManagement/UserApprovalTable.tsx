@@ -25,7 +25,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, X, Loader2 } from 'lucide-react';
+import { Check, X, Loader2, Clock } from 'lucide-react';
 import { UserManagementRecord } from '@/services/userManagement/userManagementService';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { UserRole } from '@/types/pharmaceutical';
@@ -44,11 +44,13 @@ export const UserApprovalTable: React.FC<UserApprovalTableProps> = ({ users, isL
 
   const handleApprove = (userId: string) => {
     const role = selectedRole[userId] || 'facility_officer';
+    console.log('Approving user:', userId, 'with role:', role);
     approveUser({ userId, newRole: role });
   };
 
   const handleReject = (userId: string) => {
     const reason = rejectReason[userId];
+    console.log('Rejecting user:', userId, 'with reason:', reason);
     rejectUser({ userId, reason });
     setOpenRejectDialog(null);
     setRejectReason(prev => ({ ...prev, [userId]: '' }));
@@ -67,130 +69,150 @@ export const UserApprovalTable: React.FC<UserApprovalTableProps> = ({ users, isL
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center p-12 bg-white rounded-lg border">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-500" />
+          <p className="text-gray-600">Loading pending users...</p>
+        </div>
       </div>
     );
   }
 
   if (users.length === 0) {
     return (
-      <div className="text-center p-8 text-muted-foreground">
-        No pending user approvals
+      <div className="text-center p-12 bg-white rounded-lg border">
+        <Clock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No pending approvals</h3>
+        <p className="text-gray-600">All user registration requests have been processed.</p>
       </div>
     );
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Registration Date</TableHead>
-          <TableHead>Assign Role</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {users.map((user) => (
-          <TableRow key={user.id}>
-            <TableCell className="font-medium">
-              {user.full_name || 'No name provided'}
-            </TableCell>
-            <TableCell>{user.email}</TableCell>
-            <TableCell>
-              {new Date(user.created_at).toLocaleDateString()}
-            </TableCell>
-            <TableCell>
-              <Select
-                value={selectedRole[user.id] || 'facility_officer'}
-                onValueChange={(value: UserRole) =>
-                  setSelectedRole(prev => ({ ...prev, [user.id]: value }))
-                }
-              >
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {roleOptions.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {getRoleDisplayName(role)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </TableCell>
-            <TableCell>
-              <div className="flex space-x-2">
-                <Button
-                  size="sm"
-                  onClick={() => handleApprove(user.id)}
-                  disabled={isApproving}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {isApproving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Check className="h-4 w-4" />
-                  )}
-                  Approve
-                </Button>
-                
-                <Dialog 
-                  open={openRejectDialog === user.id} 
-                  onOpenChange={(open) => setOpenRejectDialog(open ? user.id : null)}
-                >
-                  <DialogTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={isRejecting}
-                    >
-                      <X className="h-4 w-4" />
-                      Reject
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Reject User</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <p>Are you sure you want to reject {user.email}?</p>
-                      <Textarea
-                        placeholder="Reason for rejection (optional)"
-                        value={rejectReason[user.id] || ''}
-                        onChange={(e) =>
-                          setRejectReason(prev => ({ ...prev, [user.id]: e.target.value }))
-                        }
-                      />
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => setOpenRejectDialog(null)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          onClick={() => handleReject(user.id)}
-                          disabled={isRejecting}
-                        >
-                          {isRejecting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            'Reject User'
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </TableCell>
+    <div className="bg-white rounded-lg border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-gray-50">
+            <TableHead className="font-semibold">Name</TableHead>
+            <TableHead className="font-semibold">Email</TableHead>
+            <TableHead className="font-semibold">Registration Date</TableHead>
+            <TableHead className="font-semibold">Assign Role</TableHead>
+            <TableHead className="font-semibold">Actions</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {users.map((user) => (
+            <TableRow key={user.id} className="hover:bg-gray-50">
+              <TableCell className="font-medium">
+                {user.full_name || 'No name provided'}
+              </TableCell>
+              <TableCell>{user.email}</TableCell>
+              <TableCell>
+                {new Date(user.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </TableCell>
+              <TableCell>
+                <Select
+                  value={selectedRole[user.id] || 'facility_officer'}
+                  onValueChange={(value: UserRole) =>
+                    setSelectedRole(prev => ({ ...prev, [user.id]: value }))
+                  }
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roleOptions.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {getRoleDisplayName(role)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell>
+                <div className="flex space-x-2">
+                  <Button
+                    size="sm"
+                    onClick={() => handleApprove(user.id)}
+                    disabled={isApproving}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {isApproving ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : (
+                      <Check className="h-4 w-4 mr-1" />
+                    )}
+                    Approve
+                  </Button>
+                  
+                  <Dialog 
+                    open={openRejectDialog === user.id} 
+                    onOpenChange={(open) => setOpenRejectDialog(open ? user.id : null)}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={isRejecting}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Reject
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Reject User Registration</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <p className="text-gray-700">
+                          Are you sure you want to reject the registration for{' '}
+                          <span className="font-semibold">{user.email}</span>?
+                        </p>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            Reason for rejection (optional)
+                          </label>
+                          <Textarea
+                            placeholder="Provide a reason for rejection..."
+                            value={rejectReason[user.id] || ''}
+                            onChange={(e) =>
+                              setRejectReason(prev => ({ ...prev, [user.id]: e.target.value }))
+                            }
+                            rows={3}
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => setOpenRejectDialog(null)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleReject(user.id)}
+                            disabled={isRejecting}
+                          >
+                            {isRejecting ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            ) : (
+                              'Reject User'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
