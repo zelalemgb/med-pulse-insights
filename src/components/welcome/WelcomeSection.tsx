@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import OSMMap from '@/components/map/OSMMap';
 
 interface FeatureProps {
   title: string;
@@ -47,10 +47,8 @@ const WelcomeSection = () => {
             <Button variant="outline" className="bg-white border px-4 py-2 rounded-lg">Join as a Pharmacy</Button>
           </div>
         </div>
-        <div className="mt-10 md:mt-0 md:ml-10">
-          <div className="bg-white border rounded-lg p-6 shadow-md">
-            <p className="text-sm text-gray-500">Map Preview Placeholder</p>
-          </div>
+        <div className="mt-10 md:mt-0 md:ml-10 w-full md:w-96">
+          <OSMMap height="300px" className="w-full" />
         </div>
       </section>
 
