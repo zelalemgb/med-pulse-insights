@@ -7,7 +7,7 @@ import FacilityManagerDashboard from './FacilityManagerDashboard';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SystemOverview from './SystemOverview';
 import SupplyChainDashboard from './SupplyChainDashboard';
-import { Activity, BarChart3, Settings, TrendingUp, Package } from 'lucide-react';
+import { BarChart3, Settings, TrendingUp, Package } from 'lucide-react';
 
 const RoleBasedDashboard = () => {
   const { profile } = useAuth();
@@ -23,12 +23,8 @@ const RoleBasedDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-          <TabsTrigger value="overview" className="flex items-center">
-            <Activity className="h-4 w-4 mr-2" />
-            Overview
-          </TabsTrigger>
+      <Tabs defaultValue="supply-chain" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <TabsTrigger value="supply-chain" className="flex items-center">
             <Package className="h-4 w-4 mr-2" />
             Supply Chain
@@ -50,10 +46,6 @@ const RoleBasedDashboard = () => {
             System
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="overview">
-          <FacilityOfficerDashboard />
-        </TabsContent>
 
         <TabsContent value="supply-chain">
           <SupplyChainDashboard />
