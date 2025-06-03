@@ -12,7 +12,7 @@ interface NavigationItemsProps {
 }
 
 const isActive = (location: any, path: string) => {
-  return location.pathname === path ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400';
+  return location.pathname === path ? 'text-blue-600 dark:text-blue-400 bg-blue-50' : 'text-gray-600 dark:text-gray-400';
 };
 
 const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
@@ -63,7 +63,7 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
   ];
 
   return (
-    <ul className={cn('flex flex-col space-y-2', className)}>
+    <ul className={cn('flex flex-col lg:flex-row space-y-1 lg:space-y-0 lg:space-x-1', className)}>
       {navigationItems.map((item) => {
         if (item.requiresAuth && !profile) {
           return null;
@@ -74,14 +74,17 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
         }
 
         return (
-          <li key={item.label}>
+          <li key={item.label} className="flex-shrink-0">
             <Link
               to={item.href}
               onClick={onClick}
-              className={`flex items-center space-x-3 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 ${isActive(location, item.href)}`}
+              className={cn(
+                "flex items-center space-x-2 lg:space-x-3 py-2 px-2 lg:px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm lg:text-base whitespace-nowrap",
+                isActive(location, item.href)
+              )}
             >
-              <item.icon className="h-5 w-5" />
-              <span>{item.label}</span>
+              <item.icon className="h-4 w-4 lg:h-5 lg:w-5 flex-shrink-0" />
+              <span className="truncate">{item.label}</span>
             </Link>
           </li>
         );
