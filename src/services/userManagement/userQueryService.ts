@@ -6,6 +6,8 @@ import { UserManagementRecord } from './types';
 export class UserQueryService {
   static async getAllProfiles(): Promise<any[]> {
     console.log('🔍 Fetching all profiles...');
+    
+    // Try the main profiles query first
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -24,8 +26,22 @@ export class UserQueryService {
         code: error.code
       });
       
+      // If RLS is blocking, try to provide more specific error info
       if (error.message.includes('permission') || error.message.includes('policy')) {
-        console.log('🔒 This appears to be a Row Level Security (RLS) issue');
+        console.log('🔒 RLS policy is blocking access to profiles');
+        
+        // Check current user's role
+        const { data: currentUserProfile } = await supabase
+          .from('profiles')
+          .select('role, email')
+          .eq('id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+        
+        console.log('Current user profile:', currentUserProfile);
+        
+        if (currentUserProfile?.role && !['national', 'regional', 'zonal'].includes(currentUserProfile.role)) {
+          throw new Error(`Access denied. Your role (${currentUserProfile.role}) does not have permission to view all users. Contact a system administrator.`);
+        }
       }
       
       throw new Error(`Failed to fetch users: ${error.message}`);
