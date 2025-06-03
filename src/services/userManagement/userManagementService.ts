@@ -106,7 +106,7 @@ export class UserManagementService {
           // Attempt to create missing profiles
           for (const userId of missingProfiles) {
             const authUser = authResponse.users.find(u => u.id === userId);
-            if (authUser && authUser.id && authUser.email) {
+            if (authUser?.id && authUser?.email) {
               console.log('🔧 Creating missing profile for user:', authUser.email);
               const { error: insertError } = await supabase
                 .from('profiles')
