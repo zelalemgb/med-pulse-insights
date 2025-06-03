@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -34,21 +35,21 @@ const WelcomeSection = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="flex flex-col md:flex-row items-center justify-between px-8 py-20 bg-gray-100">
-        <div className="max-w-xl">
-          <h1 className="text-4xl font-bold mb-4">
+      <section className="flex flex-col lg:flex-row items-center justify-between px-8 py-16 bg-gray-100 min-h-[600px]">
+        <div className="max-w-xl lg:w-1/2 z-10">
+          <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
             Find Essential Medicines Near You. Report What's Missing.
           </h1>
-          <p className="text-lg mb-6">
+          <p className="text-lg lg:text-xl mb-8 text-gray-700 leading-relaxed">
             A decentralized, real-time platform where pharmacies, clinics, and patients collaborate to improve medicine availability.
           </p>
           <div className="space-x-4">
-            <Button className="bg-green-600 text-white px-4 py-2 rounded-lg">Download App</Button>
-            <Button variant="outline" className="bg-white border px-4 py-2 rounded-lg">Join as a Pharmacy</Button>
+            <Button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg text-lg">Download App</Button>
+            <Button variant="outline" className="bg-white border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-lg text-lg">Join as a Pharmacy</Button>
           </div>
         </div>
-        <div className="mt-10 md:mt-0 md:ml-10 w-full md:w-96">
-          <OSMMap height="300px" className="w-full" />
+        <div className="lg:w-1/2 w-full mt-10 lg:mt-0 lg:ml-10 relative">
+          <OSMMap height="500px" className="w-full shadow-lg" />
         </div>
       </section>
 
