@@ -123,6 +123,7 @@ const SystemOverview = () => {
 
       {/* Quick Status Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* First Card: Facilities Reporting */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Facilities Reporting</CardTitle>
@@ -136,6 +137,7 @@ const SystemOverview = () => {
           </CardContent>
         </Card>
 
+        {/* Second Card: Data Completeness */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Data Completeness</CardTitle>
@@ -149,6 +151,7 @@ const SystemOverview = () => {
           </CardContent>
         </Card>
 
+        {/* Third Card: Active Users */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Users</CardTitle>
@@ -162,6 +165,7 @@ const SystemOverview = () => {
           </CardContent>
         </Card>
 
+        {/* Fourth Card: System Status */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">System Status</CardTitle>
