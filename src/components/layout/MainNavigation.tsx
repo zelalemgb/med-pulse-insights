@@ -7,7 +7,7 @@ import { useNavigation } from '@/contexts/NavigationContext';
 import { Menu, X, Loader2, Shield } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BrandLogo } from './BrandLogo';
-import NavigationItems from './NavigationItems';
+import { NavigationItems } from './NavigationItems';
 import { UserProfileDropdown } from './UserProfileDropdown';
 import { MobileMenu } from './MobileMenu';
 
