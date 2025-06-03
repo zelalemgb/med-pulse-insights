@@ -12,7 +12,8 @@ import {
   CheckCircle,
   XCircle,
   Calendar,
-  BarChart3
+  BarChart3,
+  Database
 } from 'lucide-react';
 
 const FacilityOfficerDashboard = () => {
@@ -27,7 +28,10 @@ const FacilityOfficerDashboard = () => {
     stockOutRate: 4.9,
     averageLeadTime: 14,
     orderFulfillmentRate: 92,
-    wastePercentage: 2.3
+    wastePercentage: 2.3,
+    avgDaysOfStock: 45,
+    forecastAccuracy: 87.5,
+    reportingRate: 92
   };
 
   const availabilityRate = ((facilityMetrics.availableProducts / facilityMetrics.totalProducts) * 100).toFixed(1);
@@ -37,9 +41,23 @@ const FacilityOfficerDashboard = () => {
     <div className="space-y-6">
       {/* Key Supply Chain Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* First Card: Facilities Reporting */}
+        <Card className="border-l-4 border-l-blue-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Facilities Reporting</CardTitle>
+            <Database className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{facilityMetrics.reportingRate}%</div>
+            <p className="text-xs text-muted-foreground">Reporting rate this month</p>
+            <Progress value={facilityMetrics.reportingRate} className="mt-2" />
+          </CardContent>
+        </Card>
+
+        {/* Second Card: Data Completeness - Stock Availability */}
         <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Product Availability</CardTitle>
+            <CardTitle className="text-sm font-medium">Stock Availability</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -49,37 +67,56 @@ const FacilityOfficerDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Third Card: Stock Out Rate */}
         <Card className="border-l-4 border-l-red-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Stock Outs</CardTitle>
+            <CardTitle className="text-sm font-medium">Stock Out Rate</CardTitle>
             <XCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{facilityMetrics.stockOutProducts}</div>
+            <div className="text-2xl font-bold text-red-600">{facilityMetrics.stockOutRate}%</div>
             <p className="text-xs text-muted-foreground">Critical: {facilityMetrics.criticalProducts} products</p>
-            <Badge variant="destructive" className="mt-2">Urgent Action Required</Badge>
+            <Badge variant="destructive" className="mt-2">Monitor Closely</Badge>
           </CardContent>
         </Card>
 
+        {/* Fourth Card: Avg Days of Stock */}
         <Card className="border-l-4 border-l-amber-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Stock Alert</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <CardTitle className="text-sm font-medium">Avg Days of Stock</CardTitle>
+            <Clock className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{facilityMetrics.lowStockProducts}</div>
-            <p className="text-xs text-muted-foreground">Need reordering soon</p>
-            <Badge className="bg-amber-100 text-amber-800 mt-2">Monitor Closely</Badge>
+            <div className="text-2xl font-bold text-amber-600">{facilityMetrics.avgDaysOfStock}</div>
+            <p className="text-xs text-muted-foreground">Days until reorder needed</p>
+            <Progress value={(facilityMetrics.avgDaysOfStock / 90) * 100} className="mt-2" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Additional Metrics Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Forecast Accuracy */}
+        <Card className="border-l-4 border-l-purple-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Forecast Accuracy</CardTitle>
+            <TrendingUp className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">{facilityMetrics.forecastAccuracy}%</div>
+            <p className="text-xs text-muted-foreground">Demand prediction accuracy</p>
+            <Progress value={facilityMetrics.forecastAccuracy} className="mt-2" />
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
+        {/* Stock Health Score */}
+        <Card className="border-l-4 border-l-indigo-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Stock Health Score</CardTitle>
-            <BarChart3 className="h-4 w-4 text-blue-500" />
+            <BarChart3 className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stockHealthScore.toFixed(0)}/100</div>
+            <div className="text-2xl font-bold text-indigo-600">{stockHealthScore.toFixed(0)}/100</div>
             <p className="text-xs text-muted-foreground">Overall supply performance</p>
             <Progress value={stockHealthScore} className="mt-2" />
           </CardContent>
