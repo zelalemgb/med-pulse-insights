@@ -5,8 +5,8 @@ import MultiLevelAggregation from '@/components/analytics/MultiLevelAggregation'
 import AdvancedAnalytics from '@/components/analytics/AdvancedAnalytics';
 import SystemIntegration from '@/components/integration/SystemIntegration';
 import ScenarioPlanning from '@/components/analytics/ScenarioPlanning';
-import AuditTrail from '@/components/analytics/AuditTrail';
 import PerformanceEvaluation from '@/components/analytics/PerformanceEvaluation';
+import { AuditTrailTab } from '@/components/facilities/AuditTrailTab';
 import { usePermissions } from '@/hooks/usePermissions';
 import { performanceOptimizer } from '@/utils/performanceOptimizer';
 import { auditTrail } from '@/utils/auditTrail';
@@ -90,7 +90,7 @@ const AnalyticsDashboard = () => {
 
         <TabsContent value="audit">
           {canAccess.auditTrail ? (
-            <AuditTrail />
+            <AuditTrailTab />
           ) : (
             <div className="text-center py-8">
               <p className="text-muted-foreground">You don't have permission to access audit trail.</p>
