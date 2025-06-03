@@ -1,23 +1,96 @@
 
 import React from 'react';
-import HeroSection from './HeroSection';
-import LiveMetrics from './LiveMetrics';
-import RegionalPerformance from './RegionalPerformance';
-import SystemCapabilities from './SystemCapabilities';
-import FieldEvidence from './FieldEvidence';
-import AccessSection from './AccessSection';
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+
+interface FeatureProps {
+  title: string;
+}
+
+function Feature({ title }: FeatureProps) {
+  return (
+    <div className="bg-white border rounded-lg p-4 shadow-sm">
+      <h4 className="font-semibold mb-2">{title}</h4>
+      <p className="text-sm text-gray-600">Short description about this feature.</p>
+    </div>
+  );
+}
 
 const WelcomeSection = () => {
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-16">
-        <HeroSection />
-        <LiveMetrics />
-        <RegionalPerformance />
-        <SystemCapabilities />
-        <FieldEvidence />
-        <AccessSection />
-      </div>
+    <div className="font-sans text-gray-800">
+      {/* Header */}
+      <header className="flex justify-between items-center px-6 py-4 border-b shadow-sm">
+        <div className="text-xl font-bold">MediLink</div>
+        <nav className="space-x-4">
+          <a href="#about" className="hover:underline">About</a>
+          <a href="#how" className="hover:underline">How It Works</a>
+          <a href="#pharmacies" className="hover:underline">For Pharmacies</a>
+          <a href="#patients" className="hover:underline">For Patients</a>
+          <Link to="/auth">
+            <Button className="bg-blue-600 text-white px-4 py-2 rounded-lg">Login / Sign Up</Button>
+          </Link>
+        </nav>
+      </header>
+
+      {/* Hero Section */}
+      <section className="flex flex-col md:flex-row items-center justify-between px-8 py-20 bg-gray-100">
+        <div className="max-w-xl">
+          <h1 className="text-4xl font-bold mb-4">
+            Find Essential Medicines Near You. Report What's Missing.
+          </h1>
+          <p className="text-lg mb-6">
+            A decentralized, real-time platform where pharmacies, clinics, and patients collaborate to improve medicine availability.
+          </p>
+          <div className="space-x-4">
+            <Button className="bg-green-600 text-white px-4 py-2 rounded-lg">Download App</Button>
+            <Button variant="outline" className="bg-white border px-4 py-2 rounded-lg">Join as a Pharmacy</Button>
+          </div>
+        </div>
+        <div className="mt-10 md:mt-0 md:ml-10">
+          <div className="bg-white border rounded-lg p-6 shadow-md">
+            <p className="text-sm text-gray-500">Map Preview Placeholder</p>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how" className="px-8 py-16 text-center">
+        <h2 className="text-2xl font-semibold mb-10">How It Works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <h3 className="text-lg font-bold mb-2">Search or Report</h3>
+            <p>Check availability or report shortages in real time.</p>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold mb-2">Update Inventory</h3>
+            <p>Pharmacies and clinics update their stock, visible to all.</p>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold mb-2">Coordinate and Respond</h3>
+            <p>Facilities collaborate to fill supply gaps efficiently.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="px-8 py-16 bg-gray-50">
+        <h2 className="text-2xl font-semibold text-center mb-10">Key Features</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Feature title="Live Medicine Map" />
+          <Feature title="Daily Stock Updates" />
+          <Feature title="AI Forecasting Insights" />
+          <Feature title="Community Feedback Loop" />
+          <Feature title="Real-time Notifications" />
+          <Feature title="Pharmacy Coordination" />
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="text-center text-sm text-gray-500 py-8 border-t mt-16">
+        <p>© {new Date().getFullYear()} MediLink. All rights reserved.</p>
+        <p className="mt-2">Made with ❤️ in Ethiopia</p>
+      </footer>
     </div>
   );
 };
