@@ -7,7 +7,7 @@ import FacilityManagerDashboard from './FacilityManagerDashboard';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SystemOverview from './SystemOverview';
 import SupplyChainDashboard from './SupplyChainDashboard';
-import { BarChart3, Settings, TrendingUp, Package } from 'lucide-react';
+import { BarChart3, Settings, TrendingUp, Package, Activity } from 'lucide-react';
 
 const RoleBasedDashboard = () => {
   const { profile } = useAuth();
@@ -20,6 +20,10 @@ const RoleBasedDashboard = () => {
   const isAnalystLevel = profile?.role === 'data_analyst' || 
     profile?.role === 'national' || 
     profile?.role === 'regional';
+
+  const isSuperAdmin = profile?.role === 'national' || 
+    profile?.role === 'regional' || 
+    profile?.role === 'zonal';
 
   return (
     <div className="space-y-6">
@@ -41,10 +45,12 @@ const RoleBasedDashboard = () => {
               Analytics
             </TabsTrigger>
           )}
-          <TabsTrigger value="system" className="flex items-center">
-            <Settings className="h-4 w-4 mr-2" />
-            System
-          </TabsTrigger>
+          {isSuperAdmin && (
+            <TabsTrigger value="system" className="flex items-center">
+              <Activity className="h-4 w-4 mr-2" />
+              System Health
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="supply-chain">
@@ -63,9 +69,11 @@ const RoleBasedDashboard = () => {
           </TabsContent>
         )}
 
-        <TabsContent value="system">
-          <SystemOverview />
-        </TabsContent>
+        {isSuperAdmin && (
+          <TabsContent value="system">
+            <SystemOverview />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

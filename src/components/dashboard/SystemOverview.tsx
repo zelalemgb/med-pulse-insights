@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +20,16 @@ import {
   Settings
 } from 'lucide-react';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SystemOverview = () => {
   const { settings, isLoading } = useSystemSettings();
+  const { profile } = useAuth();
+
+  // Check if user is super admin (national, regional, or zonal)
+  const isSuperAdmin = profile?.role === 'national' || 
+    profile?.role === 'regional' || 
+    profile?.role === 'zonal';
 
   // Mock data - in real implementation, this would come from your API
   const systemMetrics = {
@@ -73,16 +79,46 @@ const SystemOverview = () => {
     );
   }
 
+  // Access denied for non-super admin users
+  if (!isSuperAdmin) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <CardTitle className="text-red-600">Access Denied</CardTitle>
+            <CardDescription>
+              System Health is only available for Super Admin users
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-sm text-gray-600">
+              Your current role: <Badge variant="outline">{profile?.role}</Badge>
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Contact your administrator for access
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">System Administration</h2>
+          <h2 className="text-3xl font-bold text-gray-900">System Health</h2>
           <p className="text-gray-600 mt-1">Platform health, performance, and management metrics</p>
         </div>
-        <Badge variant="outline" className="text-sm">
-          Last Updated: {new Date().toLocaleTimeString()}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-sm">
+            Super Admin Access
+          </Badge>
+          <Badge variant="outline" className="text-sm">
+            Last Updated: {new Date().toLocaleTimeString()}
+          </Badge>
+        </div>
       </div>
 
       {/* Quick Status Overview */}
