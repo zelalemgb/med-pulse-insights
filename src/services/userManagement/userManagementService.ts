@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
 
@@ -37,7 +36,7 @@ export interface UserManagementLogEntry {
 
 export class UserManagementService {
   static async getAllUsers(): Promise<UserManagementRecord[]> {
-    console.log('🔍 Fetching all users with comprehensive debugging...');
+    console.log('🔍 Fetching all users...');
     
     // Get current user info for debugging
     const { data: currentUser, error: userError } = await supabase.auth.getUser();
@@ -57,14 +56,14 @@ export class UserManagementService {
 
     console.log('Current user profile:', currentProfile, 'Error:', profileError);
 
-    // Try to fetch all profiles with detailed logging
-    console.log('🔍 Attempting to fetch all profiles...');
+    // Try to fetch all profiles
+    console.log('🔍 Fetching all profiles...');
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
 
-    console.log('📊 Query results:');
+    console.log('📊 Profiles query results:');
     console.log('- Data:', data);
     console.log('- Error:', error);
     console.log('- Data length:', data?.length || 0);
@@ -77,37 +76,78 @@ export class UserManagementService {
         code: error.code
       });
       
-      // If it's a permission error, try to check RLS policies
       if (error.message.includes('permission') || error.message.includes('policy')) {
         console.log('🔒 This appears to be a Row Level Security (RLS) issue');
         console.log('Current user role:', currentProfile?.role);
         console.log('Current user is_active:', currentProfile?.is_active);
-        
-        // Try a different approach - check if we can query specific records
-        const { data: sampleData, error: sampleError } = await supabase
-          .from('profiles')
-          .select('id, email, role')
-          .limit(5);
-        
-        console.log('Sample query results:', sampleData, 'Error:', sampleError);
       }
       
       throw new Error(`Failed to fetch users: ${error.message}`);
     }
 
-    if (!data || data.length === 0) {
-      console.log('⚠️ No users found in profiles table');
+    // Check for users in auth who might not have profiles
+    try {
+      console.log('🔍 Checking auth users vs profiles...');
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
       
-      // Let's check if there are users in auth.users but not in profiles
-      console.log('🔍 Checking for potential data inconsistencies...');
-      
-      // Try to get auth users count - using the correct approach for auth.admin.listUsers()
-      try {
-        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-        console.log('Auth users data attempt:', authData?.users?.length || 0, 'Error:', authError);
-      } catch (err) {
-        console.log('Error accessing auth.admin.listUsers:', err);
+      if (authData?.users) {
+        console.log('Auth users count:', authData.users.length);
+        console.log('Profiles count:', data?.length || 0);
+        
+        // Find users in auth but not in profiles
+        const authUserIds = authData.users.map(u => u.id);
+        const profileUserIds = (data || []).map(p => p.id);
+        const missingProfiles = authUserIds.filter(id => !profileUserIds.includes(id));
+        
+        if (missingProfiles.length > 0) {
+          console.warn('⚠️ Users found in auth without profiles:', missingProfiles.length);
+          console.log('Missing profile user IDs:', missingProfiles);
+          
+          // Attempt to create missing profiles
+          for (const userId of missingProfiles) {
+            const authUser = authData.users.find(u => u.id === userId);
+            if (authUser) {
+              console.log('🔧 Creating missing profile for user:', authUser.email);
+              const { error: insertError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: authUser.id,
+                  email: authUser.email || '',
+                  full_name: authUser.user_metadata?.full_name || '',
+                  role: 'facility_officer' as UserRole,
+                  approval_status: 'pending',
+                  is_active: true,
+                  created_at: authUser.created_at
+                });
+              
+              if (insertError) {
+                console.error('❌ Failed to create profile for user:', authUser.email, insertError);
+              } else {
+                console.log('✅ Created profile for user:', authUser.email);
+              }
+            }
+          }
+          
+          // Re-fetch profiles after creating missing ones
+          const { data: updatedData, error: refetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (!refetchError && updatedData) {
+            console.log('✅ Re-fetched profiles after creating missing ones:', updatedData.length);
+            return updatedData.map(user => ({
+              ...user,
+              role: user.role as UserRole,
+              approval_status: (user.approval_status || 'pending') as 'pending' | 'approved' | 'rejected'
+            }));
+          }
+        }
+      } else if (authError) {
+        console.log('Cannot access auth.admin.listUsers (expected in some environments):', authError.message);
       }
+    } catch (err) {
+      console.log('Auth users check failed (this may be normal):', err);
     }
 
     // Map the data to ensure type compatibility
@@ -127,13 +167,6 @@ export class UserManagementService {
     });
 
     console.log('✅ Final mapped users:', mappedUsers.length, 'users');
-    console.log('User details:', mappedUsers.map(u => ({ 
-      email: u.email, 
-      status: u.approval_status, 
-      role: u.role,
-      active: u.is_active 
-    })));
-    
     return mappedUsers;
   }
 

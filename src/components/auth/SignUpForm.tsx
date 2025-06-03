@@ -29,9 +29,20 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
       return;
     }
 
+    if (!signUpData.fullName.trim()) {
+      toast.error('Please enter your full name');
+      return;
+    }
+
+    if (!signUpData.email.trim()) {
+      toast.error('Please enter your email');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      console.log('🚀 Starting signup process for:', signUpData.email);
       const { error } = await signUp(
         signUpData.email,
         signUpData.password,
@@ -39,11 +50,21 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
       );
       
       if (error) {
+        console.error('❌ Signup error:', error);
         toast.error(error.message || 'Failed to sign up');
       } else {
+        console.log('✅ Signup successful for:', signUpData.email);
         toast.success('Account created successfully! Please check your email for verification.');
+        // Clear form after successful signup
+        setSignUpData({
+          email: '',
+          password: '',
+          confirmPassword: '',
+          fullName: '',
+        });
       }
     } catch (error) {
+      console.error('❌ Unexpected signup error:', error);
       toast.error('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -61,6 +82,7 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
           value={signUpData.fullName}
           onChange={(e) => setSignUpData(prev => ({ ...prev, fullName: e.target.value }))}
           disabled={isLoading}
+          required
         />
       </div>
       <div className="space-y-2">
