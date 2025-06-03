@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -25,7 +24,6 @@ const OSMMap: React.FC<OSMMapProps> = ({ className = '', height = '300px' }) => 
     map.current = L.map(mapContainer.current, {
       zoomControl: false, // We'll add custom controls
       attributionControl: false,
-      tap: isMobile, // Enable tap for mobile
       touchZoom: true,
       doubleClickZoom: true,
       scrollWheelZoom: !isMobile, // Disable scroll zoom on mobile to prevent conflicts
