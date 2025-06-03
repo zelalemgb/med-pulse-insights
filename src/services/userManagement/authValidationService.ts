@@ -27,6 +27,7 @@ export class AuthValidationService {
     // Check if user has admin privileges
     if (currentProfile && !['national', 'regional', 'zonal'].includes(currentProfile.role)) {
       console.warn('⚠️ User does not have admin privileges:', currentProfile.role);
+      throw new Error(`Access denied. Your role (${currentProfile.role}) does not have permission to view all users. Contact a system administrator.`);
     }
     
     return { profile: currentProfile, error: profileError };
@@ -34,14 +35,10 @@ export class AuthValidationService {
 
   static async validateAuthUsers(profileUserIds: string[]) {
     try {
-      console.log('🔍 Checking for missing profiles...');
-      
-      // Since we can't access auth.admin.listUsers, we'll focus on ensuring
-      // all users in the profiles table are properly handled
+      console.log('🔍 Checking profiles data consistency...');
       console.log('📊 Current profiles count:', profileUserIds.length);
       
-      // Instead of trying to access auth users, we'll check if there are any
-      // profiles that might need attention (like missing fields)
+      // Check if there are any profiles that might need attention (like missing fields)
       const { data: incompleteProfiles, error } = await supabase
         .from('profiles')
         .select('id, email, full_name, role')
@@ -54,13 +51,12 @@ export class AuthValidationService {
       
       if (incompleteProfiles && incompleteProfiles.length > 0) {
         console.log('⚠️ Found profiles with missing data:', incompleteProfiles.length);
-        // We could fix these, but for now just log them
         incompleteProfiles.forEach(profile => {
           console.log('Incomplete profile:', profile.id, profile.email);
         });
       }
       
-      return false; // No profiles were created
+      return false; // No profiles were created, just validated
     } catch (err) {
       console.log('Profile validation check failed:', err);
       return false;
