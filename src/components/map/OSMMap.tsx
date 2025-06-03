@@ -15,36 +15,46 @@ const OSMMap: React.FC<OSMMapProps> = ({ className = '', height = '300px' }) => 
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Initialize the map
-    map.current = L.map(mapContainer.current).setView([9.0, 38.7], 6); // Ethiopia coordinates
+    // Initialize the map with cleaner settings
+    map.current = L.map(mapContainer.current, {
+      zoomControl: false, // Remove zoom controls for cleaner look
+      attributionControl: false, // Remove attribution for cleaner look
+    }).setView([9.0, 38.7], 7); // Ethiopia coordinates with better zoom level
 
-    // Add OpenStreetMap tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+    // Use a cleaner, minimal tile layer
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
+      subdomains: 'abcd',
     }).addTo(map.current);
 
-    // Add some sample pharmacy markers
+    // Create a simple, clean pharmacy marker
     const pharmacyIcon = L.divIcon({
-      html: '<div style="background-color: #22c55e; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+      html: '<div style="background-color: #10b981; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 2px white, 0 0 0 3px rgba(16, 185, 129, 0.3);"></div>',
       className: 'custom-marker',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
     });
 
-    // Sample pharmacy locations
+    // Fewer pharmacy locations for cleaner appearance
     const pharmacies = [
-      { lat: 9.03, lng: 38.74, name: 'City Pharmacy' },
-      { lat: 9.02, lng: 38.76, name: 'Health Plus Pharmacy' },
-      { lat: 9.04, lng: 38.72, name: 'Medical Center Pharmacy' },
-      { lat: 9.01, lng: 38.75, name: 'Community Pharmacy' },
+      { lat: 9.03, lng: 38.74, name: 'Central Pharmacy' },
+      { lat: 9.01, lng: 38.76, name: 'Medical Plaza' },
+      { lat: 9.05, lng: 38.72, name: 'Health Center' },
     ];
 
     pharmacies.forEach(pharmacy => {
       L.marker([pharmacy.lat, pharmacy.lng], { icon: pharmacyIcon })
         .addTo(map.current!)
-        .bindPopup(`<b>${pharmacy.name}</b><br>Medicine availability: Available`);
+        .bindPopup(`<div style="font-size: 12px; padding: 4px;"><b>${pharmacy.name}</b></div>`);
     });
+
+    // Disable interactions for a cleaner, static-like appearance
+    map.current.dragging.disable();
+    map.current.touchZoom.disable();
+    map.current.doubleClickZoom.disable();
+    map.current.scrollWheelZoom.disable();
+    map.current.boxZoom.disable();
+    map.current.keyboard.disable();
 
     // Cleanup function
     return () => {
@@ -57,7 +67,7 @@ const OSMMap: React.FC<OSMMapProps> = ({ className = '', height = '300px' }) => 
   return (
     <div 
       ref={mapContainer} 
-      className={`rounded-lg shadow-md ${className}`}
+      className={`rounded-lg shadow-md border ${className}`}
       style={{ height }}
     />
   );
