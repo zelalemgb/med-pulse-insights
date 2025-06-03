@@ -46,7 +46,18 @@ export class UserManagementService {
       throw new Error(`Failed to fetch users: ${error.message}`);
     }
 
-    return data || [];
+    // Filter and map to ensure proper typing
+    return (data || []).map(user => ({
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role as UserRole,
+      approval_status: user.approval_status as 'pending' | 'approved' | 'rejected',
+      is_active: user.is_active,
+      created_at: user.created_at,
+      approved_by: user.approved_by,
+      approved_at: user.approved_at,
+    }));
   }
 
   static async getPendingUsers(): Promise<UserManagementRecord[]> {
@@ -60,7 +71,18 @@ export class UserManagementService {
       throw new Error(`Failed to fetch pending users: ${error.message}`);
     }
 
-    return data || [];
+    // Filter and map to ensure proper typing
+    return (data || []).map(user => ({
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role as UserRole,
+      approval_status: user.approval_status as 'pending' | 'approved' | 'rejected',
+      is_active: user.is_active,
+      created_at: user.created_at,
+      approved_by: user.approved_by,
+      approved_at: user.approved_at,
+    }));
   }
 
   static async approveUser(userId: string, newRole: UserRole = 'facility_officer'): Promise<void> {
@@ -130,6 +152,20 @@ export class UserManagementService {
       throw new Error(`Failed to fetch user management log: ${error.message}`);
     }
 
-    return data || [];
+    // Map and filter to ensure proper typing
+    return (data || []).map(entry => ({
+      id: entry.id,
+      admin_user_id: entry.admin_user_id,
+      target_user_id: entry.target_user_id,
+      action: entry.action,
+      old_status: entry.old_status,
+      new_status: entry.new_status,
+      old_role: entry.old_role as UserRole | null,
+      new_role: entry.new_role as UserRole | null,
+      reason: entry.reason,
+      created_at: entry.created_at,
+      admin_profile: entry.admin_profile,
+      target_profile: entry.target_profile,
+    }));
   }
 }
