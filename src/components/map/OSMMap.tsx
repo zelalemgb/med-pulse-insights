@@ -1,7 +1,9 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Fullscreen, Minimize } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface OSMMapProps {
   className?: string;
@@ -11,6 +13,7 @@ interface OSMMapProps {
 const OSMMap: React.FC<OSMMapProps> = ({ className = '', height = '300px' }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -77,12 +80,44 @@ const OSMMap: React.FC<OSMMapProps> = ({ className = '', height = '300px' }) => 
     };
   }, []);
 
+  // Resize map when fullscreen state changes
+  useEffect(() => {
+    if (map.current) {
+      setTimeout(() => {
+        map.current?.invalidateSize();
+      }, 100);
+    }
+  }, [isFullscreen]);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
   return (
-    <div 
-      ref={mapContainer} 
-      className={`rounded-lg shadow-md border ${className}`}
-      style={{ height }}
-    />
+    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
+      <div 
+        ref={mapContainer} 
+        className={`w-full h-full rounded-lg shadow-md border ${className}`}
+        style={{ 
+          height: isFullscreen ? '100vh' : height,
+          minHeight: isFullscreen ? '100vh' : height
+        }}
+      />
+      
+      {/* Fullscreen Toggle Button */}
+      <Button
+        onClick={toggleFullscreen}
+        className="absolute top-4 right-4 z-10 bg-white hover:bg-gray-100 text-gray-700 shadow-lg border"
+        size="sm"
+        variant="outline"
+      >
+        {isFullscreen ? (
+          <Minimize className="h-4 w-4" />
+        ) : (
+          <Fullscreen className="h-4 w-4" />
+        )}
+      </Button>
+    </div>
   );
 };
 
