@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -473,3 +472,5 @@ export const SupplyChainDashboard = () => {
     </div>
   );
 };
+
+export default SupplyChainDashboard;

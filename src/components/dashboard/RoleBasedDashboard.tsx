@@ -6,7 +6,7 @@ import FacilityOfficerDashboard from './FacilityOfficerDashboard';
 import FacilityManagerDashboard from './FacilityManagerDashboard';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SystemOverview from './SystemOverview';
-import { SupplyChainDashboard } from './SupplyChainDashboard';
+import SupplyChainDashboard from './SupplyChainDashboard';
 import { Activity, BarChart3, Settings, TrendingUp, Package } from 'lucide-react';
 
 const RoleBasedDashboard = () => {
