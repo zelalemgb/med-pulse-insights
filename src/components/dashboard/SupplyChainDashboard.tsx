@@ -321,98 +321,15 @@ const SupplyChainDashboard = () => {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Stock Availability Trend */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  Stock Availability Trend
-                  <InfoTooltip content="Tracks stock availability and reporting rates over time to identify patterns" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={{
-                  availability: { label: "Availability %" },
-                  reportingRate: { label: "Reporting Rate %" }
-                }} className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={mockTimeSeriesData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line 
-                        type="monotone" 
-                        dataKey="availability" 
-                        stroke="#3b82f6" 
-                        strokeWidth={2}
-                        name="Stock Availability"
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="reportingRate" 
-                        stroke="#10b981" 
-                        strokeWidth={2}
-                        name="Reporting Rate"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-
-            {/* Top Products by Consumption */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  Top Products by Consumption
-                  <InfoTooltip content="Products with highest monthly consumption across all facilities" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={{
-                  consumption: { label: "Monthly Consumption" }
-                }} className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={mockProductData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="product" />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="consumption" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="map">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                Geographic Distribution
-                <InfoTooltip content="Interactive map showing facility locations and their current stock status" />
-              </CardTitle>
-              <p className="text-sm text-gray-600">Interactive map showing facility locations and stock status</p>
-            </CardHeader>
-            <CardContent>
-              <OSMMap height="400px" />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="trends">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                Forecast Accuracy Over Time
-                <InfoTooltip content="Shows how prediction accuracy changes over time, helping improve forecasting models" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+            <div className="bg-white p-6 rounded-lg border shadow-sm">
+              <h3 className="text-lg font-semibold mb-2 flex items-center">
+                Stock Availability Trend
+                <InfoTooltip content="Tracks stock availability and reporting rates over time to identify patterns" />
+              </h3>
               <ChartContainer config={{
-                forecastAccuracy: { label: "Forecast Accuracy %" }
-              }} className="h-[400px]">
+                availability: { label: "Availability %" },
+                reportingRate: { label: "Reporting Rate %" }
+              }} className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={mockTimeSeriesData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -421,43 +338,106 @@ const SupplyChainDashboard = () => {
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Line 
                       type="monotone" 
-                      dataKey="forecastAccuracy" 
-                      stroke="#f59e0b" 
-                      strokeWidth={3}
+                      dataKey="availability" 
+                      stroke="#3b82f6" 
+                      strokeWidth={2}
+                      name="Stock Availability"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="reportingRate" 
+                      stroke="#10b981" 
+                      strokeWidth={2}
+                      name="Reporting Rate"
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartContainer>
-            </CardContent>
-          </Card>
+            </div>
+
+            {/* Top Products by Consumption */}
+            <div className="bg-white p-6 rounded-lg border shadow-sm">
+              <h3 className="text-lg font-semibold mb-2 flex items-center">
+                Top Products by Consumption
+                <InfoTooltip content="Products with highest monthly consumption across all facilities" />
+              </h3>
+              <ChartContainer config={{
+                consumption: { label: "Monthly Consumption" }
+              }} className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={mockProductData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="product" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="consumption" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="map">
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <h3 className="text-lg font-semibold mb-2 flex items-center">
+              Geographic Distribution
+              <InfoTooltip content="Interactive map showing facility locations and their current stock status" />
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">Interactive map showing facility locations and stock status</p>
+            <OSMMap height="400px" />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="trends">
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <h3 className="text-lg font-semibold mb-2 flex items-center">
+              Forecast Accuracy Over Time
+              <InfoTooltip content="Shows how prediction accuracy changes over time, helping improve forecasting models" />
+            </h3>
+            <ChartContainer config={{
+              forecastAccuracy: { label: "Forecast Accuracy %" }
+            }} className="h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={mockTimeSeriesData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line 
+                    type="monotone" 
+                    dataKey="forecastAccuracy" 
+                    stroke="#f59e0b" 
+                    strokeWidth={3}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </div>
         </TabsContent>
 
         <TabsContent value="products">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                Product Analysis
-                <InfoTooltip content="Analysis of individual product performance including consumption and stockout frequency" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {mockProductData.map((product, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h4 className="font-medium">{product.product}</h4>
-                      <p className="text-sm text-gray-600">Monthly consumption: {product.consumption.toLocaleString()}</p>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant={product.stockouts > 10 ? "destructive" : product.stockouts > 5 ? "default" : "secondary"}>
-                        {product.stockouts} stockouts
-                      </Badge>
-                    </div>
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <h3 className="text-lg font-semibold mb-4 flex items-center">
+              Product Analysis
+              <InfoTooltip content="Analysis of individual product performance including consumption and stockout frequency" />
+            </h3>
+            <div className="space-y-4">
+              {mockProductData.map((product, index) => (
+                <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">{product.product}</h4>
+                    <p className="text-sm text-gray-600">Monthly consumption: {product.consumption.toLocaleString()}</p>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="text-right">
+                    <Badge variant={product.stockouts > 10 ? "destructive" : product.stockouts > 5 ? "default" : "secondary"}>
+                      {product.stockouts} stockouts
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
