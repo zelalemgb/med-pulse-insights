@@ -2,10 +2,10 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { FacilityOfficerDashboard } from './FacilityOfficerDashboard';
-import { FacilityManagerDashboard } from './FacilityManagerDashboard';
-import { AnalyticsDashboard } from './AnalyticsDashboard';
-import { SystemOverview } from './SystemOverview';
+import FacilityOfficerDashboard from './FacilityOfficerDashboard';
+import FacilityManagerDashboard from './FacilityManagerDashboard';
+import AnalyticsDashboard from './AnalyticsDashboard';
+import SystemOverview from './SystemOverview';
 import { SupplyChainDashboard } from './SupplyChainDashboard';
 import { Activity, BarChart3, Settings, TrendingUp, Package } from 'lucide-react';
 
