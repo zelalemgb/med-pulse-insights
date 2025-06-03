@@ -49,7 +49,8 @@ export class UserManagementService {
     // Map the data to ensure type compatibility
     return (data || []).map(user => ({
       ...user,
-      role: user.role as UserRole
+      role: user.role as UserRole,
+      approval_status: (user.approval_status || 'pending') as 'pending' | 'approved' | 'rejected'
     }));
   }
 
@@ -67,7 +68,8 @@ export class UserManagementService {
     // Map the data to ensure type compatibility
     return (data || []).map(user => ({
       ...user,
-      role: user.role as UserRole
+      role: user.role as UserRole,
+      approval_status: (user.approval_status || 'pending') as 'pending' | 'approved' | 'rejected'
     }));
   }
 
