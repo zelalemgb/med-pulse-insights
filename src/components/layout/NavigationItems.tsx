@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Package, Users, Settings, BarChart3, Activity, Shield } from 'lucide-react';
+import { Home, Users, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { UserRole } from '@/types/pharmaceutical';
@@ -28,30 +27,11 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
       requiresAuth: true,
     },
     {
-      href: '/supply-chain',
-      label: 'Supply Chain',
-      icon: Package,
-      requiresAuth: true,
-    },
-    {
       href: '/analytics',
       label: 'Analytics',
       icon: BarChart3,
       requiresAuth: true,
       allowedRoles: ['data_analyst', 'national', 'regional'],
-    },
-    {
-      href: '/system-health',
-      label: 'System Health',
-      icon: Activity,
-      requiresAuth: true,
-      allowedRoles: ['national', 'regional', 'zonal'],
-    },
-    {
-      href: '/settings',
-      label: 'Settings',
-      icon: Settings,
-      requiresAuth: true,
     },
     {
       href: '/user-management',
