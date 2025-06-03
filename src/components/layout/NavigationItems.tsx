@@ -1,61 +1,90 @@
-
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, Package, Users, Settings, BarChart3, Activity, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface NavigationItem {
-  path: string;
-  label: string;
-  roles?: string[];
-}
+import { cn } from '@/lib/utils';
+import { UserRole } from '@/types/pharmaceutical';
 
 interface NavigationItemsProps {
   className?: string;
-  onClick?: () => void;
 }
 
-const navigationItems: NavigationItem[] = [
-  { path: '/dashboard', label: 'Dashboard' },
-  { path: '/analytics', label: 'Analytics' },
-  { path: '/data-management', label: 'Data Management', roles: ['national', 'regional', 'zonal', 'facility_manager'] },
-];
+const isActive = (location: any, path: string) => {
+  return location.pathname === path ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400';
+};
 
-export const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
-  const location = useLocation();
+const NavigationItems = ({ className }: NavigationItemsProps) => {
   const { profile } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const isActiveRoute = (path: string) => {
-    return location.pathname === path;
-  };
-
-  const hasAccessToRoute = (item: NavigationItem) => {
-    if (!item.roles) return true;
-    return profile?.role && item.roles.includes(profile.role);
-  };
-
-  const filteredItems = navigationItems.filter(hasAccessToRoute);
+  const navigationItems = [
+    {
+      href: '/',
+      label: 'Dashboard',
+      icon: Home,
+      requiresAuth: true,
+    },
+    {
+      href: '/supply-chain',
+      label: 'Supply Chain',
+      icon: Package,
+      requiresAuth: true,
+    },
+    {
+      href: '/analytics',
+      label: 'Analytics',
+      icon: BarChart3,
+      requiresAuth: true,
+      allowedRoles: ['data_analyst', 'national', 'regional'],
+    },
+    {
+      href: '/system-health',
+      label: 'System Health',
+      icon: Activity,
+      requiresAuth: true,
+      allowedRoles: ['national', 'regional', 'zonal'],
+    },
+    {
+      href: '/settings',
+      label: 'Settings',
+      icon: Settings,
+      requiresAuth: true,
+    },
+    {
+      href: '/user-management',
+      label: 'User Management',
+      icon: Users,
+      requiresAuth: true,
+      allowedRoles: ['national', 'regional', 'zonal'] as UserRole[],
+    },
+  ];
 
   return (
-    <div className={className}>
-      {filteredItems.map((item) => (
-        <Link
-          key={item.path}
-          to={item.path}
-          onClick={onClick}
-          className={cn(
-            "px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 min-h-[44px] flex items-center",
-            className?.includes('block') 
-              ? "block px-4 py-3 rounded-md text-base font-medium min-h-[48px]"
-              : "",
-            isActiveRoute(item.path)
-              ? "bg-blue-100 text-blue-700 shadow-sm"
-              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 active:bg-gray-100"
-          )}
-        >
-          {item.label}
-        </Link>
-      ))}
-    </div>
+    <ul className={cn('flex flex-col space-y-2', className)}>
+      {navigationItems.map((item) => {
+        if (item.requiresAuth && !profile) {
+          return null;
+        }
+
+        if (item.allowedRoles && !item.allowedRoles.includes(profile?.role as UserRole)) {
+          return null;
+        }
+
+        return (
+          <li key={item.label}>
+            <Link
+              to={item.href}
+              className={`flex items-center space-x-3 py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 ${isActive(location, item.href)}`}
+            >
+              <item.icon className="h-5 w-5" />
+              <span>{item.label}</span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 };
+
+export default NavigationItems;

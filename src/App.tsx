@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,6 +16,8 @@ import Facilities from "./pages/Facilities";
 import Products from "./pages/Products";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import UserManagement from '@/pages/UserManagement';
+import Footer from '@/components/layout/Footer';
 
 const queryClient = new QueryClient();
 
@@ -29,21 +30,25 @@ function App() {
             <TooltipProvider>
               <Toaster />
               <Sonner />
-              <div className="min-h-screen bg-gray-50">
+              <div className="min-h-screen bg-gray-50 flex flex-col">
                 <MainNavigation />
-                <Routes>
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/import" element={<Import />} />
-                  <Route path="/data-entry" element={<DataEntry />} />
-                  <Route path="/data-management" element={<DataManagement />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/facilities" element={<Facilities />} />
-                  <Route path="/products" element={<Products />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <main className="flex-1">
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/import" element={<Import />} />
+                    <Route path="/data-entry" element={<DataEntry />} />
+                    <Route path="/data-management" element={<DataManagement />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/facilities" element={<Facilities />} />
+                    <Route path="/products" element={<Products />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/user-management" element={<UserManagement />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+                <Footer />
               </div>
             </TooltipProvider>
           </NavigationProvider>

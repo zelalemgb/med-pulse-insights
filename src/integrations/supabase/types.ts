@@ -301,6 +301,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           can_approve_associations: boolean
           created_at: string
           department: string | null
@@ -319,6 +322,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           can_approve_associations?: boolean
           created_at?: string
           department?: string | null
@@ -337,6 +343,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           can_approve_associations?: boolean
           created_at?: string
           department?: string | null
@@ -505,6 +514,45 @@ export type Database = {
           },
         ]
       }
+      user_management_log: {
+        Row: {
+          action: string
+          admin_user_id: string
+          created_at: string
+          id: string
+          new_role: Database["public"]["Enums"]["user_role"] | null
+          new_status: string | null
+          old_role: Database["public"]["Enums"]["user_role"] | null
+          old_status: string | null
+          reason: string | null
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          new_role?: Database["public"]["Enums"]["user_role"] | null
+          new_status?: string | null
+          old_role?: Database["public"]["Enums"]["user_role"] | null
+          old_status?: string | null
+          reason?: string | null
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          new_role?: Database["public"]["Enums"]["user_role"] | null
+          new_status?: string | null
+          old_role?: Database["public"]["Enums"]["user_role"] | null
+          old_status?: string | null
+          reason?: string | null
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string
@@ -567,6 +615,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_user: {
+        Args: {
+          _user_id: string
+          _approved_by: string
+          _new_role?: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
       bulk_assign_facility_roles: {
         Args: {
           _user_ids: string[]
@@ -578,6 +634,15 @@ export type Database = {
       }
       can_approve_associations: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      change_user_role: {
+        Args: {
+          _user_id: string
+          _changed_by: string
+          _new_role: Database["public"]["Enums"]["user_role"]
+          _reason?: string
+        }
         Returns: boolean
       }
       check_conditional_permissions: {
@@ -675,6 +740,10 @@ export type Database = {
           _metadata?: Json
         }
         Returns: string
+      }
+      reject_user: {
+        Args: { _user_id: string; _rejected_by: string; _reason?: string }
+        Returns: boolean
       }
       track_navigation: {
         Args: {
