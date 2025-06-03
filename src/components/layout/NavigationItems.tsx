@@ -16,8 +16,8 @@ interface NavigationItemsProps {
 }
 
 const navigationItems: NavigationItem[] = [
-  { path: '/dashboard', label: 'Analytics' },
-  { path: '/analytics', label: 'Forecast' },
+  { path: '/dashboard', label: 'Dashboard' },
+  { path: '/analytics', label: 'Analytics' },
   { path: '/data-management', label: 'Data Management', roles: ['national', 'regional', 'zonal', 'facility_manager'] },
 ];
 
