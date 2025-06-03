@@ -43,8 +43,8 @@ const Dashboard = () => {
           />
           
           <div className="mt-8 space-y-8">
-            <DashboardStatsCards />
             <QuickActionCards />
+            <DashboardStatsCards />
             <RoleBasedDashboard />
           </div>
         </div>
