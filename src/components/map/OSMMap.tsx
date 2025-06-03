@@ -27,6 +27,19 @@ const OSMMap: React.FC<OSMMapProps> = ({ className = '', height = '300px' }) => 
       subdomains: 'abcd',
     }).addTo(map.current);
 
+    // Create current location marker (larger and more prominent)
+    const currentLocationIcon = L.divIcon({
+      html: '<div style="background-color: #3b82f6; width: 16px; height: 16px; border-radius: 50%; box-shadow: 0 0 0 4px white, 0 0 0 6px rgba(59, 130, 246, 0.4); position: relative;"><div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background-color: white; border-radius: 50%;"></div></div>',
+      className: 'current-location-marker',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    });
+
+    // Add current location marker at the center
+    L.marker([9.0, 38.7], { icon: currentLocationIcon })
+      .addTo(map.current!)
+      .bindPopup('<div style="font-size: 12px; padding: 4px; font-weight: bold;"><b>Your Location</b></div>');
+
     // Create a simple, clean pharmacy marker
     const pharmacyIcon = L.divIcon({
       html: '<div style="background-color: #10b981; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 2px white, 0 0 0 3px rgba(16, 185, 129, 0.3);"></div>',
