@@ -15,11 +15,11 @@ const OSMMap: React.FC<OSMMapProps> = ({ className = '', height = '300px' }) => 
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Initialize the map with cleaner settings
+    // Initialize the map with higher zoom for 1km radius view
     map.current = L.map(mapContainer.current, {
       zoomControl: false, // Remove zoom controls for cleaner look
       attributionControl: false, // Remove attribution for cleaner look
-    }).setView([9.0, 38.7], 7); // Ethiopia coordinates with better zoom level
+    }).setView([9.0, 38.7], 15); // Higher zoom level (15) for ~1km radius
 
     // Use a cleaner, minimal tile layer
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -35,11 +35,11 @@ const OSMMap: React.FC<OSMMapProps> = ({ className = '', height = '300px' }) => 
       iconAnchor: [7, 7],
     });
 
-    // Fewer pharmacy locations for cleaner appearance
+    // Fewer pharmacy locations within 1km radius for cleaner appearance
     const pharmacies = [
-      { lat: 9.03, lng: 38.74, name: 'Central Pharmacy' },
-      { lat: 9.01, lng: 38.76, name: 'Medical Plaza' },
-      { lat: 9.05, lng: 38.72, name: 'Health Center' },
+      { lat: 9.002, lng: 38.702, name: 'Central Pharmacy' },
+      { lat: 8.998, lng: 38.698, name: 'Medical Plaza' },
+      { lat: 9.001, lng: 38.705, name: 'Health Center' },
     ];
 
     pharmacies.forEach(pharmacy => {
