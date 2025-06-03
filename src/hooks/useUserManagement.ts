@@ -44,7 +44,11 @@ export const useUserManagement = () => {
     retry: (failureCount, error) => {
       console.log('Retry attempt:', failureCount, 'Error:', error);
       // Only retry on network errors, not permission errors
-      if (error instanceof Error && error.message.includes('permission')) {
+      if (error instanceof Error && (
+        error.message.includes('permission') || 
+        error.message.includes('policy') ||
+        error.message.includes('Authentication required')
+      )) {
         return false;
       }
       return failureCount < 2;

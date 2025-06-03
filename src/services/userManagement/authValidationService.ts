@@ -29,6 +29,8 @@ export class AuthValidationService {
   static async validateAuthUsers(profileUserIds: string[]) {
     try {
       console.log('🔍 Checking auth users vs profiles...');
+      
+      // Try to get auth users - this might fail in some environments
       const { data: authResponse, error: authError } = await supabase.auth.admin.listUsers();
       
       if (authResponse?.users && Array.isArray(authResponse.users)) {

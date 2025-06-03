@@ -64,9 +64,25 @@ export class UserQueryService {
       });
       
       return {
-        ...user,
-        role: user.role,
-        approval_status: (user.approval_status || 'pending') as 'pending' | 'approved' | 'rejected'
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        role: user.role as UserRole,
+        facility_id: user.facility_id,
+        department: user.department,
+        is_active: user.is_active,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        approval_status: (user.approval_status || 'pending') as 'pending' | 'approved' | 'rejected',
+        approved_by: user.approved_by,
+        approved_at: user.approved_at,
+        can_approve_associations: user.can_approve_associations,
+        primary_facility_id: user.primary_facility_id,
+        is_facility_owner: user.is_facility_owner,
+        last_login_at: user.last_login_at,
+        login_count: user.login_count,
+        timezone: user.timezone,
+        language: user.language
       };
     });
   }

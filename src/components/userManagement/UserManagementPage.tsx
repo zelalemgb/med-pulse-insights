@@ -3,15 +3,18 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserCheck, UserX, History } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, UserCheck, UserX, History, Bug } from 'lucide-react';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { UserApprovalTable } from './UserApprovalTable';
 import { AllUsersTable } from './AllUsersTable';
 import { UserManagementLog } from './UserManagementLog';
+import { UserManagementDebug } from './UserManagementDebug';
 import PageHeader from '@/components/layout/PageHeader';
 
 export const UserManagementPage = () => {
   const { allUsers, pendingUsers, isLoading } = useUserManagement();
+  const [showDebug, setShowDebug] = useState(false);
   
   const approvedUsers = allUsers.filter(user => user.approval_status === 'approved');
   const rejectedUsers = allUsers.filter(user => user.approval_status === 'rejected');
@@ -28,11 +31,24 @@ export const UserManagementPage = () => {
         description="Manage user registrations, approvals, and role assignments across the system"
         breadcrumbItems={breadcrumbItems}
         action={
-          <Badge variant="secondary" className="px-3 py-1">
-            Admin Panel
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDebug(!showDebug)}
+            >
+              <Bug className="h-4 w-4 mr-2" />
+              {showDebug ? 'Hide' : 'Show'} Debug
+            </Button>
+            <Badge variant="secondary" className="px-3 py-1">
+              Admin Panel
+            </Badge>
+          </div>
         }
       />
+
+      {/* Debug Panel */}
+      {showDebug && <UserManagementDebug />}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -93,7 +109,7 @@ export const UserManagementPage = () => {
                 </TabsTrigger>
                 <TabsTrigger value="all" className="flex items-center gap-2 text-sm">
                   <Users className="h-4 w-4" />
-                  All Users
+                  All Users ({allUsers.length})
                 </TabsTrigger>
                 <TabsTrigger value="log" className="flex items-center gap-2 text-sm">
                   <History className="h-4 w-4" />
