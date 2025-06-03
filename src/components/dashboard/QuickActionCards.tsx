@@ -7,7 +7,8 @@ import {
   Upload, 
   BarChart3,
   Database,
-  ArrowRight
+  ArrowRight,
+  TrendingUp
 } from "lucide-react";
 
 const QuickActionCards = () => {
@@ -35,12 +36,20 @@ const QuickActionCards = () => {
       path: "/import",
       color: "text-blue-600",
       bgColor: "bg-blue-50"
+    },
+    {
+      title: "Import Forecast Data",
+      description: "Upload forecast data for multi-level aggregation analysis",
+      icon: TrendingUp,
+      path: "/import?type=forecast",
+      color: "text-orange-600",
+      bgColor: "bg-orange-50"
     }
   ];
 
   return (
     <div className="mb-16">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {quickActions.map((action) => (
           <Card key={action.path} className="hover:shadow-xl transition-all duration-300 group border-0 shadow-lg">
             <CardHeader className="pb-4">
