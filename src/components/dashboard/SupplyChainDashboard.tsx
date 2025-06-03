@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -17,7 +18,8 @@ import {
   FileText, 
   Target,
   MapPin,
-  Filter
+  Filter,
+  Info
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import OSMMap from '@/components/map/OSMMap';
@@ -55,7 +57,7 @@ interface TimeSeriesData {
   reportingRate: number;
 }
 
-export const SupplyChainDashboard = () => {
+const SupplyChainDashboard = () => {
   const { profile } = useAuth();
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('30days');
@@ -154,6 +156,19 @@ export const SupplyChainDashboard = () => {
     );
   }, [selectedRegion]);
 
+  const InfoTooltip = ({ content }: { content: string }) => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help ml-1" />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="max-w-xs text-sm">{content}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header with Filters */}
@@ -193,7 +208,10 @@ export const SupplyChainDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Stock Availability</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center">
+              Stock Availability
+              <InfoTooltip content="Percentage of tracer items available out of total expected across all facilities" />
+            </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -207,7 +225,10 @@ export const SupplyChainDashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Stockout Rate</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center">
+              Stockout Rate
+              <InfoTooltip content="Percentage of facilities experiencing at least one product stockout" />
+            </CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -221,7 +242,10 @@ export const SupplyChainDashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Days Stock</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center">
+              Avg Days Stock
+              <InfoTooltip content="Average number of days remaining before stockout based on current consumption" />
+            </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -235,7 +259,10 @@ export const SupplyChainDashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Facilities Reporting</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center">
+              Facilities Reporting
+              <InfoTooltip content="Percentage of facilities that submitted their reports on time this period" />
+            </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -249,7 +276,10 @@ export const SupplyChainDashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Forecast Accuracy</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center">
+              Forecast Accuracy
+              <InfoTooltip content="How accurately consumption was predicted vs actual usage" />
+            </CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -263,7 +293,10 @@ export const SupplyChainDashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Data Completeness</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center">
+              Data Completeness
+              <InfoTooltip content="Percentage of required data fields that are filled in facility reports" />
+            </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -290,7 +323,10 @@ export const SupplyChainDashboard = () => {
             {/* Stock Availability Trend */}
             <Card>
               <CardHeader>
-                <CardTitle>Stock Availability Trend</CardTitle>
+                <CardTitle className="flex items-center">
+                  Stock Availability Trend
+                  <InfoTooltip content="Tracks stock availability and reporting rates over time to identify patterns" />
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ChartContainer config={{
@@ -326,7 +362,10 @@ export const SupplyChainDashboard = () => {
             {/* Top Products by Consumption */}
             <Card>
               <CardHeader>
-                <CardTitle>Top Products by Consumption</CardTitle>
+                <CardTitle className="flex items-center">
+                  Top Products by Consumption
+                  <InfoTooltip content="Products with highest monthly consumption across all facilities" />
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ChartContainer config={{
@@ -350,7 +389,10 @@ export const SupplyChainDashboard = () => {
         <TabsContent value="map">
           <Card>
             <CardHeader>
-              <CardTitle>Geographic Distribution</CardTitle>
+              <CardTitle className="flex items-center">
+                Geographic Distribution
+                <InfoTooltip content="Interactive map showing facility locations and their current stock status" />
+              </CardTitle>
               <p className="text-sm text-gray-600">Interactive map showing facility locations and stock status</p>
             </CardHeader>
             <CardContent>
@@ -362,7 +404,10 @@ export const SupplyChainDashboard = () => {
         <TabsContent value="trends">
           <Card>
             <CardHeader>
-              <CardTitle>Forecast Accuracy Over Time</CardTitle>
+              <CardTitle className="flex items-center">
+                Forecast Accuracy Over Time
+                <InfoTooltip content="Shows how prediction accuracy changes over time, helping improve forecasting models" />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer config={{
@@ -390,7 +435,10 @@ export const SupplyChainDashboard = () => {
         <TabsContent value="products">
           <Card>
             <CardHeader>
-              <CardTitle>Product Analysis</CardTitle>
+              <CardTitle className="flex items-center">
+                Product Analysis
+                <InfoTooltip content="Analysis of individual product performance including consumption and stockout frequency" />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -416,7 +464,10 @@ export const SupplyChainDashboard = () => {
       {/* Drilldown Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Facility Details</CardTitle>
+          <CardTitle className="flex items-center">
+            Facility Details
+            <InfoTooltip content="Detailed facility-level view of stock levels, consumption, and reporting status" />
+          </CardTitle>
           <p className="text-sm text-gray-600">Detailed view of facility stock levels and reporting status</p>
         </CardHeader>
         <CardContent>
