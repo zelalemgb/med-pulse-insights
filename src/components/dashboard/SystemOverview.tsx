@@ -125,13 +125,26 @@ const SystemOverview = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">System Status</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium">Facilities Reporting</CardTitle>
+            <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">Operational</div>
+            <div className="text-2xl font-bold">{systemMetrics.facilities.reportingRate}%</div>
             <p className="text-xs text-muted-foreground">
-              Uptime: {systemMetrics.system.uptime}%
+              Active facilities reporting
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Data Completeness</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{systemMetrics.data.completeness}%</div>
+            <p className="text-xs text-muted-foreground">
+              Data completeness score
             </p>
           </CardContent>
         </Card>
@@ -151,26 +164,13 @@ const SystemOverview = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Data Quality</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">System Status</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{systemMetrics.data.completeness}%</div>
+            <div className="text-2xl font-bold text-green-600">Operational</div>
             <p className="text-xs text-muted-foreground">
-              Data completeness score
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Security Status</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">Secure</div>
-            <p className="text-xs text-muted-foreground">
-              {systemMetrics.security.vulnerabilities} vulnerabilities
+              Uptime: {systemMetrics.system.uptime}%
             </p>
           </CardContent>
         </Card>
