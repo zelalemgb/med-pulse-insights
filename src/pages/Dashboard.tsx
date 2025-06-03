@@ -3,7 +3,6 @@ import React from 'react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import PageHeader from '@/components/layout/PageHeader';
 import RoleBasedDashboard from '@/components/dashboard/RoleBasedDashboard';
-import QuickActionCards from '@/components/dashboard/QuickActionCards';
 import { useAuth } from "@/contexts/AuthContext";
 import WelcomeSection from "@/components/welcome/WelcomeSection";
 
@@ -42,7 +41,6 @@ const Dashboard = () => {
           />
           
           <div className="mt-8 space-y-8">
-            <QuickActionCards />
             <RoleBasedDashboard />
           </div>
         </div>
