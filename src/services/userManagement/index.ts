@@ -5,4 +5,6 @@ export { UserManagementLogService } from './userManagementLogService';
 export { UserDataService } from './userDataService';
 export { AuthUserService } from './authUserService';
 export { UserActionsService } from './userActionsService';
+export { UserQueryService } from './userQueryService';
+export { AuthValidationService } from './authValidationService';
 export type { UserManagementRecord, UserManagementLogEntry } from './types';

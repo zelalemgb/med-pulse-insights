@@ -1,9 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { UserRole } from '@/types/pharmaceutical';
 import { UserManagementRecord } from './types';
 
-export class UserDataService {
-  static async fetchAllProfiles(): Promise<any[]> {
+export class UserQueryService {
+  static async getAllProfiles(): Promise<any[]> {
     console.log('🔍 Fetching all profiles...');
     const { data, error } = await supabase
       .from('profiles')
@@ -33,7 +34,7 @@ export class UserDataService {
     return data || [];
   }
 
-  static async fetchPendingProfiles(): Promise<any[]> {
+  static async getPendingProfiles(): Promise<any[]> {
     console.log('🔍 Fetching pending users...');
     
     const { data, error } = await supabase

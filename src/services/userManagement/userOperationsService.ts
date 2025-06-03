@@ -1,53 +1,40 @@
 
-import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
 import { UserManagementRecord } from './types';
-import { UserDataService } from './userDataService';
-import { AuthUserService } from './authUserService';
+import { UserQueryService } from './userQueryService';
+import { AuthValidationService } from './authValidationService';
 import { UserActionsService } from './userActionsService';
 
 export class UserOperationsService {
   static async getAllUsers(): Promise<UserManagementRecord[]> {
     console.log('🔍 Fetching all users...');
     
-    // Get current user info for debugging
-    const { data: currentUser, error: userError } = await supabase.auth.getUser();
-    console.log('Current user:', currentUser.user?.email, 'Error:', userError);
-
-    if (!currentUser.user) {
-      console.error('❌ No authenticated user found');
-      throw new Error('Authentication required');
-    }
-
+    // Validate current user authentication
+    const currentUser = await AuthValidationService.getCurrentUserInfo();
+    
     // Check current user's profile and permissions
-    const { data: currentProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', currentUser.user.id)
-      .single();
-
-    console.log('Current user profile:', currentProfile, 'Error:', profileError);
+    await AuthValidationService.getCurrentUserProfile(currentUser.id);
 
     // Fetch all profiles
-    const data = await UserDataService.fetchAllProfiles();
+    const data = await UserQueryService.getAllProfiles();
 
     // Check for users in auth who might not have profiles
     const profileUserIds = data.map(p => p.id);
-    const profilesCreated = await AuthUserService.checkAuthUsers(profileUserIds);
+    const profilesCreated = await AuthValidationService.validateAuthUsers(profileUserIds);
     
     if (profilesCreated) {
       // Re-fetch profiles after creating missing ones
-      const updatedData = await UserDataService.fetchAllProfiles();
+      const updatedData = await UserQueryService.getAllProfiles();
       console.log('✅ Re-fetched profiles after creating missing ones:', updatedData.length);
-      return UserDataService.mapUsersToRecords(updatedData);
+      return UserQueryService.mapUsersToRecords(updatedData);
     }
 
-    return UserDataService.mapUsersToRecords(data);
+    return UserQueryService.mapUsersToRecords(data);
   }
 
   static async getPendingUsers(): Promise<UserManagementRecord[]> {
-    const data = await UserDataService.fetchPendingProfiles();
-    return UserDataService.mapUsersToRecords(data);
+    const data = await UserQueryService.getPendingProfiles();
+    return UserQueryService.mapUsersToRecords(data);
   }
 
   static async approveUser(userId: string, newRole: UserRole = 'facility_officer'): Promise<void> {
