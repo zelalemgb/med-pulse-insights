@@ -46,7 +46,11 @@ export class UserManagementService {
       throw new Error(`Failed to fetch users: ${error.message}`);
     }
 
-    return data || [];
+    // Map the data to ensure type compatibility
+    return (data || []).map(user => ({
+      ...user,
+      role: user.role as UserRole
+    }));
   }
 
   static async getPendingUsers(): Promise<UserManagementRecord[]> {
@@ -60,7 +64,11 @@ export class UserManagementService {
       throw new Error(`Failed to fetch pending users: ${error.message}`);
     }
 
-    return data || [];
+    // Map the data to ensure type compatibility
+    return (data || []).map(user => ({
+      ...user,
+      role: user.role as UserRole
+    }));
   }
 
   static async approveUser(userId: string, newRole: UserRole = 'facility_officer'): Promise<void> {
@@ -116,20 +124,48 @@ export class UserManagementService {
   }
 
   static async getUserManagementLog(): Promise<UserManagementLogEntry[]> {
-    const { data, error } = await supabase
+    // Fetch log entries first
+    const { data: logData, error: logError } = await supabase
       .from('user_management_log')
-      .select(`
-        *,
-        admin_profile:profiles!admin_user_id(full_name, email),
-        target_profile:profiles!target_user_id(full_name, email)
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(100);
 
-    if (error) {
-      throw new Error(`Failed to fetch user management log: ${error.message}`);
+    if (logError) {
+      throw new Error(`Failed to fetch user management log: ${logError.message}`);
     }
 
-    return data || [];
+    if (!logData || logData.length === 0) {
+      return [];
+    }
+
+    // Get unique user IDs
+    const adminUserIds = [...new Set(logData.map(entry => entry.admin_user_id))];
+    const targetUserIds = [...new Set(logData.map(entry => entry.target_user_id))];
+    const allUserIds = [...new Set([...adminUserIds, ...targetUserIds])];
+
+    // Fetch profile data for all users
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', allUserIds);
+
+    if (profilesError) {
+      throw new Error(`Failed to fetch user profiles: ${profilesError.message}`);
+    }
+
+    // Create a map for quick profile lookup
+    const profilesMap = new Map(
+      (profilesData || []).map(profile => [profile.id, profile])
+    );
+
+    // Combine log data with profile data
+    return logData.map(entry => ({
+      ...entry,
+      old_role: entry.old_role as UserRole | null,
+      new_role: entry.new_role as UserRole | null,
+      admin_profile: profilesMap.get(entry.admin_user_id) || { full_name: 'Unknown', email: 'Unknown' },
+      target_profile: profilesMap.get(entry.target_user_id) || { full_name: 'Unknown', email: 'Unknown' }
+    }));
   }
 }

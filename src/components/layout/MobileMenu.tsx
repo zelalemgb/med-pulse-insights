@@ -3,7 +3,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { cn } from '@/lib/utils';
-import { NavigationItems } from './NavigationItems';
+import NavigationItems from './NavigationItems';
 
 export const MobileMenu = () => {
   const { user, loading } = useAuth();
