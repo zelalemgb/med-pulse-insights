@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { UserManagementService } from '@/services/userManagement/userManagementService';
 import { UserRole } from '@/types/pharmaceutical';
@@ -11,52 +10,72 @@ export const useUserManagement = () => {
   const allUsersQuery = useQuery({
     queryKey: ['users', 'all'],
     queryFn: async () => {
-      console.log('Fetching all users...');
+      console.log('🚀 Starting getAllUsers query...');
       try {
         const users = await UserManagementService.getAllUsers();
-        console.log('All users fetched successfully:', users.length, 'users');
+        console.log('✅ All users fetched successfully:', users.length, 'users');
+        console.log('Users details:', users.map(u => ({ email: u.email, status: u.approval_status, role: u.role })));
         return users;
       } catch (error) {
-        console.error('Error fetching all users:', error);
+        console.error('❌ Error fetching all users:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch users. Please check your permissions.',
+          variant: 'destructive',
+        });
         throw error;
       }
     },
     refetchOnWindowFocus: false,
     staleTime: 30000, // 30 seconds
+    retry: 2,
   });
 
   const pendingUsersQuery = useQuery({
     queryKey: ['users', 'pending'],
     queryFn: async () => {
-      console.log('Fetching pending users...');
+      console.log('🚀 Starting getPendingUsers query...');
       try {
         const users = await UserManagementService.getPendingUsers();
-        console.log('Pending users fetched successfully:', users.length, 'users');
+        console.log('✅ Pending users fetched successfully:', users.length, 'users');
+        console.log('Pending users details:', users.map(u => ({ email: u.email, status: u.approval_status })));
         return users;
       } catch (error) {
-        console.error('Error fetching pending users:', error);
+        console.error('❌ Error fetching pending users:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch pending users. Please check your permissions.',
+          variant: 'destructive',
+        });
         throw error;
       }
     },
     refetchOnWindowFocus: false,
     staleTime: 30000, // 30 seconds
+    retry: 2,
   });
 
   const userManagementLogQuery = useQuery({
     queryKey: ['user-management-log'],
     queryFn: async () => {
-      console.log('Fetching user management log...');
+      console.log('🚀 Starting getUserManagementLog query...');
       try {
         const log = await UserManagementService.getUserManagementLog();
-        console.log('User management log fetched successfully:', log.length, 'entries');
+        console.log('✅ User management log fetched successfully:', log.length, 'entries');
         return log;
       } catch (error) {
-        console.error('Error fetching user management log:', error);
+        console.error('❌ Error fetching user management log:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch activity log. Please check your permissions.',
+          variant: 'destructive',
+        });
         throw error;
       }
     },
     refetchOnWindowFocus: false,
     staleTime: 30000, // 30 seconds
+    retry: 2,
   });
 
   const approveUserMutation = useMutation({
@@ -136,6 +155,7 @@ export const useUserManagement = () => {
     pendingUsers: pendingUsersQuery.data || [],
     userManagementLog: userManagementLogQuery.data || [],
     isLoading: allUsersQuery.isLoading || pendingUsersQuery.isLoading || userManagementLogQuery.isLoading,
+    error: allUsersQuery.error || pendingUsersQuery.error || userManagementLogQuery.error,
     approveUser: approveUserMutation.mutate,
     rejectUser: rejectUserMutation.mutate,
     changeUserRole: changeRoleMutation.mutate,

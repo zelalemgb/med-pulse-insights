@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
 
@@ -37,40 +36,62 @@ export interface UserManagementLogEntry {
 
 export class UserManagementService {
   static async getAllUsers(): Promise<UserManagementRecord[]> {
+    console.log('🔍 Fetching all users with current user context...');
+    
+    // Get current user info for debugging
+    const { data: currentUser } = await supabase.auth.getUser();
+    console.log('Current user:', currentUser.user?.email);
+
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
 
+    console.log('Raw profiles data:', data);
+    console.log('Query error:', error);
+
     if (error) {
+      console.error('Database error:', error);
       throw new Error(`Failed to fetch users: ${error.message}`);
     }
 
     // Map the data to ensure type compatibility
-    return (data || []).map(user => ({
+    const mappedUsers = (data || []).map(user => ({
       ...user,
       role: user.role as UserRole,
       approval_status: (user.approval_status || 'pending') as 'pending' | 'approved' | 'rejected'
     }));
+
+    console.log('Mapped users count:', mappedUsers.length);
+    return mappedUsers;
   }
 
   static async getPendingUsers(): Promise<UserManagementRecord[]> {
+    console.log('🔍 Fetching pending users...');
+    
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('approval_status', 'pending')
       .order('created_at', { ascending: false });
 
+    console.log('Pending users raw data:', data);
+    console.log('Pending users query error:', error);
+
     if (error) {
+      console.error('Database error fetching pending users:', error);
       throw new Error(`Failed to fetch pending users: ${error.message}`);
     }
 
     // Map the data to ensure type compatibility
-    return (data || []).map(user => ({
+    const mappedUsers = (data || []).map(user => ({
       ...user,
       role: user.role as UserRole,
       approval_status: (user.approval_status || 'pending') as 'pending' | 'approved' | 'rejected'
     }));
+
+    console.log('Mapped pending users count:', mappedUsers.length);
+    return mappedUsers;
   }
 
   static async approveUser(userId: string, newRole: UserRole = 'facility_officer'): Promise<void> {
@@ -126,6 +147,8 @@ export class UserManagementService {
   }
 
   static async getUserManagementLog(): Promise<UserManagementLogEntry[]> {
+    console.log('🔍 Fetching user management log...');
+    
     // Fetch log entries first
     const { data: logData, error: logError } = await supabase
       .from('user_management_log')
@@ -133,7 +156,11 @@ export class UserManagementService {
       .order('created_at', { ascending: false })
       .limit(100);
 
+    console.log('Log data:', logData);
+    console.log('Log query error:', logError);
+
     if (logError) {
+      console.error('Database error fetching log:', logError);
       throw new Error(`Failed to fetch user management log: ${logError.message}`);
     }
 
@@ -153,6 +180,7 @@ export class UserManagementService {
       .in('id', allUserIds);
 
     if (profilesError) {
+      console.error('Database error fetching profiles for log:', profilesError);
       throw new Error(`Failed to fetch user profiles: ${profilesError.message}`);
     }
 
