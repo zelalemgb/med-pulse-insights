@@ -79,12 +79,12 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
               to={item.href}
               onClick={onClick}
               className={cn(
-                "flex items-center space-x-2 lg:space-x-3 py-2 px-2 lg:px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm lg:text-base whitespace-nowrap",
+                "flex items-center space-x-1 lg:space-x-2 py-2 px-2 lg:px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm whitespace-nowrap",
                 isActive(location, item.href)
               )}
             >
-              <item.icon className="h-4 w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-              <span className="truncate">{item.label}</span>
+              <item.icon className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate text-xs lg:text-sm">{item.label}</span>
             </Link>
           </li>
         );

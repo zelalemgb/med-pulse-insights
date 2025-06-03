@@ -24,10 +24,10 @@ const MainNavigation = () => {
             <BrandLogo />
           </div>
 
-          {/* Desktop Navigation - Hidden on smaller screens to prevent overlap */}
+          {/* Desktop Navigation - Only show on xl screens and up to prevent overlap */}
           {user && !loading && (
-            <div className="hidden lg:flex flex-1 justify-center max-w-md xl:max-w-lg">
-              <NavigationItems className="flex items-center space-x-1 overflow-hidden" />
+            <div className="hidden xl:flex flex-1 justify-center max-w-2xl mx-4">
+              <NavigationItems className="flex items-center space-x-2 overflow-hidden" />
             </div>
           )}
 
@@ -43,11 +43,11 @@ const MainNavigation = () => {
                 {/* Notification Bell */}
                 <NotificationBell />
 
-                {/* Mobile Menu Button - Show on lg and below */}
+                {/* Mobile Menu Button - Show on xl and below */}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="lg:hidden min-h-[40px] min-w-[40px] p-2"
+                  className="xl:hidden min-h-[40px] min-w-[40px] p-2"
                   onClick={toggleMobileMenu}
                   aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
                 >

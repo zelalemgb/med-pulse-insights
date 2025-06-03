@@ -17,7 +17,7 @@ export const MobileMenu = () => {
 
   return (
     <div className={cn(
-      "lg:hidden border-t border-gray-200 transition-all duration-300 ease-in-out overflow-hidden bg-white",
+      "xl:hidden border-t border-gray-200 transition-all duration-300 ease-in-out overflow-hidden bg-white",
       isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
     )}>
       <div className="px-2 pt-2 pb-3 space-y-1 max-h-80 overflow-y-auto">
