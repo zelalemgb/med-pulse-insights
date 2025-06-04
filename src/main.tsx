@@ -7,6 +7,15 @@ import './index.css';
 
 console.log('🚀 main.tsx loading...');
 
+// Add error boundary for main.tsx
+window.addEventListener('error', (event) => {
+  console.error('❌ Global error:', event.error);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('❌ Unhandled promise rejection:', event.reason);
+});
+
 // Register PWA manifest with better update handling
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -36,6 +45,7 @@ if ('serviceWorker' in navigator) {
 
 const container = document.getElementById("root");
 if (!container) {
+  console.error('❌ Root element not found');
   throw new Error('❌ Root element not found');
 }
 
@@ -43,10 +53,25 @@ console.log('🎯 Creating React root...');
 const root = createRoot(container);
 
 console.log('🔧 Rendering App component...');
-root.render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
 
-console.log('✅ App rendered successfully');
+try {
+  root.render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+  console.log('✅ App rendered successfully');
+} catch (error) {
+  console.error('❌ Error rendering App:', error);
+  
+  // Fallback render
+  root.render(
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h1>App Loading Error</h1>
+      <p>There was an error loading the application. Check the console for details.</p>
+      <pre style={{ background: '#f5f5f5', padding: '10px', borderRadius: '4px' }}>
+        {error instanceof Error ? error.message : String(error)}
+      </pre>
+    </div>
+  );
+}
