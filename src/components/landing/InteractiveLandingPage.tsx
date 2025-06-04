@@ -23,14 +23,14 @@ const InteractiveLandingPage = ({ hideTopNavigation = false }: InteractiveLandin
       {!hideTopNavigation && <TopNavigation />}
       
       {/* Main content container with proper viewport handling */}
-      <div className={`flex flex-col xl:flex-row w-full ${
+      <div className={`w-full ${
         hideTopNavigation 
           ? 'h-screen' 
           : 'min-h-screen pt-16'
       }`}>
         
-        {/* Map Section - Responsive sizing */}
-        <div className="flex-1 relative min-h-[60vh] lg:min-h-[70vh] xl:min-h-screen">
+        {/* Map Section - Full width now */}
+        <div className="relative w-full h-full min-h-[60vh] lg:min-h-[70vh] xl:min-h-screen">
           <InteractiveMap 
             onFacilitySelect={setSelectedFacility}
             onReportIssue={() => setIsReportModalOpen(true)}
@@ -53,29 +53,6 @@ const InteractiveLandingPage = ({ hideTopNavigation = false }: InteractiveLandin
             </div>
           </div>
         </div>
-
-        {/* Dashboard Panel - Only show for authenticated users on larger screens */}
-        {user && (
-          <div className="xl:w-96 xl:max-w-md bg-white border-l border-gray-200 flex flex-col order-first xl:order-last">
-            <div className="p-3 sm:p-4 lg:p-6">
-              <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Quick Actions</h3>
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                Access your dashboard features and analytics from this panel.
-              </p>
-              
-              {/* Additional responsive content */}
-              <div className="mt-4 space-y-2">
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-xs font-medium text-gray-700 mb-1">System Status</div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-xs text-gray-600">All systems operational</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Modals with responsive sizing */}
