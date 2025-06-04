@@ -34,9 +34,7 @@ const InteractiveLandingPage = ({ hideTopNavigation = false }: InteractiveLandin
           {user && <MiniDashboard />}
           
           {/* Show legend for all users, positioned based on authentication status */}
-          <div className={user ? "top-80" : "top-20"}>
-            <MapLegend />
-          </div>
+          <MapLegend isUserAuthenticated={!!user} />
         </div>
 
         {/* Dashboard Panel - Only show for authenticated users */}

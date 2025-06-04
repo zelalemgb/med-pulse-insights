@@ -3,11 +3,15 @@ import React from 'react';
 
 interface MapLegendProps {
   className?: string;
+  isUserAuthenticated?: boolean;
 }
 
-const MapLegend = ({ className = "" }: MapLegendProps) => {
+const MapLegend = ({ className = "", isUserAuthenticated = false }: MapLegendProps) => {
+  // Position the legend based on authentication status
+  const positionClass = isUserAuthenticated ? "top-80" : "top-20";
+  
   return (
-    <div className={`absolute left-2 sm:left-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-xl border border-gray-200 w-[300px] sm:w-80 max-w-[calc(100vw-1rem)] ${className}`}>
+    <div className={`absolute ${positionClass} left-2 sm:left-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-xl border border-gray-200 w-[300px] sm:w-80 max-w-[calc(100vw-1rem)] ${className}`}>
       <h4 className="font-semibold text-sm mb-3 text-gray-900">Map Legend</h4>
       <div className="space-y-2 text-xs">
         {/* Your Location */}
