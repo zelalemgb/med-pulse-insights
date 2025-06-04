@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useCallback, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthContextType, UserProfile } from '@/types/auth';
@@ -13,11 +13,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   console.log('🔧 AuthProvider rendering...');
   
   // Initialize state with proper error boundaries
-  const [user, setUser] = React.useState<User | null>(null);
-  const [session, setSession] = React.useState<Session | null>(null);
-  const [profile, setProfile] = React.useState<UserProfile | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [authInitialized, setAuthInitialized] = React.useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [authInitialized, setAuthInitialized] = useState(false);
 
   console.log('🔧 AuthProvider state initialized');
 
