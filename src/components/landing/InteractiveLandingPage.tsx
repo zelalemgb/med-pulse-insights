@@ -26,11 +26,11 @@ const InteractiveLandingPage = ({ hideTopNavigation = false }: InteractiveLandin
       <div className={`w-full ${
         hideTopNavigation 
           ? 'h-screen' 
-          : 'min-h-screen pt-16'
+          : 'h-screen pt-16'
       }`}>
         
-        {/* Map Section - Full width now */}
-        <div className="relative w-full h-full min-h-[60vh] lg:min-h-[70vh] xl:min-h-screen">
+        {/* Map Section - Full width and height */}
+        <div className="relative w-full h-full">
           <InteractiveMap 
             onFacilitySelect={setSelectedFacility}
             onReportIssue={() => setIsReportModalOpen(true)}
@@ -38,7 +38,7 @@ const InteractiveLandingPage = ({ hideTopNavigation = false }: InteractiveLandin
           
           {/* Overlays positioned responsively */}
           <div className="absolute inset-0 pointer-events-none">
-            {/* Mini dashboard - responsive positioning */}
+            {/* Mini dashboard - only show for authenticated users */}
             {user && (
               <div className="absolute top-2 sm:top-4 left-2 sm:left-4 pointer-events-auto">
                 <MiniDashboard />
