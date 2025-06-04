@@ -9,13 +9,18 @@ vi.mock('@/services/auth/profileService');
 describe('AuthValidationService.validateAuthUsers', () => {
   it('creates missing profiles and returns true', async () => {
     const listUsers = vi.fn().mockResolvedValue({
-      data: { users: [
-        { id: '1', email: 'a@test.com', user_metadata: { full_name: 'A' } },
-        { id: '2', email: 'b@test.com', user_metadata: { full_name: 'B' } }
-      ] },
+      data: {
+        users: [
+          { id: '1', email: 'a@test.com', user_metadata: { full_name: 'A' } },
+          { id: '2', email: 'b@test.com', user_metadata: { full_name: 'B' } }
+        ]
+      },
       error: null
     });
-    (supabase.functions as any) = { invoke: listUsers };
+    Object.defineProperty(supabase, 'functions', {
+      value: { invoke: listUsers },
+      configurable: true
+    });
 
     const createProfile = vi.fn().mockResolvedValue({ data: {}, error: null });
     (ProfileService.createProfile as any) = createProfile;

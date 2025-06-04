@@ -80,7 +80,11 @@ export class ProfileService {
     }
   }
 
-  static async createProfile(userId: string, email: string, fullName?: string | null) {
+  static async createProfile(
+    userId: string,
+    email: string,
+    fullName?: string | null
+  ) {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -88,11 +92,8 @@ export class ProfileService {
           id: userId,
           email,
           full_name: fullName ?? null,
-          role: 'viewer',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          approval_status: 'pending'
+          approval_status: 'pending',
+          is_active: true
         })
         .select()
         .single();
