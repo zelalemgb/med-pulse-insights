@@ -1,80 +1,53 @@
 
 import React, { useState } from 'react';
-import TopNavigation from './TopNavigation';
+import { useAuth } from '@/contexts/AuthContext';
 import InteractiveMap from './InteractiveMap';
+import TopNavigation from './TopNavigation';
 import MiniDashboard from './MiniDashboard';
-import ReportButton from './ReportButton';
-import MapFilters from './MapFilters';
 import FacilityInfoModal from './FacilityInfoModal';
+import ReportIssueModal from './ReportIssueModal';
 
-export interface Facility {
-  id: string;
-  name: string;
-  type: 'health_center' | 'hospital' | 'pharmacy' | 'regional_store' | 'zonal_store';
-  status: 'in_stock' | 'stockout' | 'partial';
-  latitude: number;
-  longitude: number;
-  region: string;
-  zone: string;
-  wereda: string;
-  lastReported: string;
-  stockAvailability: number; // percentage
-  reportingCompleteness: number; // percentage
-  tracerItems: {
-    available: number;
-    total: number;
-  };
+interface InteractiveLandingPageProps {
+  hideTopNavigation?: boolean;
 }
 
-const InteractiveLandingPage = () => {
-  const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null);
-  const [filters, setFilters] = useState({
-    facilityType: 'all',
-    region: 'all',
-    zone: 'all',
-    product: 'all'
-  });
-
-  const handleFacilityClick = (facility: Facility) => {
-    setSelectedFacility(facility);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedFacility(null);
-  };
+const InteractiveLandingPage = ({ hideTopNavigation = false }: InteractiveLandingPageProps) => {
+  const { user } = useAuth();
+  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   return (
-    <div className="h-screen bg-gray-50 overflow-hidden relative">
-      {/* Top Navigation */}
-      <TopNavigation />
+    <div className="relative min-h-screen bg-gray-50">
+      {!hideTopNavigation && <TopNavigation />}
       
-      {/* Mini Dashboard Overlay */}
-      <MiniDashboard />
-      
-      {/* Map Filters */}
-      <MapFilters 
-        filters={filters} 
-        onFiltersChange={setFilters} 
+      <div className={`flex flex-col lg:flex-row ${hideTopNavigation ? 'h-screen' : 'h-[calc(100vh-4rem)] mt-16'}`}>
+        {/* Map Section */}
+        <div className="flex-1 relative">
+          <InteractiveMap 
+            onFacilitySelect={setSelectedFacility}
+            onReportIssue={() => setIsReportModalOpen(true)}
+          />
+        </div>
+
+        {/* Dashboard Panel - Only show for authenticated users */}
+        {user && (
+          <div className="lg:w-96 bg-white border-l border-gray-200 flex flex-col">
+            <MiniDashboard />
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      <FacilityInfoModal 
+        facility={selectedFacility}
+        isOpen={!!selectedFacility}
+        onClose={() => setSelectedFacility(null)}
       />
       
-      {/* Interactive Map - Full Width */}
-      <div className="absolute inset-0 pt-16">
-        <InteractiveMap 
-          filters={filters}
-          onFacilityClick={handleFacilityClick}
-        />
-      </div>
-      
-      {/* Floating Report Button */}
-      <ReportButton />
-      
-      {/* Facility Info Modal */}
-      {selectedFacility && (
-        <FacilityInfoModal 
-          facility={selectedFacility}
-          onClose={handleCloseModal}
-        />
-      )}
+      <ReportIssueModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </div>
   );
 };
