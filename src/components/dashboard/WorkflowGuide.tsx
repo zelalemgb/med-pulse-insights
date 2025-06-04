@@ -17,7 +17,7 @@ const WorkflowGuide = () => {
       title: 'Import Your Data',
       description: 'Upload supply chain and forecast data from Excel files',
       icon: Upload,
-      route: '/import',
+      route: '/data-entry',
       color: 'bg-blue-500',
       textColor: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -131,7 +131,7 @@ const WorkflowGuide = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/import')}
+                onClick={() => navigate('/data-entry')}
                 className="text-blue-600 border-blue-200 hover:bg-blue-50"
               >
                 <Upload className="h-4 w-4 mr-1" />

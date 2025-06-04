@@ -26,7 +26,7 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
       requiresAuth: false,
     },
     {
-      href: '/import',
+      href: '/data-entry',
       label: 'Import Data',
       icon: Upload,
       requiresAuth: true,
