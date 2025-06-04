@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Facility } from './types';
 import MapFilters from './MapFilters';
+import ReportButton from './ReportButton';
 
 // Mock data for demonstration
 const mockFacilities: Facility[] = [
@@ -243,6 +244,9 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
         filters={filters}
         onFiltersChange={setFilters}
       />
+      
+      {/* Report Button */}
+      <ReportButton />
       
       {/* Legend - Fixed position with high z-index */}
       <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-xl z-[1000] border border-gray-200 max-w-[200px] sm:max-w-none">
