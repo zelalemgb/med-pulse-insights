@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import ReportIssueModal from './ReportIssueModal';
 
 const ReportButton = () => {
@@ -16,7 +16,7 @@ const ReportButton = () => {
           className="bg-red-600 hover:bg-red-700 text-white shadow-lg rounded-full w-14 h-14 p-0 transition-all hover:scale-105"
           title="Report drug issue"
         >
-          <plus className="w-6 h-6" />
+          <Plus className="w-6 h-6" />
         </Button>
         
         {/* Tooltip */}
