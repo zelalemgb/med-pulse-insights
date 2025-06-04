@@ -21,43 +21,52 @@ import NotFound from "./pages/NotFound";
 import UserManagement from '@/pages/UserManagement';
 import Footer from '@/components/layout/Footer';
 
+console.log('🔧 App.tsx loading...');
+
 const queryClient = new QueryClient();
 
 const App: React.FC = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <NavigationProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <div className="min-h-screen bg-gray-50 flex flex-col">
-                <MainNavigation />
-                <main className="flex-1">
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/import" element={<Import />} />
-                    <Route path="/data-entry" element={<DataEntry />} />
-                    <Route path="/data-management" element={<DataManagement />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/facilities" element={<Facilities />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/user-management" element={<UserManagement />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-                <Footer />
-              </div>
-            </TooltipProvider>
-          </NavigationProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
+  console.log('🔧 App component rendering...');
+  
+  try {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <NavigationProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <div className="min-h-screen bg-gray-50 flex flex-col">
+                  <MainNavigation />
+                  <main className="flex-1">
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/import" element={<Import />} />
+                      <Route path="/data-entry" element={<DataEntry />} />
+                      <Route path="/data-management" element={<DataManagement />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/facilities" element={<Facilities />} />
+                      <Route path="/products" element={<Products />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/user-management" element={<UserManagement />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </main>
+                  <Footer />
+                </div>
+              </TooltipProvider>
+            </NavigationProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    );
+  } catch (error) {
+    console.error('💥 Error in App component:', error);
+    return <div>Error loading application</div>;
+  }
 };
 
 export default App;
