@@ -2,19 +2,17 @@
 import React, { useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from 'react-router-dom';
-import WelcomeSection from "@/components/welcome/WelcomeSection";
-import UserDashboardPreview from "@/components/dashboard/UserDashboardPreview";
+import InteractiveLandingPage from "@/components/landing/InteractiveLandingPage";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Handle redirect for unauthenticated users who try to access protected content
+  // Handle redirect for authenticated users
   useEffect(() => {
-    if (!loading && !user) {
-      console.log('❌ No user found, staying on welcome page');
-    } else if (!loading && user) {
-      console.log('✅ User found, showing dashboard');
+    if (!loading && user) {
+      console.log('✅ User found, redirecting to dashboard');
+      navigate('/dashboard');
     }
   }, [user, loading, navigate]);
 
@@ -29,7 +27,8 @@ const Index = () => {
     );
   }
 
-  return user ? <UserDashboardPreview /> : <WelcomeSection />;
+  // Show interactive landing page for non-authenticated users
+  return <InteractiveLandingPage />;
 };
 
 export default Index;

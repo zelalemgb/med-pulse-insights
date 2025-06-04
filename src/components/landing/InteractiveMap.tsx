@@ -1,0 +1,220 @@
+
+import React, { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { Facility } from './InteractiveLandingPage';
+
+// Mock data for demonstration
+const mockFacilities: Facility[] = [
+  {
+    id: '1',
+    name: 'Addis Ababa Health Center',
+    type: 'health_center',
+    status: 'in_stock',
+    latitude: 9.0307,
+    longitude: 38.7407,
+    region: 'Addis Ababa',
+    zone: 'Addis Ababa',
+    wereda: 'Arada',
+    lastReported: '2025-06-03',
+    stockAvailability: 85,
+    reportingCompleteness: 92,
+    tracerItems: { available: 13, total: 15 }
+  },
+  {
+    id: '2',
+    name: 'Black Lion Hospital',
+    type: 'hospital',
+    status: 'partial',
+    latitude: 9.0347,
+    longitude: 38.7507,
+    region: 'Addis Ababa',
+    zone: 'Addis Ababa',
+    wereda: 'Gulele',
+    lastReported: '2025-06-04',
+    stockAvailability: 65,
+    reportingCompleteness: 88,
+    tracerItems: { available: 10, total: 15 }
+  },
+  {
+    id: '3',
+    name: 'Merkato Pharmacy',
+    type: 'pharmacy',
+    status: 'stockout',
+    latitude: 9.0147,
+    longitude: 38.7247,
+    region: 'Addis Ababa',
+    zone: 'Addis Ababa',
+    wereda: 'Addis Ketema',
+    lastReported: '2025-06-02',
+    stockAvailability: 45,
+    reportingCompleteness: 75,
+    tracerItems: { available: 7, total: 15 }
+  },
+  {
+    id: '4',
+    name: 'Regional Medical Store',
+    type: 'regional_store',
+    status: 'in_stock',
+    latitude: 9.0427,
+    longitude: 38.7607,
+    region: 'Addis Ababa',
+    zone: 'Addis Ababa',
+    wereda: 'Bole',
+    lastReported: '2025-06-04',
+    stockAvailability: 95,
+    reportingCompleteness: 98,
+    tracerItems: { available: 15, total: 15 }
+  }
+];
+
+interface InteractiveMapProps {
+  filters: {
+    facilityType: string;
+    region: string;
+    zone: string;
+    product: string;
+  };
+  onFacilityClick: (facility: Facility) => void;
+}
+
+const InteractiveMap: React.FC<InteractiveMapProps> = ({ filters, onFacilityClick }) => {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<L.Map | null>(null);
+  const markersGroup = useRef<L.LayerGroup | null>(null);
+
+  // Facility icon configurations
+  const getFacilityIcon = (facility: Facility) => {
+    let color = '#10b981'; // Green default
+    let iconSymbol = '●';
+    
+    // Color based on status
+    switch (facility.status) {
+      case 'stockout':
+        color = '#ef4444'; // Red
+        break;
+      case 'partial':
+        color = '#f59e0b'; // Yellow
+        break;
+      case 'in_stock':
+        color = '#10b981'; // Green
+        break;
+    }
+    
+    // Symbol based on type
+    switch (facility.type) {
+      case 'hospital':
+        color = '#3b82f6'; // Blue for hospitals
+        iconSymbol = '🏥';
+        break;
+      case 'pharmacy':
+        iconSymbol = '💊';
+        break;
+      case 'regional_store':
+      case 'zonal_store':
+        color = '#8b5cf6'; // Purple
+        iconSymbol = '📦';
+        break;
+      default:
+        iconSymbol = '🏥';
+    }
+
+    return L.divIcon({
+      html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-size: 12px;">${iconSymbol}</div>`,
+      className: 'custom-facility-marker',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+    });
+  };
+
+  // Filter facilities based on current filters
+  const filteredFacilities = mockFacilities.filter(facility => {
+    if (filters.facilityType !== 'all' && facility.type !== filters.facilityType) return false;
+    if (filters.region !== 'all' && facility.region !== filters.region) return false;
+    if (filters.zone !== 'all' && facility.zone !== filters.zone) return false;
+    return true;
+  });
+
+  useEffect(() => {
+    if (!mapContainer.current) return;
+
+    // Initialize map
+    map.current = L.map(mapContainer.current, {
+      zoomControl: false,
+      attributionControl: false,
+    }).setView([9.0307, 38.7407], 12);
+
+    // Add tile layer
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      subdomains: 'abcd',
+    }).addTo(map.current);
+
+    // Add zoom control to bottom right
+    L.control.zoom({ position: 'bottomright' }).addTo(map.current);
+
+    // Initialize markers group
+    markersGroup.current = L.layerGroup().addTo(map.current);
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!map.current || !markersGroup.current) return;
+
+    // Clear existing markers
+    markersGroup.current.clearLayers();
+
+    // Add filtered facilities as markers
+    filteredFacilities.forEach(facility => {
+      const marker = L.marker([facility.latitude, facility.longitude], {
+        icon: getFacilityIcon(facility)
+      });
+
+      marker.on('click', () => {
+        onFacilityClick(facility);
+      });
+
+      markersGroup.current?.addLayer(marker);
+    });
+  }, [filteredFacilities, onFacilityClick]);
+
+  return (
+    <div className="w-full h-full relative">
+      <div ref={mapContainer} className="w-full h-full" />
+      
+      {/* Legend */}
+      <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg z-10">
+        <h4 className="font-semibold text-sm mb-2">Legend</h4>
+        <div className="space-y-1 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-green-500"></div>
+            <span>In Stock</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
+            <span>Partial Stock</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-red-500"></div>
+            <span>Stock Out</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+            <span>Hospital</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-purple-500"></div>
+            <span>Store/Bureau</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default InteractiveMap;
