@@ -19,37 +19,66 @@ const InteractiveLandingPage = ({ hideTopNavigation = false }: InteractiveLandin
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   return (
-    <div className="relative min-h-screen bg-gray-50">
+    <div className="relative w-full bg-gray-50">
       {!hideTopNavigation && <TopNavigation />}
       
-      <div className={`flex flex-col lg:flex-row ${hideTopNavigation ? 'h-screen' : 'h-[calc(100vh-4rem)] mt-16'}`}>
-        {/* Map Section */}
-        <div className="flex-1 relative">
+      {/* Main content container with proper viewport handling */}
+      <div className={`flex flex-col xl:flex-row w-full ${
+        hideTopNavigation 
+          ? 'h-screen' 
+          : 'min-h-screen pt-16'
+      }`}>
+        
+        {/* Map Section - Responsive sizing */}
+        <div className="flex-1 relative min-h-[60vh] lg:min-h-[70vh] xl:min-h-screen">
           <InteractiveMap 
             onFacilitySelect={setSelectedFacility}
             onReportIssue={() => setIsReportModalOpen(true)}
           />
           
-          {/* Show mini dashboard only for authenticated users */}
-          {user && <MiniDashboard />}
-          
-          {/* Show legend for all users, positioned based on authentication status */}
-          <MapLegend isUserAuthenticated={!!user} />
+          {/* Overlays positioned responsively */}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Mini dashboard - responsive positioning */}
+            {user && (
+              <div className="absolute top-2 sm:top-4 left-2 sm:left-4 pointer-events-auto">
+                <MiniDashboard />
+              </div>
+            )}
+            
+            {/* Map legend - responsive positioning */}
+            <div className={`absolute left-2 sm:left-4 pointer-events-auto ${
+              user ? 'top-[20rem] sm:top-80' : 'top-16 sm:top-20'
+            }`}>
+              <MapLegend isUserAuthenticated={!!user} />
+            </div>
+          </div>
         </div>
 
-        {/* Dashboard Panel - Only show for authenticated users */}
+        {/* Dashboard Panel - Only show for authenticated users on larger screens */}
         {user && (
-          <div className="lg:w-96 bg-white border-l border-gray-200 flex flex-col">
-            {/* Additional dashboard content can go here */}
-            <div className="p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Quick Actions</h3>
-              <p className="text-sm text-gray-600">Access your dashboard features and analytics.</p>
+          <div className="xl:w-96 xl:max-w-md bg-white border-l border-gray-200 flex flex-col order-first xl:order-last">
+            <div className="p-3 sm:p-4 lg:p-6">
+              <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Quick Actions</h3>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                Access your dashboard features and analytics from this panel.
+              </p>
+              
+              {/* Additional responsive content */}
+              <div className="mt-4 space-y-2">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs font-medium text-gray-700 mb-1">System Status</div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-xs text-gray-600">All systems operational</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Modals */}
+      {/* Modals with responsive sizing */}
       <FacilityInfoModal 
         facility={selectedFacility}
         isOpen={!!selectedFacility}
