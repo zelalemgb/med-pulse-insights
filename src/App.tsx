@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -35,24 +35,12 @@ const ErrorScreen = ({ error }: { error: string }) => (
   </div>
 );
 
-// Import contexts and components with proper ES6 imports
+// Direct imports instead of lazy loading
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
 import MainNavigation from "@/components/layout/MainNavigation";
 import Footer from "@/components/layout/Footer";
-
-// Lazy load pages for better performance
-const Dashboard = React.lazy(() => import("./pages/Dashboard"));
-const Analytics = React.lazy(() => import("./pages/Analytics"));
-const Import = React.lazy(() => import("./pages/Import"));
-const DataEntry = React.lazy(() => import("./pages/DataEntry"));
-const DataManagement = React.lazy(() => import("./pages/DataManagement"));
-const Auth = React.lazy(() => import("./pages/Auth"));
-const Facilities = React.lazy(() => import("./pages/Facilities"));
-const Products = React.lazy(() => import("./pages/Products"));
-const Profile = React.lazy(() => import("./pages/Profile"));
-const NotFound = React.lazy(() => import("./pages/NotFound"));
-const UserManagement = React.lazy(() => import("./pages/UserManagement"));
+import Dashboard from "./pages/Dashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,7 +56,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    console.log('✅ All core modules loaded successfully');
+    console.log('✅ App component mounted successfully');
   }, []);
 
   if (error) {
@@ -86,22 +74,18 @@ const App: React.FC = () => {
               <div className="min-h-screen bg-gray-50 flex flex-col">
                 <MainNavigation />
                 <main className="flex-1">
-                  <Suspense fallback={<LoadingScreen />}>
-                    <Routes>
-                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/import" element={<Import />} />
-                      <Route path="/data-entry" element={<DataEntry />} />
-                      <Route path="/data-management" element={<DataManagement />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/facilities" element={<Facilities />} />
-                      <Route path="/products" element={<Products />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/user-management" element={<UserManagement />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="*" element={
+                      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                        <div className="text-center">
+                          <h1 className="text-2xl font-bold text-gray-900 mb-4">Page Not Found</h1>
+                          <p className="text-gray-600">The page you're looking for doesn't exist.</p>
+                        </div>
+                      </div>
+                    } />
+                  </Routes>
                 </main>
                 <Footer />
               </div>
