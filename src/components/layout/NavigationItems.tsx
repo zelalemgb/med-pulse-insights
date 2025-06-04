@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Home, Users, BarChart3, Map } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { UserRole } from '@/types/pharmaceutical';
 
 interface NavigationItemsProps {
   className?: string;
@@ -18,7 +17,6 @@ const isActive = (location: any, path: string) => {
 const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
   const { profile } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const navigationItems = [
     {
@@ -38,14 +36,12 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
       label: 'Analytics',
       icon: BarChart3,
       requiresAuth: true,
-      allowedRoles: ['data_analyst', 'national', 'regional'],
     },
     {
       href: '/user-management',
       label: 'User Management',
       icon: Users,
       requiresAuth: true,
-      allowedRoles: ['national', 'regional', 'zonal'] as UserRole[],
     },
   ];
 
@@ -53,10 +49,6 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
     <ul className={cn('flex flex-col lg:flex-row space-y-1 lg:space-y-0 lg:space-x-1', className)}>
       {navigationItems.map((item) => {
         if (item.requiresAuth && !profile) {
-          return null;
-        }
-
-        if (item.allowedRoles && !item.allowedRoles.includes(profile?.role as UserRole)) {
           return null;
         }
 
