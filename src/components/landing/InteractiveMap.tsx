@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Facility } from './types';
+import MapFilters from './MapFilters';
 
 // Mock data for demonstration
 const mockFacilities: Facility[] = [
@@ -77,6 +78,12 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
   const map = useRef<L.Map | null>(null);
   const markersGroup = useRef<L.LayerGroup | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [filters, setFilters] = useState({
+    facilityType: 'all',
+    region: 'all',
+    zone: 'all',
+    product: 'all'
+  });
 
   // Default fallback location (Addis Ababa)
   const defaultLocation: [number, number] = [9.0307, 38.7407];
@@ -195,6 +202,14 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
     };
   }, [userLocation]);
 
+  // Filter facilities based on current filters
+  const filteredFacilities = mockFacilities.filter(facility => {
+    if (filters.facilityType !== 'all' && facility.type !== filters.facilityType) return false;
+    if (filters.region !== 'all' && facility.region !== filters.region) return false;
+    if (filters.zone !== 'all' && facility.zone !== filters.zone) return false;
+    return true;
+  });
+
   useEffect(() => {
     if (!map.current || !markersGroup.current) return;
 
@@ -205,8 +220,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
       }
     });
 
-    // Add facilities as markers
-    mockFacilities.forEach(facility => {
+    // Add filtered facilities as markers
+    filteredFacilities.forEach(facility => {
       const marker = L.marker([facility.latitude, facility.longitude], {
         icon: getFacilityIcon(facility)
       });
@@ -217,11 +232,17 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
 
       markersGroup.current?.addLayer(marker);
     });
-  }, [onFacilitySelect]);
+  }, [filteredFacilities, onFacilitySelect]);
 
   return (
     <div className="w-full h-full relative">
       <div ref={mapContainer} className="w-full h-full z-0" />
+      
+      {/* Map Filters */}
+      <MapFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+      />
       
       {/* Legend - Fixed position with high z-index */}
       <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-xl z-[1000] border border-gray-200 max-w-[200px] sm:max-w-none">
