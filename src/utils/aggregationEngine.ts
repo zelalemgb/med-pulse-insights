@@ -4,6 +4,7 @@ import { AggregationLevel, AggregatedMetrics } from '@/types/aggregation';
 import { cacheManager } from './cacheManager';
 import { MetricsCalculator } from './metricsCalculator';
 import { HierarchyManager } from './hierarchyManager';
+import { UserRole } from '@/types/pharmaceutical';
 
 export class AggregationEngine {
   /**
@@ -47,12 +48,23 @@ export class AggregationEngine {
    */
   async aggregateHierarchy(
     products: ProductData[],
-    levels: AggregationLevel[]
+    levels: AggregationLevel[],
+    userRole: UserRole = 'national',
+    userFacilityId?: string,
+    userZone?: string,
+    userRegion?: string
   ): Promise<Map<string, AggregatedMetrics>> {
     const results = new Map<string, AggregatedMetrics>();
     
-    // Group products by level
-    const productsByLevel = HierarchyManager.groupProductsByLevel(products, levels);
+    // Group products by level with user context
+    const productsByLevel = HierarchyManager.groupProductsByLevel(
+      products, 
+      levels, 
+      userRole, 
+      userFacilityId, 
+      userZone, 
+      userRegion
+    );
     
     // Aggregate each level in parallel for better performance
     const aggregationPromises = levels.map(async level => {
