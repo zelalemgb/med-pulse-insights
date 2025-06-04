@@ -64,7 +64,7 @@ export class UserQueryService {
         id: user.id,
         email: user.email,
         full_name: user.full_name,
-        role: user.role as UserRole,
+        role: (user.role ?? 'viewer') as UserRole,
         facility_id: user.facility_id,
         department: user.department,
         is_active: user.is_active,
