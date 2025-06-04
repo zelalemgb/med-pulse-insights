@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
+import { isValidPharmaceuticalRole } from '@/utils/roleMapping';
 
 export class UserActionsService {
   static async getCurrentUser() {
@@ -36,8 +37,17 @@ export class UserActionsService {
       throw new Error('Failed to get target user profile');
     }
 
+    // Validate roles are valid pharmaceutical roles
+    if (!isValidPharmaceuticalRole(currentProfile.role)) {
+      throw new Error(`Invalid current user role: ${currentProfile.role}`);
+    }
+
+    if (!isValidPharmaceuticalRole(targetProfile.role)) {
+      throw new Error(`Invalid target user role: ${targetProfile.role}`);
+    }
+
     // Validate hierarchical permissions
-    const canManage = this.canManageUser(currentProfile.role, targetProfile.role);
+    const canManage = this.canManageUser(currentProfile.role as UserRole, targetProfile.role as UserRole);
     
     if (!canManage) {
       throw new Error(`Insufficient permissions: ${currentProfile.role} cannot ${action} ${targetProfile.role} users`);
@@ -107,7 +117,9 @@ export class UserActionsService {
       .eq('id', currentUser.id)
       .single();
 
-    if (currentProfile && !this.canManageUser(currentProfile.role, newRole)) {
+    if (currentProfile && 
+        isValidPharmaceuticalRole(currentProfile.role) && 
+        !this.canManageUser(currentProfile.role as UserRole, newRole)) {
       throw new Error(`You cannot assign ${newRole} role`);
     }
 
