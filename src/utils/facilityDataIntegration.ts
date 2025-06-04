@@ -1,7 +1,7 @@
 
 import { ProductData } from '@/types/pharmaceutical';
 import { HealthFacility } from '@/types/healthFacilities';
-import { dataAccess } from './dataAccessLayer';
+import { supabaseDataAccess as dataAccess } from './dataAccessLayer';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface FacilityProductData extends ProductData {

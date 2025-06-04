@@ -1,6 +1,7 @@
-import { ProductData, Facility, User, PeriodData, ValidationResult } from '@/types/pharmaceutical';
+import { ProductData, PeriodData } from '@/types/pharmaceutical';
 import { performanceOptimizer } from './performanceOptimizer';
 import { auditTrail } from './auditTrail';
+import { supabase } from '@/integrations/supabase/client';
 
 // Abstract data access layer for future database integration
 export interface DataAccessLayer {
@@ -118,234 +119,292 @@ export interface ImportSummary {
   filename?: string;
 }
 
-// Enhanced in-memory implementation with performance optimizations
-export class InMemoryDataAccess implements DataAccessLayer {
-  private products: Map<string, ProductData> = new Map();
-  private importLogs: ImportSummary[] = [];
-
+// Supabase-backed implementation
+export class SupabaseDataAccess implements DataAccessLayer {
   async createProduct(product: Omit<ProductData, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProductData> {
-    return performanceOptimizer.measureAsyncPerformance('createProduct', async () => {
-      const newProduct: ProductData = {
-        ...product,
-        id: Date.now().toString(),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      this.products.set(newProduct.id, newProduct);
-      
-      // Log audit trail
-      auditTrail.logUserAction(
-        product.createdBy || 'system',
-        'Unknown User',
-        'CREATE',
-        'product',
-        newProduct.id,
-        { productName: newProduct.productName }
-      );
-      
-      return newProduct;
-    });
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        product_name: product.productName,
+        product_code: product.productCode,
+        unit: product.unit,
+        unit_price: product.unitPrice,
+        ven_classification: product.venClassification,
+        facility_specific: product.facilitySpecific,
+        procurement_source: product.procurementSource,
+        frequency: product.frequency,
+        facility_id: product.facilityId,
+        annual_consumption: product.annualAverages.annualConsumption,
+        aamc: product.annualAverages.aamc,
+        wastage_rate: product.annualAverages.wastageRate,
+        awamc: product.annualAverages.awamc,
+        forecast: product.forecast,
+        seasonality: product.seasonality,
+        created_by: product.createdBy
+      })
+      .select()
+      .single();
+    if (error || !data) {
+      throw error || new Error('Failed to create product');
+    }
+
+    if (product.periods?.length) {
+      const periods = product.periods.map(p => ({
+        product_id: data.id,
+        period: p.period,
+        period_name: p.periodName,
+        beginning_balance: p.beginningBalance,
+        received: p.received,
+        positive_adj: p.positiveAdj,
+        negative_adj: p.negativeAdj,
+        ending_balance: p.endingBalance,
+        stock_out_days: p.stockOutDays,
+        expired_damaged: p.expiredDamaged,
+        consumption_issue: p.consumptionIssue,
+        aamc: p.aamc,
+        wastage_rate: p.wastageRate,
+        calculated_at: p.calculatedAt
+      }));
+      await supabase.from('period_data').insert(periods);
+    }
+
+    auditTrail.logUserAction(
+      product.createdBy || 'system',
+      'Unknown User',
+      'CREATE',
+      'product',
+      data.id,
+      { productName: data.product_name }
+    );
+
+    return this.getProduct(data.id) as Promise<ProductData>;
   }
 
   async getProduct(id: string): Promise<ProductData | null> {
-    const cacheKey = `product_${id}`;
-    let product = performanceOptimizer.getCache<ProductData>(cacheKey);
-    
-    if (!product) {
-      product = this.products.get(id) || null;
-      if (product) {
-        performanceOptimizer.setCache(cacheKey, product);
-      }
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error || !data) {
+      return null;
     }
-    
-    return product;
+
+    const { data: periods } = await supabase
+      .from('period_data')
+      .select('*')
+      .eq('product_id', id)
+      .order('period');
+
+    return {
+      id: data.id,
+      productName: data.product_name,
+      productCode: data.product_code || undefined,
+      unit: data.unit,
+      unitPrice: data.unit_price,
+      venClassification: data.ven_classification,
+      facilitySpecific: data.facility_specific,
+      procurementSource: data.procurement_source,
+      frequency: data.frequency,
+      facilityId: data.facility_id,
+      periods: (periods || []).map(p => ({
+        period: p.period,
+        periodName: p.period_name,
+        beginningBalance: p.beginning_balance,
+        received: p.received,
+        positiveAdj: p.positive_adj,
+        negativeAdj: p.negative_adj,
+        endingBalance: p.ending_balance,
+        stockOutDays: p.stock_out_days,
+        expiredDamaged: p.expired_damaged,
+        consumptionIssue: p.consumption_issue,
+        aamc: p.aamc,
+        wastageRate: p.wastage_rate,
+        calculatedAt: p.calculated_at ? new Date(p.calculated_at) : undefined
+      })),
+      annualAverages: {
+        annualConsumption: data.annual_consumption,
+        aamc: data.aamc,
+        wastageRate: data.wastage_rate,
+        awamc: data.awamc
+      },
+      forecast: data.forecast,
+      seasonality: data.seasonality,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+      createdBy: data.created_by
+    };
   }
 
   async getProductsByFacility(facilityId: string): Promise<ProductData[]> {
-    const cacheKey = `facility_products_${facilityId}`;
-    let products = performanceOptimizer.getCache<ProductData[]>(cacheKey);
-    
-    if (!products) {
-      products = Array.from(this.products.values()).filter(p => p.facilityId === facilityId);
-      performanceOptimizer.setCache(cacheKey, products);
+    const { data, error } = await supabase
+      .from('products')
+      .select('id')
+      .eq('facility_id', facilityId);
+    if (error || !data) {
+      return [];
     }
-    
+
+    const products: ProductData[] = [];
+    for (const row of data) {
+      const product = await this.getProduct(row.id);
+      if (product) products.push(product);
+    }
     return products;
   }
 
   async updateProduct(id: string, updates: Partial<ProductData>): Promise<ProductData> {
-    return performanceOptimizer.measureAsyncPerformance('updateProduct', async () => {
-      const existing = this.products.get(id);
-      if (!existing) {
-        throw new Error(`Product ${id} not found`);
-      }
+    const { error } = await supabase
+      .from('products')
+      .update({
+        product_name: updates.productName,
+        product_code: updates.productCode,
+        unit: updates.unit,
+        unit_price: updates.unitPrice,
+        ven_classification: updates.venClassification,
+        facility_specific: updates.facilitySpecific,
+        procurement_source: updates.procurementSource,
+        frequency: updates.frequency,
+        facility_id: updates.facilityId,
+        annual_consumption: updates.annualAverages?.annualConsumption,
+        aamc: updates.annualAverages?.aamc,
+        wastage_rate: updates.annualAverages?.wastageRate,
+        awamc: updates.annualAverages?.awamc,
+        forecast: updates.forecast,
+        seasonality: updates.seasonality,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+    if (error) throw error;
 
-      const updated = {
-        ...existing,
-        ...updates,
-        updatedAt: new Date()
-      };
-
-      this.products.set(id, updated);
-      
-      // Clear related cache
-      performanceOptimizer.setCache(`product_${id}`, updated);
-      performanceOptimizer.setCache(`facility_products_${updated.facilityId}`, null);
-      
-      // Log changes for audit trail
-      const changes = Object.entries(updates).map(([field, newValue]) => ({
-        field,
-        oldValue: (existing as any)[field],
-        newValue,
-      }));
-      
-      auditTrail.logDataChange(
-        updates.createdBy || 'system',
-        'Unknown User',
-        'product',
-        id,
-        changes
-      );
-      
-      return updated;
-    });
+    return (await this.getProduct(id))!;
   }
 
   async deleteProduct(id: string): Promise<boolean> {
-    const product = this.products.get(id);
-    const result = this.products.delete(id);
-    
-    if (result && product) {
-      // Clear cache
-      performanceOptimizer.setCache(`product_${id}`, null);
-      performanceOptimizer.setCache(`facility_products_${product.facilityId}`, null);
-      
-      // Log audit trail
-      auditTrail.logUserAction(
-        'system',
-        'System',
-        'DELETE',
-        'product',
-        id,
-        { productName: product.productName }
-      );
-    }
-    
-    return result;
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) throw error;
+    return true;
   }
 
   async createProductsBatch(products: Omit<ProductData, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<ProductData[]> {
-    return performanceOptimizer.processBatch(
-      products,
-      async (batch) => {
-        const results = [];
-        for (const product of batch) {
-          const created = await this.createProduct(product);
-          results.push(created);
-        }
-        return results;
-      }
-    );
+    const created: ProductData[] = [];
+    for (const p of products) {
+      const prod = await this.createProduct(p);
+      created.push(prod);
+    }
+    return created;
   }
 
   async getProductsWithFilters(filters: ProductFilters): Promise<PaginatedResult<ProductData>> {
-    return performanceOptimizer.measureAsyncPerformance('getProductsWithFilters', async () => {
-      let filtered = Array.from(this.products.values());
+    let query = supabase.from('products').select('id', { count: 'exact' });
+    if (filters.facilityId) query = query.eq('facility_id', filters.facilityId);
+    if (filters.venClassification?.length) query = query.in('ven_classification', filters.venClassification);
+    if (filters.frequency?.length) query = query.in('frequency', filters.frequency);
+    if (filters.searchTerm) query = query.ilike('product_name', `%${filters.searchTerm}%`);
 
-      if (filters.facilityId) {
-        filtered = filtered.filter(p => p.facilityId === filters.facilityId);
-      }
+    const page = filters.page || 1;
+    const limit = filters.limit || 50;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
 
-      if (filters.venClassification?.length) {
-        filtered = filtered.filter(p => filters.venClassification!.includes(p.venClassification));
-      }
+    query = query.range(from, to);
 
-      if (filters.frequency?.length) {
-        filtered = filtered.filter(p => filters.frequency!.includes(p.frequency));
-      }
+    const { data, error, count } = await query;
+    if (error || !data) {
+      return { data: [], total: 0, page, limit, hasNext: false, hasPrevious: false };
+    }
 
-      if (filters.searchTerm) {
-        const term = filters.searchTerm.toLowerCase();
-        filtered = filtered.filter(p => 
-          p.productName.toLowerCase().includes(term) ||
-          p.productCode?.toLowerCase().includes(term)
-        );
-      }
+    const products: ProductData[] = [];
+    for (const row of data) {
+      const product = await this.getProduct(row.id);
+      if (product) products.push(product);
+    }
 
-      const page = filters.page || 1;
-      const limit = filters.limit || 50;
-      
-      // Use virtualization for large datasets
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      const virtualizedData = performanceOptimizer.virtualizeData(filtered, startIndex, endIndex);
-
-      return {
-        data: virtualizedData,
-        total: filtered.length,
-        page,
-        limit,
-        hasNext: endIndex < filtered.length,
-        hasPrevious: page > 1
-      };
-    });
+    return {
+      data: products,
+      total: count || 0,
+      page,
+      limit,
+      hasNext: count ? to + 1 < count : false,
+      hasPrevious: page > 1
+    };
   }
 
   async updatePeriodData(productId: string, periodIndex: number, data: Partial<PeriodData>): Promise<boolean> {
-    const product = this.products.get(productId);
-    if (!product || !product.periods[periodIndex]) {
-      return false;
+    const { data: existing } = await supabase
+      .from('period_data')
+      .select('id')
+      .eq('product_id', productId)
+      .eq('period', periodIndex)
+      .single();
+
+    if (existing) {
+      const { error } = await supabase
+        .from('period_data')
+        .update({
+          period_name: data.periodName,
+          beginning_balance: data.beginningBalance,
+          received: data.received,
+          positive_adj: data.positiveAdj,
+          negative_adj: data.negativeAdj,
+          ending_balance: data.endingBalance,
+          stock_out_days: data.stockOutDays,
+          expired_damaged: data.expiredDamaged,
+          consumption_issue: data.consumptionIssue,
+          aamc: data.aamc,
+          wastage_rate: data.wastageRate,
+          calculated_at: data.calculatedAt
+        })
+        .eq('id', existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('period_data').insert({
+        product_id: productId,
+        period: periodIndex,
+        period_name: data.periodName,
+        beginning_balance: data.beginningBalance,
+        received: data.received,
+        positive_adj: data.positiveAdj,
+        negative_adj: data.negativeAdj,
+        ending_balance: data.endingBalance,
+        stock_out_days: data.stockOutDays,
+        expired_damaged: data.expiredDamaged,
+        consumption_issue: data.consumptionIssue,
+        aamc: data.aamc,
+        wastage_rate: data.wastageRate,
+        calculated_at: data.calculatedAt
+      });
+      if (error) throw error;
     }
-
-    const oldData = { ...product.periods[periodIndex] };
-    product.periods[periodIndex] = {
-      ...product.periods[periodIndex],
-      ...data
-    };
-
-    product.updatedAt = new Date();
-    this.products.set(productId, product);
-    
-    // Clear cache
-    performanceOptimizer.setCache(`product_${productId}`, product);
-    
-    // Log audit trail for period data changes
-    const changes = Object.entries(data).map(([field, newValue]) => ({
-      field: `period_${periodIndex}_${field}`,
-      oldValue: (oldData as any)[field],
-      newValue,
-    }));
-    
-    auditTrail.logDataChange(
-      'system',
-      'System',
-      'product',
-      productId,
-      changes,
-      { periodIndex }
-    );
-    
     return true;
   }
 
   async getPeriodData(productId: string, periodIndex?: number): Promise<PeriodData[]> {
-    const product = this.products.get(productId);
-    if (!product) {
-      return [];
-    }
-
-    if (periodIndex !== undefined) {
-      return product.periods[periodIndex] ? [product.periods[periodIndex]] : [];
-    }
-
-    return product.periods;
+    let query = supabase.from('period_data').select('*').eq('product_id', productId);
+    if (periodIndex !== undefined) query = query.eq('period', periodIndex);
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map(p => ({
+      period: p.period,
+      periodName: p.period_name,
+      beginningBalance: p.beginning_balance,
+      received: p.received,
+      positiveAdj: p.positive_adj,
+      negativeAdj: p.negative_adj,
+      endingBalance: p.ending_balance,
+      stockOutDays: p.stock_out_days,
+      expiredDamaged: p.expired_damaged,
+      consumptionIssue: p.consumption_issue,
+      aamc: p.aamc,
+      wastageRate: p.wastage_rate,
+      calculatedAt: p.calculated_at ? new Date(p.calculated_at) : undefined
+    }));
   }
 
   async getConsumptionAnalytics(facilityId: string, dateRange: DateRange): Promise<ConsumptionAnalytics> {
     const products = await this.getProductsByFacility(facilityId);
-    
-    const totalConsumption = products.reduce((sum, p) => 
+
+    const totalConsumption = products.reduce((sum, p) =>
       sum + p.annualAverages.annualConsumption, 0
     );
 
@@ -364,14 +423,14 @@ export class InMemoryDataAccess implements DataAccessLayer {
     return {
       totalConsumption,
       averageMonthlyConsumption,
-      consumptionTrend: [], // Would be calculated from period data
+      consumptionTrend: [],
       topConsumingProducts
     };
   }
 
   async getWastageAnalytics(facilityId: string, dateRange: DateRange): Promise<WastageAnalytics> {
     const products = await this.getProductsByFacility(facilityId);
-    
+
     const wastageByProduct = products.map(p => ({
       productId: p.id,
       productName: p.productName,
@@ -386,13 +445,13 @@ export class InMemoryDataAccess implements DataAccessLayer {
       totalWastage,
       wastageRate: averageWastageRate,
       wastageByProduct,
-      wastageByCategory: [] // Would be calculated by VEN classification
+      wastageByCategory: []
     };
   }
 
   async getStockOutAnalytics(facilityId: string, dateRange: DateRange): Promise<StockOutAnalytics> {
     const products = await this.getProductsByFacility(facilityId);
-    
+
     const stockOutsByProduct = products.map(p => ({
       productId: p.id,
       productName: p.productName,
@@ -416,19 +475,43 @@ export class InMemoryDataAccess implements DataAccessLayer {
   }
 
   async logImport(summary: ImportSummary): Promise<string> {
-    const logEntry = {
-      ...summary,
-      id: Date.now().toString()
-    };
-    
-    this.importLogs.push(logEntry);
-    return logEntry.id!;
+    const { data, error } = await supabase
+      .from('import_logs')
+      .insert({
+        filename: summary.filename,
+        total_rows: summary.totalRows,
+        successful_rows: summary.successfulRows,
+        error_rows: summary.errorRows,
+        warnings: summary.warnings,
+        mapping: summary.mapping,
+        imported_by: summary.userId,
+        imported_at: summary.timestamp
+      })
+      .select('id')
+      .single();
+    if (error || !data) throw error || new Error('failed to log import');
+    return data.id;
   }
 
   async getImportHistory(userId: string): Promise<ImportSummary[]> {
-    return this.importLogs.filter(log => log.userId === userId);
+    const { data, error } = await supabase
+      .from('import_logs')
+      .select('*')
+      .eq('imported_by', userId)
+      .order('imported_at', { ascending: false });
+    if (error || !data) return [];
+    return data.map(d => ({
+      id: d.id,
+      totalRows: d.total_rows,
+      successfulRows: d.successful_rows,
+      errorRows: d.error_rows,
+      warnings: d.warnings,
+      mapping: d.mapping,
+      timestamp: new Date(d.imported_at),
+      userId: d.imported_by,
+      filename: d.filename
+    }));
   }
 }
 
-// Export singleton instance
-export const dataAccess = new InMemoryDataAccess();
+export const supabaseDataAccess = new SupabaseDataAccess();
