@@ -1,3 +1,4 @@
+
 import { ProductData, PeriodData } from '@/types/pharmaceutical';
 import { performanceOptimizer } from './performanceOptimizer';
 import { auditTrail } from './auditTrail';
@@ -122,7 +123,7 @@ export interface ImportSummary {
 // Supabase-backed implementation
 export class SupabaseDataAccess implements DataAccessLayer {
   async createProduct(product: Omit<ProductData, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProductData> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('products')
       .insert({
         product_name: product.productName,
@@ -165,7 +166,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
         wastage_rate: p.wastageRate,
         calculated_at: p.calculatedAt
       }));
-      await supabase.from('period_data').insert(periods);
+      await (supabase as any).from('period_data').insert(periods);
     }
 
     auditTrail.logUserAction(
@@ -181,7 +182,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
   }
 
   async getProduct(id: string): Promise<ProductData | null> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('products')
       .select('*')
       .eq('id', id)
@@ -190,7 +191,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
       return null;
     }
 
-    const { data: periods } = await supabase
+    const { data: periods } = await (supabase as any)
       .from('period_data')
       .select('*')
       .eq('product_id', id)
@@ -237,7 +238,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
   }
 
   async getProductsByFacility(facilityId: string): Promise<ProductData[]> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('products')
       .select('id')
       .eq('facility_id', facilityId);
@@ -254,7 +255,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
   }
 
   async updateProduct(id: string, updates: Partial<ProductData>): Promise<ProductData> {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('products')
       .update({
         product_name: updates.productName,
@@ -281,7 +282,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
   }
 
   async deleteProduct(id: string): Promise<boolean> {
-    const { error } = await supabase.from('products').delete().eq('id', id);
+    const { error } = await (supabase as any).from('products').delete().eq('id', id);
     if (error) throw error;
     return true;
   }
@@ -296,7 +297,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
   }
 
   async getProductsWithFilters(filters: ProductFilters): Promise<PaginatedResult<ProductData>> {
-    let query = supabase.from('products').select('id', { count: 'exact' });
+    let query = (supabase as any).from('products').select('id', { count: 'exact' });
     if (filters.facilityId) query = query.eq('facility_id', filters.facilityId);
     if (filters.venClassification?.length) query = query.in('ven_classification', filters.venClassification);
     if (filters.frequency?.length) query = query.in('frequency', filters.frequency);
@@ -331,7 +332,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
   }
 
   async updatePeriodData(productId: string, periodIndex: number, data: Partial<PeriodData>): Promise<boolean> {
-    const { data: existing } = await supabase
+    const { data: existing } = await (supabase as any)
       .from('period_data')
       .select('id')
       .eq('product_id', productId)
@@ -339,7 +340,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
       .single();
 
     if (existing) {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('period_data')
         .update({
           period_name: data.periodName,
@@ -358,7 +359,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
         .eq('id', existing.id);
       if (error) throw error;
     } else {
-      const { error } = await supabase.from('period_data').insert({
+      const { error } = await (supabase as any).from('period_data').insert({
         product_id: productId,
         period: periodIndex,
         period_name: data.periodName,
@@ -380,7 +381,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
   }
 
   async getPeriodData(productId: string, periodIndex?: number): Promise<PeriodData[]> {
-    let query = supabase.from('period_data').select('*').eq('product_id', productId);
+    let query = (supabase as any).from('period_data').select('*').eq('product_id', productId);
     if (periodIndex !== undefined) query = query.eq('period', periodIndex);
     const { data, error } = await query;
     if (error || !data) return [];
@@ -475,7 +476,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
   }
 
   async logImport(summary: ImportSummary): Promise<string> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('import_logs')
       .insert({
         filename: summary.filename,
@@ -494,7 +495,7 @@ export class SupabaseDataAccess implements DataAccessLayer {
   }
 
   async getImportHistory(userId: string): Promise<ImportSummary[]> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('import_logs')
       .select('*')
       .eq('imported_by', userId)
