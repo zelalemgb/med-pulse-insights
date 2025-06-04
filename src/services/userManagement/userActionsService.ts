@@ -11,7 +11,61 @@ export class UserActionsService {
     return currentUser.user;
   }
 
+  static async validateUserManagementPermission(targetUserId: string, action: string): Promise<void> {
+    const currentUser = await this.getCurrentUser();
+
+    // Get current user's profile
+    const { data: currentProfile, error: currentProfileError } = await supabase
+      .from('profiles')
+      .select('role, facility_id, primary_facility_id')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (currentProfileError || !currentProfile) {
+      throw new Error('Failed to get current user profile');
+    }
+
+    // Get target user's profile
+    const { data: targetProfile, error: targetProfileError } = await supabase
+      .from('profiles')
+      .select('role, facility_id, primary_facility_id')
+      .eq('id', targetUserId)
+      .single();
+
+    if (targetProfileError || !targetProfile) {
+      throw new Error('Failed to get target user profile');
+    }
+
+    // Validate hierarchical permissions
+    const canManage = this.canManageUser(currentProfile.role, targetProfile.role);
+    
+    if (!canManage) {
+      throw new Error(`Insufficient permissions: ${currentProfile.role} cannot ${action} ${targetProfile.role} users`);
+    }
+  }
+
+  static canManageUser(currentUserRole: UserRole, targetUserRole: UserRole): boolean {
+    const hierarchyMap: Record<UserRole, UserRole[]> = {
+      'national': ['regional'],
+      'regional': ['zonal'],
+      'zonal': ['facility_manager', 'facility_officer'],
+      'facility_manager': [],
+      'facility_officer': [],
+      'viewer': [],
+      'qa': [],
+      'procurement': [],
+      'finance': [],
+      'data_analyst': [],
+      'program_manager': []
+    };
+
+    const managableRoles = hierarchyMap[currentUserRole] || [];
+    return managableRoles.includes(targetUserRole);
+  }
+
   static async approveUser(userId: string, newRole: UserRole = 'facility_officer'): Promise<void> {
+    await this.validateUserManagementPermission(userId, 'approve');
+    
     const currentUser = await this.getCurrentUser();
 
     const { error } = await supabase.rpc('approve_user', {
@@ -26,6 +80,8 @@ export class UserActionsService {
   }
 
   static async rejectUser(userId: string, reason?: string): Promise<void> {
+    await this.validateUserManagementPermission(userId, 'reject');
+    
     const currentUser = await this.getCurrentUser();
 
     const { error } = await supabase.rpc('reject_user', {
@@ -40,7 +96,20 @@ export class UserActionsService {
   }
 
   static async changeUserRole(userId: string, newRole: UserRole, reason?: string): Promise<void> {
+    await this.validateUserManagementPermission(userId, 'change role for');
+    
     const currentUser = await this.getCurrentUser();
+
+    // Additional validation: ensure the new role is manageable by current user
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (currentProfile && !this.canManageUser(currentProfile.role, newRole)) {
+      throw new Error(`You cannot assign ${newRole} role`);
+    }
 
     const { error } = await supabase.rpc('change_user_role', {
       _user_id: userId,

@@ -30,6 +30,7 @@ import { UserManagementRecord } from '@/services/userManagement/userManagementSe
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { UserRole } from '@/types/pharmaceutical';
 import { getRoleDisplayName } from '@/utils/roleMapping';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AllUsersTableProps {
   users: UserManagementRecord[];
@@ -38,6 +39,7 @@ interface AllUsersTableProps {
 
 export const AllUsersTable: React.FC<AllUsersTableProps> = ({ users, isLoading }) => {
   const { changeUserRole, isChangingRole } = useUserManagement();
+  const { profile } = useAuth();
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [newRole, setNewRole] = useState<UserRole>('facility_officer');
   const [reason, setReason] = useState('');
@@ -48,6 +50,20 @@ export const AllUsersTable: React.FC<AllUsersTableProps> = ({ users, isLoading }
       changeUserRole({ userId: selectedUser, newRole, reason });
       setSelectedUser(null);
       setReason('');
+    }
+  };
+
+  // Get appropriate role options based on current user's role
+  const getAvailableRoles = (): UserRole[] => {
+    switch (profile?.role) {
+      case 'national':
+        return ['regional'];
+      case 'regional':
+        return ['zonal'];
+      case 'zonal':
+        return ['facility_officer', 'facility_manager'];
+      default:
+        return [];
     }
   };
 
@@ -64,19 +80,7 @@ export const AllUsersTable: React.FC<AllUsersTableProps> = ({ users, isLoading }
     }
   };
 
-  const roleOptions: UserRole[] = [
-    'facility_officer',
-    'facility_manager',
-    'qa',
-    'procurement',
-    'finance',
-    'data_analyst',
-    'program_manager',
-    'zonal',
-    'regional',
-    'national',
-    'viewer'
-  ];
+  const roleOptions = getAvailableRoles();
 
   if (isLoading) {
     return (
@@ -94,13 +98,22 @@ export const AllUsersTable: React.FC<AllUsersTableProps> = ({ users, isLoading }
       <div className="text-center p-12 bg-white rounded-lg border">
         <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-        <p className="text-gray-600">No users have been registered in the system yet.</p>
+        <p className="text-gray-600">
+          No users in your jurisdiction have been registered yet.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="bg-white rounded-lg border overflow-hidden">
+      <div className="px-6 py-4 bg-gray-50 border-b">
+        <h3 className="text-sm font-medium text-gray-700">
+          Managing {profile?.role === 'national' ? 'Regional' : 
+                    profile?.role === 'regional' ? 'Zonal' : 
+                    'Facility'} Users
+        </h3>
+      </div>
       <Table>
         <TableHeader>
           <TableRow className="bg-gray-50">
@@ -133,79 +146,81 @@ export const AllUsersTable: React.FC<AllUsersTableProps> = ({ users, isLoading }
                 })}
               </TableCell>
               <TableCell>
-                <Dialog 
-                  open={selectedUser === user.id} 
-                  onOpenChange={(open) => setSelectedUser(open ? user.id : null)}
-                >
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="outline" className="hover:bg-gray-100">
-                      <Settings className="h-4 w-4 mr-1" />
-                      Manage
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Change User Role</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-6">
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="font-medium text-gray-900">{user.email}</p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Current Role: {getRoleDisplayName(user.role)}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Status: {user.approval_status}
-                        </p>
+                {roleOptions.length > 0 && (
+                  <Dialog 
+                    open={selectedUser === user.id} 
+                    onOpenChange={(open) => setSelectedUser(open ? user.id : null)}
+                  >
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="hover:bg-gray-100">
+                        <Settings className="h-4 w-4 mr-1" />
+                        Manage
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Change User Role</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-6">
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <p className="font-medium text-gray-900">{user.email}</p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Current Role: {getRoleDisplayName(user.role)}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Status: {user.approval_status}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-2">New Role</label>
+                          <Select value={newRole} onValueChange={(value: UserRole) => setNewRole(value)}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {roleOptions.map((role) => (
+                                <SelectItem key={role} value={role}>
+                                  {getRoleDisplayName(role)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Reason (optional)</label>
+                          <Textarea
+                            placeholder="Reason for role change..."
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                        
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => setSelectedUser(null)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleRoleChange}
+                            disabled={isChangingRole || newRole === user.role}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            {isChangingRole ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            ) : (
+                              'Change Role'
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium mb-2">New Role</label>
-                        <Select value={newRole} onValueChange={(value: UserRole) => setNewRole(value)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {roleOptions.map((role) => (
-                              <SelectItem key={role} value={role}>
-                                {getRoleDisplayName(role)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Reason (optional)</label>
-                        <Textarea
-                          placeholder="Reason for role change..."
-                          value={reason}
-                          onChange={(e) => setReason(e.target.value)}
-                          rows={3}
-                        />
-                      </div>
-                      
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => setSelectedUser(null)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={handleRoleChange}
-                          disabled={isChangingRole || newRole === user.role}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          {isChangingRole ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                          ) : (
-                            'Change Role'
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </TableCell>
             </TableRow>
           ))}

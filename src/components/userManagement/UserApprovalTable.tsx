@@ -30,6 +30,7 @@ import { UserManagementRecord } from '@/services/userManagement/userManagementSe
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { UserRole } from '@/types/pharmaceutical';
 import { getRoleDisplayName } from '@/utils/roleMapping';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserApprovalTableProps {
   users: UserManagementRecord[];
@@ -38,12 +39,13 @@ interface UserApprovalTableProps {
 
 export const UserApprovalTable: React.FC<UserApprovalTableProps> = ({ users, isLoading }) => {
   const { approveUser, rejectUser, isApproving, isRejecting } = useUserManagement();
+  const { profile } = useAuth();
   const [selectedRole, setSelectedRole] = useState<Record<string, UserRole>>({});
   const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
   const [openRejectDialog, setOpenRejectDialog] = useState<string | null>(null);
 
   const handleApprove = (userId: string) => {
-    const role = selectedRole[userId] || 'facility_officer';
+    const role = selectedRole[userId] || getDefaultRoleForUserLevel();
     console.log('Approving user:', userId, 'with role:', role);
     approveUser({ userId, newRole: role });
   };
@@ -56,16 +58,34 @@ export const UserApprovalTable: React.FC<UserApprovalTableProps> = ({ users, isL
     setRejectReason(prev => ({ ...prev, [userId]: '' }));
   };
 
-  const roleOptions: UserRole[] = [
-    'facility_officer',
-    'facility_manager',
-    'qa',
-    'procurement',
-    'finance',
-    'data_analyst',
-    'program_manager',
-    'viewer'
-  ];
+  // Get appropriate role options based on current user's role
+  const getAvailableRoles = (): UserRole[] => {
+    switch (profile?.role) {
+      case 'national':
+        return ['regional'];
+      case 'regional':
+        return ['zonal'];
+      case 'zonal':
+        return ['facility_officer', 'facility_manager'];
+      default:
+        return ['facility_officer'];
+    }
+  };
+
+  const getDefaultRoleForUserLevel = (): UserRole => {
+    switch (profile?.role) {
+      case 'national':
+        return 'regional';
+      case 'regional':
+        return 'zonal';
+      case 'zonal':
+        return 'facility_officer';
+      default:
+        return 'facility_officer';
+    }
+  };
+
+  const roleOptions = getAvailableRoles();
 
   if (isLoading) {
     return (
@@ -83,7 +103,9 @@ export const UserApprovalTable: React.FC<UserApprovalTableProps> = ({ users, isL
       <div className="text-center p-12 bg-white rounded-lg border">
         <Clock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">No pending approvals</h3>
-        <p className="text-gray-600">All user registration requests have been processed.</p>
+        <p className="text-gray-600">
+          All user registration requests in your jurisdiction have been processed.
+        </p>
       </div>
     );
   }
@@ -116,7 +138,7 @@ export const UserApprovalTable: React.FC<UserApprovalTableProps> = ({ users, isL
               </TableCell>
               <TableCell>
                 <Select
-                  value={selectedRole[user.id] || 'facility_officer'}
+                  value={selectedRole[user.id] || getDefaultRoleForUserLevel()}
                   onValueChange={(value: UserRole) =>
                     setSelectedRole(prev => ({ ...prev, [user.id]: value }))
                   }
