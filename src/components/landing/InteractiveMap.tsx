@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -234,35 +235,35 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ filters, onFacilityClic
 
   return (
     <div className="w-full h-full relative">
-      <div ref={mapContainer} className="w-full h-full" />
+      <div ref={mapContainer} className="w-full h-full z-0" />
       
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg z-10">
+      {/* Legend - Fixed position with high z-index */}
+      <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-xl z-[1000] border border-gray-200 max-w-[200px] sm:max-w-none">
         <h4 className="font-semibold text-sm mb-2">Legend</h4>
         <div className="space-y-1 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-blue-500 border border-white"></div>
-            <span>Your Location</span>
+            <div className="w-4 h-4 rounded-full bg-blue-500 border border-white flex-shrink-0"></div>
+            <span className="truncate sm:text-clip">Your Location</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-green-500"></div>
-            <span>In Stock</span>
+            <div className="w-4 h-4 rounded-full bg-green-500 flex-shrink-0"></div>
+            <span className="truncate sm:text-clip">In Stock</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-            <span>Partial Stock</span>
+            <div className="w-4 h-4 rounded-full bg-yellow-500 flex-shrink-0"></div>
+            <span className="truncate sm:text-clip">Partial Stock</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-red-500"></div>
-            <span>Stock Out</span>
+            <div className="w-4 h-4 rounded-full bg-red-500 flex-shrink-0"></div>
+            <span className="truncate sm:text-clip">Stock Out</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-            <span>Hospital</span>
+            <div className="w-4 h-4 rounded-full bg-blue-500 flex-shrink-0"></div>
+            <span className="truncate sm:text-clip">Hospital</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-purple-500"></div>
-            <span>Store/Bureau</span>
+            <div className="w-4 h-4 rounded-full bg-purple-500 flex-shrink-0"></div>
+            <span className="truncate sm:text-clip">Store/Bureau</span>
           </div>
         </div>
       </div>
