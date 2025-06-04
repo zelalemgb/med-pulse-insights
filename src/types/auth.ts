@@ -21,7 +21,7 @@ export interface AuthContextType {
     email: string,
     password: string
   ) => Promise<{ data: any; error: any }>;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
   updateUserRole: (userId: string, newRole: UserRole) => Promise<{ error: any }>;
