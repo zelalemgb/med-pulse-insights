@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/pharmaceutical';
-import { ProfileService } from '@/services/auth/profileService';
 
 export class AuthValidationService {
   static async getCurrentUserInfo() {
@@ -38,29 +37,7 @@ export class AuthValidationService {
     try {
       console.log('🔍 Checking profiles data consistency...');
       console.log('📊 Current profiles count:', profileUserIds.length);
-
-      const { data: authData, error: authError } = await supabase.functions.invoke('list-users');
-
-      if (authError) {
-        console.log('Error fetching auth users:', authError);
-        return false;
-      }
-
-      const authUsers = authData?.users || [];
-      const missingAuthUsers = authUsers.filter(u => !profileUserIds.includes(u.id));
-
-      if (missingAuthUsers.length > 0) {
-        console.log('➕ Creating profiles for auth users missing profiles:', missingAuthUsers.length);
-        for (const user of missingAuthUsers) {
-          await ProfileService.createProfile(
-            user.id,
-            user.email ?? '',
-            (user.user_metadata as any)?.full_name ?? null
-          );
-        }
-        return true;
-      }
-
+      
       // Check if there are any profiles that might need attention (like missing fields)
       const { data: incompleteProfiles, error } = await supabase
         .from('profiles')

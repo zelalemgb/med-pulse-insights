@@ -28,7 +28,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Settings, Loader2, Users } from 'lucide-react';
 import { UserManagementRecord } from '@/services/userManagement/userManagementService';
 import { useUserManagement } from '@/hooks/useUserManagement';
-import { useUserRoles } from '@/hooks/useUserRoles';
 import { UserRole } from '@/types/pharmaceutical';
 import { getRoleDisplayName } from '@/utils/roleMapping';
 
@@ -39,7 +38,6 @@ interface AllUsersTableProps {
 
 export const AllUsersTable: React.FC<AllUsersTableProps> = ({ users, isLoading }) => {
   const { changeUserRole, isChangingRole } = useUserManagement();
-  const { data: availableRoles, isLoading: rolesLoading } = useUserRoles();
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [newRole, setNewRole] = useState<UserRole>('facility_officer');
   const [reason, setReason] = useState('');
@@ -65,6 +63,20 @@ export const AllUsersTable: React.FC<AllUsersTableProps> = ({ users, isLoading }
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
+
+  const roleOptions: UserRole[] = [
+    'facility_officer',
+    'facility_manager',
+    'qa',
+    'procurement',
+    'finance',
+    'data_analyst',
+    'program_manager',
+    'zonal',
+    'regional',
+    'national',
+    'viewer'
+  ];
 
   if (isLoading) {
     return (
@@ -153,18 +165,11 @@ export const AllUsersTable: React.FC<AllUsersTableProps> = ({ users, isLoading }
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {rolesLoading ? (
-                              <SelectItem value="" disabled>
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                Loading roles...
+                            {roleOptions.map((role) => (
+                              <SelectItem key={role} value={role}>
+                                {getRoleDisplayName(role)}
                               </SelectItem>
-                            ) : (
-                              availableRoles?.map((role) => (
-                                <SelectItem key={role} value={role}>
-                                  {getRoleDisplayName(role)}
-                                </SelectItem>
-                              ))
-                            )}
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -188,7 +193,7 @@ export const AllUsersTable: React.FC<AllUsersTableProps> = ({ users, isLoading }
                         </Button>
                         <Button
                           onClick={handleRoleChange}
-                          disabled={isChangingRole || newRole === user.role || rolesLoading}
+                          disabled={isChangingRole || newRole === user.role}
                           className="bg-blue-600 hover:bg-blue-700"
                         >
                           {isChangingRole ? (

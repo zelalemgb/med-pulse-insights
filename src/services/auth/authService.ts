@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { ProfileService } from './profileService';
 
 export class AuthService {
   static async signIn(email: string, password: string) {
@@ -21,7 +20,7 @@ export class AuthService {
 
   static async signUp(email: string, password: string, fullName?: string) {
     console.log('📝 Attempting sign up for:', email);
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -30,19 +29,14 @@ export class AuthService {
         },
       },
     });
-
+    
     if (error) {
       console.error('❌ Sign up error:', error);
-      return { error };
+    } else {
+      console.log('✅ Sign up successful');
     }
-
-    console.log('✅ Sign up successful');
-
-    if (data.user) {
-      await ProfileService.createProfile(data.user.id, email, fullName);
-    }
-
-    return { error: null };
+    
+    return { error };
   }
 
   static async signOut() {

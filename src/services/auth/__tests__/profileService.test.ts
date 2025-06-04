@@ -22,26 +22,3 @@ describe('ProfileService.updateProfile', () => {
     expect(eq).toHaveBeenCalledWith('id', '1');
   });
 });
-
-describe('ProfileService.createProfile', () => {
-  it('inserts a new user profile', async () => {
-    const insert = vi.fn().mockReturnThis();
-    const select = vi.fn().mockReturnThis();
-    const single = vi.fn().mockResolvedValue({ data: { id: '1', email: 'test@example.com', full_name: 'Test', approval_status: 'pending' }, error: null });
-
-    (supabase.from as any) = vi.fn(() => ({ insert, select, single }));
-
-    const { error, data } = await ProfileService.createProfile('1', 'test@example.com', 'Test');
-
-    expect(error).toBeNull();
-    expect(data).toEqual({ id: '1', email: 'test@example.com', full_name: 'Test', approval_status: 'pending' });
-    expect(supabase.from).toHaveBeenCalledWith('profiles');
-    expect(insert).toHaveBeenCalledWith({
-      id: '1',
-      email: 'test@example.com',
-      full_name: 'Test',
-      approval_status: 'pending',
-      is_active: true
-    });
-  });
-});

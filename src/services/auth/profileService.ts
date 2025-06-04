@@ -80,35 +80,6 @@ export class ProfileService {
     }
   }
 
-  static async createProfile(userId: string, email: string, fullName?: string | null) {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          email,
-          full_name: fullName ?? null,
-          role: 'viewer',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          approval_status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ Error creating profile:', error);
-        return { data: null, error };
-      }
-
-      return { data: data as UserProfile, error: null };
-    } catch (error) {
-      console.error('💥 Unexpected error creating profile:', error);
-      return { data: null, error };
-    }
-  }
-
   static async updateUserRole(userId: string, newRole: UserRole, currentUserProfile: UserProfile | null, currentUserId?: string) {
     // Enhanced validation
     if (!isValidPharmaceuticalRole(newRole)) {

@@ -171,42 +171,6 @@ export type Database = {
           },
         ]
       }
-      import_logs: {
-        Row: {
-          error_rows: number | null
-          filename: string | null
-          id: string
-          imported_at: string | null
-          imported_by: string | null
-          mapping: Json | null
-          successful_rows: number | null
-          total_rows: number | null
-          warnings: Json | null
-        }
-        Insert: {
-          error_rows?: number | null
-          filename?: string | null
-          id?: string
-          imported_at?: string | null
-          imported_by?: string | null
-          mapping?: Json | null
-          successful_rows?: number | null
-          total_rows?: number | null
-          warnings?: Json | null
-        }
-        Update: {
-          error_rows?: number | null
-          filename?: string | null
-          id?: string
-          imported_at?: string | null
-          imported_by?: string | null
-          mapping?: Json | null
-          successful_rows?: number | null
-          total_rows?: number | null
-          warnings?: Json | null
-        }
-        Relationships: []
-      }
       navigation_analytics: {
         Row: {
           created_at: string
@@ -279,68 +243,6 @@ export type Database = {
         }
         Relationships: []
       }
-      period_data: {
-        Row: {
-          aamc: number | null
-          beginning_balance: number | null
-          calculated_at: string | null
-          consumption_issue: number | null
-          ending_balance: number | null
-          expired_damaged: number | null
-          id: string
-          negative_adj: number | null
-          period: number
-          period_name: string
-          positive_adj: number | null
-          product_id: string | null
-          received: number | null
-          stock_out_days: number | null
-          wastage_rate: number | null
-        }
-        Insert: {
-          aamc?: number | null
-          beginning_balance?: number | null
-          calculated_at?: string | null
-          consumption_issue?: number | null
-          ending_balance?: number | null
-          expired_damaged?: number | null
-          id?: string
-          negative_adj?: number | null
-          period: number
-          period_name: string
-          positive_adj?: number | null
-          product_id?: string | null
-          received?: number | null
-          stock_out_days?: number | null
-          wastage_rate?: number | null
-        }
-        Update: {
-          aamc?: number | null
-          beginning_balance?: number | null
-          calculated_at?: string | null
-          consumption_issue?: number | null
-          ending_balance?: number | null
-          expired_damaged?: number | null
-          id?: string
-          negative_adj?: number | null
-          period?: number
-          period_name?: string
-          positive_adj?: number | null
-          product_id?: string | null
-          received?: number | null
-          stock_out_days?: number | null
-          wastage_rate?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "period_data_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       permission_usage_log: {
         Row: {
           access_granted: boolean
@@ -390,80 +292,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "permission_usage_log_facility_id_fkey"
-            columns: ["facility_id"]
-            isOneToOne: false
-            referencedRelation: "health_facilities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      products: {
-        Row: {
-          aamc: number | null
-          annual_consumption: number | null
-          awamc: number | null
-          created_at: string | null
-          created_by: string | null
-          facility_id: string | null
-          facility_specific: boolean
-          forecast: Json | null
-          frequency: string
-          id: string
-          procurement_source: string
-          product_code: string | null
-          product_name: string
-          seasonality: Json | null
-          unit: string
-          unit_price: number
-          updated_at: string | null
-          ven_classification: string
-          wastage_rate: number | null
-        }
-        Insert: {
-          aamc?: number | null
-          annual_consumption?: number | null
-          awamc?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          facility_id?: string | null
-          facility_specific?: boolean
-          forecast?: Json | null
-          frequency: string
-          id?: string
-          procurement_source: string
-          product_code?: string | null
-          product_name: string
-          seasonality?: Json | null
-          unit: string
-          unit_price: number
-          updated_at?: string | null
-          ven_classification: string
-          wastage_rate?: number | null
-        }
-        Update: {
-          aamc?: number | null
-          annual_consumption?: number | null
-          awamc?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          facility_id?: string | null
-          facility_specific?: boolean
-          forecast?: Json | null
-          frequency?: string
-          id?: string
-          procurement_source?: string
-          product_code?: string | null
-          product_name?: string
-          seasonality?: Json | null
-          unit?: string
-          unit_price?: number
-          updated_at?: string | null
-          ven_classification?: string
-          wastage_rate?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "products_facility_id_fkey"
             columns: ["facility_id"]
             isOneToOne: false
             referencedRelation: "health_facilities"
