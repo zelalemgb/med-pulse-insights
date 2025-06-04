@@ -18,6 +18,9 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
   const { profile } = useAuth();
   const location = useLocation();
 
+  // Check if user can manage other users (national, regional, zonal roles)
+  const canManageUsers = profile?.role && ['national', 'regional', 'zonal'].includes(profile.role);
+
   const navigationItems = [
     {
       href: '/',
@@ -54,6 +57,7 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
       label: 'User Management',
       icon: Users,
       requiresAuth: true,
+      showCondition: canManageUsers, // Only show for management roles
     },
   ];
 
@@ -61,6 +65,11 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
     <ul className={cn('flex flex-col lg:flex-row space-y-1 lg:space-y-0 lg:space-x-1', className)}>
       {navigationItems.map((item) => {
         if (item.requiresAuth && !profile) {
+          return null;
+        }
+
+        // Check showCondition if it exists
+        if (item.showCondition !== undefined && !item.showCondition) {
           return null;
         }
 
