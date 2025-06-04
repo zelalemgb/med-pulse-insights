@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import { ProfileService } from '@/services/auth/profileService';
 import { toast } from 'sonner';
 
 interface SignUpFormProps {
@@ -43,17 +44,26 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
 
     try {
       console.log('🚀 Starting signup process for:', signUpData.email);
-      const { error } = await signUp(
+      const { data, error } = await signUp(
         signUpData.email,
         signUpData.password,
         signUpData.fullName
       );
-      
+
       if (error) {
         console.error('❌ Signup error:', error);
         toast.error(error.message || 'Failed to sign up');
       } else {
         console.log('✅ Signup successful for:', signUpData.email);
+
+        if (data?.user) {
+          await ProfileService.createProfile(
+            data.user.id,
+            signUpData.email,
+            signUpData.fullName
+          );
+        }
+
         toast.success('Account created successfully! Please check your email for verification.');
         // Clear form after successful signup
         setSignUpData({

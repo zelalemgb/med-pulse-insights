@@ -20,7 +20,7 @@ export class AuthService {
 
   static async signUp(email: string, password: string, fullName?: string) {
     console.log('📝 Attempting sign up for:', email);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -29,14 +29,14 @@ export class AuthService {
         },
       },
     });
-    
+
     if (error) {
       console.error('❌ Sign up error:', error);
     } else {
       console.log('✅ Sign up successful');
     }
-    
-    return { error };
+
+    return { data, error };
   }
 
   static async signOut() {
