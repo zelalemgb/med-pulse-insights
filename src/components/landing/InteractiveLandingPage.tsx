@@ -30,13 +30,13 @@ const InteractiveLandingPage = ({ hideTopNavigation = false }: InteractiveLandin
             onReportIssue={() => setIsReportModalOpen(true)}
           />
           
-          {/* Show dashboard and legend only for authenticated users */}
-          {user && (
-            <>
-              <MiniDashboard />
-              <MapLegend />
-            </>
-          )}
+          {/* Show mini dashboard only for authenticated users */}
+          {user && <MiniDashboard />}
+          
+          {/* Show legend for all users, positioned based on authentication status */}
+          <div className={user ? "top-80" : "top-20"}>
+            <MapLegend />
+          </div>
         </div>
 
         {/* Dashboard Panel - Only show for authenticated users */}

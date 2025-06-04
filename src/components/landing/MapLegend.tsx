@@ -1,9 +1,13 @@
 
 import React from 'react';
 
-const MapLegend = () => {
+interface MapLegendProps {
+  className?: string;
+}
+
+const MapLegend = ({ className = "" }: MapLegendProps) => {
   return (
-    <div className="absolute top-80 left-2 sm:left-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-xl border border-gray-200 w-[300px] sm:w-80 max-w-[calc(100vw-1rem)]">
+    <div className={`absolute left-2 sm:left-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-xl border border-gray-200 w-[300px] sm:w-80 max-w-[calc(100vw-1rem)] ${className}`}>
       <h4 className="font-semibold text-sm mb-3 text-gray-900">Map Legend</h4>
       <div className="space-y-2 text-xs">
         {/* Your Location */}
