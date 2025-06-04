@@ -43,6 +43,16 @@ console.log('🎯 Creating React root...');
 const root = createRoot(container);
 
 console.log('🔧 Rendering App component...');
+
+// Add error boundary for better debugging
+window.addEventListener('error', (event) => {
+  console.error('💥 Global error:', event.error);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('💥 Unhandled promise rejection:', event.reason);
+});
+
 try {
   root.render(
     <StrictMode>
@@ -52,4 +62,15 @@ try {
   console.log('✅ App rendered successfully');
 } catch (error) {
   console.error('💥 Error rendering App:', error);
+  // Fallback UI
+  root.render(
+    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+      <h1>Application Error</h1>
+      <p>Failed to load the application. Check the console for details.</p>
+      <details>
+        <summary>Error Details</summary>
+        <pre>{error instanceof Error ? error.stack : String(error)}</pre>
+      </details>
+    </div>
+  );
 }
