@@ -14,8 +14,11 @@ const TopNavigation = () => {
             <div className="bg-blue-100 w-8 h-8 rounded-full flex items-center justify-center">
               <Shield className="w-4 h-4 text-blue-600" />
             </div>
-            <span className="text-xl font-semibold text-gray-900">
-              MediLink
+            <span className="text-xl font-semibold text-gray-900 hidden sm:block">
+              Pharmaceutical Analytics
+            </span>
+            <span className="text-lg font-semibold text-gray-900 sm:hidden">
+              PharmAnalytics
             </span>
           </div>
 
