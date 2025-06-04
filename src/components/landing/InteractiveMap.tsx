@@ -245,14 +245,20 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
         onFiltersChange={setFilters}
       />
       
-      {/* Report Button - positioned within the map container */}
-      <div className="absolute bottom-4 right-4 z-[1000]">
+      {/* Floating Report Button - positioned to be always visible */}
+      <div className="fixed bottom-6 right-6 z-[1000]">
         <button
           onClick={onReportIssue}
-          className="bg-red-600 hover:bg-red-700 text-white shadow-xl rounded-full w-12 h-12 sm:w-14 sm:h-14 p-0 transition-all hover:scale-110 border-2 border-white flex items-center justify-center"
+          className="bg-red-600 hover:bg-red-700 text-white shadow-2xl rounded-full w-14 h-14 sm:w-16 sm:h-16 p-0 transition-all duration-200 hover:scale-110 border-3 border-white flex items-center justify-center group"
           title="Report drug issue"
         >
-          <span className="text-xl font-bold">+</span>
+          <span className="text-2xl sm:text-3xl font-bold">+</span>
+          
+          {/* Tooltip */}
+          <div className="absolute bottom-full right-0 mb-2 bg-gray-900 text-white text-xs px-3 py-2 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+            Report drug issue
+            <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
+          </div>
         </button>
       </div>
     </div>
