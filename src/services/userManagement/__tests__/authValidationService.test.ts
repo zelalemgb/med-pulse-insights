@@ -15,7 +15,7 @@ describe('AuthValidationService.validateAuthUsers', () => {
       ] },
       error: null
     });
-    (supabase.auth as any) = { admin: { listUsers } };
+    (supabase.functions as any) = { invoke: listUsers };
 
     const createProfile = vi.fn().mockResolvedValue({ data: {}, error: null });
     (ProfileService.createProfile as any) = createProfile;

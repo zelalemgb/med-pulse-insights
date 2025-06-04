@@ -39,7 +39,7 @@ export class AuthValidationService {
       console.log('🔍 Checking profiles data consistency...');
       console.log('📊 Current profiles count:', profileUserIds.length);
 
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      const { data: authData, error: authError } = await supabase.functions.invoke('list-users');
 
       if (authError) {
         console.log('Error fetching auth users:', authError);
