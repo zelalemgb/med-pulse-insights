@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -82,6 +81,10 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ filters, onFacilityClic
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markersGroup = useRef<L.LayerGroup | null>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+
+  // Default fallback location (Addis Ababa)
+  const defaultLocation: [number, number] = [9.0307, 38.7407];
 
   // Facility icon configurations
   const getFacilityIcon = (facility: Facility) => {
@@ -135,14 +138,42 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ filters, onFacilityClic
     return true;
   });
 
+  // Get user's current location
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation([latitude, longitude]);
+          console.log('User location obtained:', latitude, longitude);
+        },
+        (error) => {
+          console.log('Geolocation error:', error.message);
+          console.log('Using default location (Addis Ababa)');
+          setUserLocation(defaultLocation);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 300000 // Cache for 5 minutes
+        }
+      );
+    } else {
+      console.log('Geolocation not supported, using default location');
+      setUserLocation(defaultLocation);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mapContainer.current || !userLocation) return;
+
+    console.log('Initializing map at location:', userLocation);
 
     // Initialize map
     map.current = L.map(mapContainer.current, {
       zoomControl: false,
       attributionControl: false,
-    }).setView([9.0307, 38.7407], 12);
+    }).setView(userLocation, 12);
 
     // Add tile layer
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -156,18 +187,36 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ filters, onFacilityClic
     // Initialize markers group
     markersGroup.current = L.layerGroup().addTo(map.current);
 
+    // Add user location marker
+    const userLocationIcon = L.divIcon({
+      html: `<div style="background-color: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); position: relative;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background-color: white; border-radius: 50%;"></div>
+      </div>`,
+      className: 'user-location-marker',
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+    });
+
+    L.marker(userLocation, { icon: userLocationIcon })
+      .addTo(markersGroup.current)
+      .bindPopup('<div style="font-size: 12px; padding: 4px; font-weight: bold;">Your Location</div>');
+
     return () => {
       if (map.current) {
         map.current.remove();
       }
     };
-  }, []);
+  }, [userLocation]);
 
   useEffect(() => {
     if (!map.current || !markersGroup.current) return;
 
-    // Clear existing markers
-    markersGroup.current.clearLayers();
+    // Clear existing facility markers (keep user location)
+    markersGroup.current.eachLayer((layer) => {
+      if (layer instanceof L.Marker && !layer.getElement()?.classList.contains('user-location-marker')) {
+        markersGroup.current?.removeLayer(layer);
+      }
+    });
 
     // Add filtered facilities as markers
     filteredFacilities.forEach(facility => {
@@ -191,6 +240,10 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ filters, onFacilityClic
       <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg z-10">
         <h4 className="font-semibold text-sm mb-2">Legend</h4>
         <div className="space-y-1 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-blue-500 border border-white"></div>
+            <span>Your Location</span>
+          </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-green-500"></div>
             <span>In Stock</span>
