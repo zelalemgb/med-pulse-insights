@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import InteractiveMap from './InteractiveMap';
 import TopNavigation from './TopNavigation';
 import MiniDashboard from './MiniDashboard';
+import MapLegend from './MapLegend';
 import FacilityInfoModal from './FacilityInfoModal';
 import ReportIssueModal from './ReportIssueModal';
 import { Facility } from './types';
@@ -28,12 +29,24 @@ const InteractiveLandingPage = ({ hideTopNavigation = false }: InteractiveLandin
             onFacilitySelect={setSelectedFacility}
             onReportIssue={() => setIsReportModalOpen(true)}
           />
+          
+          {/* Show dashboard and legend only for authenticated users */}
+          {user && (
+            <>
+              <MiniDashboard />
+              <MapLegend />
+            </>
+          )}
         </div>
 
         {/* Dashboard Panel - Only show for authenticated users */}
         {user && (
           <div className="lg:w-96 bg-white border-l border-gray-200 flex flex-col">
-            <MiniDashboard />
+            {/* Additional dashboard content can go here */}
+            <div className="p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Quick Actions</h3>
+              <p className="text-sm text-gray-600">Access your dashboard features and analytics.</p>
+            </div>
           </div>
         )}
       </div>

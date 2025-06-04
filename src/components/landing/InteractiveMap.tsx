@@ -236,7 +236,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
   }, [filteredFacilities, onFacilitySelect]);
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative overflow-hidden">
       <div ref={mapContainer} className="w-full h-full z-0" />
       
       {/* Map Filters */}
@@ -245,38 +245,15 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
         onFiltersChange={setFilters}
       />
       
-      {/* Report Button */}
-      <ReportButton />
-      
-      {/* Legend - Fixed position with high z-index */}
-      <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-xl z-[1000] border border-gray-200 max-w-[200px] sm:max-w-none">
-        <h4 className="font-semibold text-sm mb-2">Legend</h4>
-        <div className="space-y-1 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-blue-500 border border-white flex-shrink-0"></div>
-            <span className="truncate sm:text-clip">Your Location</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-green-500 flex-shrink-0"></div>
-            <span className="truncate sm:text-clip">In Stock</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-yellow-500 flex-shrink-0"></div>
-            <span className="truncate sm:text-clip">Partial Stock</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-red-500 flex-shrink-0"></div>
-            <span className="truncate sm:text-clip">Stock Out</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-blue-500 flex-shrink-0"></div>
-            <span className="truncate sm:text-clip">Hospital</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-purple-500 flex-shrink-0"></div>
-            <span className="truncate sm:text-clip">Store/Bureau</span>
-          </div>
-        </div>
+      {/* Report Button - positioned within the map container */}
+      <div className="absolute bottom-4 right-4 z-[1000]">
+        <button
+          onClick={onReportIssue}
+          className="bg-red-600 hover:bg-red-700 text-white shadow-xl rounded-full w-12 h-12 sm:w-14 sm:h-14 p-0 transition-all hover:scale-110 border-2 border-white flex items-center justify-center"
+          title="Report drug issue"
+        >
+          <span className="text-xl font-bold">+</span>
+        </button>
       </div>
     </div>
   );
