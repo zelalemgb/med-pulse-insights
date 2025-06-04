@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { logger } from '@/utils/logger';
 
 interface PWAInstallPrompt {
   prompt: () => Promise<void>;
@@ -24,10 +25,10 @@ export const usePWA = (): UsePWAReturn => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
-          console.log('SW registered: ', registration);
+          logger.log('SW registered: ', registration);
         })
         .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
+          logger.log('SW registration failed: ', registrationError);
         });
     }
 
@@ -75,15 +76,15 @@ export const usePWA = (): UsePWAReturn => {
       const choiceResult = await deferredPrompt.userChoice;
       
       if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
+        logger.log('User accepted the install prompt');
       } else {
-        console.log('User dismissed the install prompt');
+        logger.log('User dismissed the install prompt');
       }
       
       setDeferredPrompt(null);
       setIsInstallable(false);
     } catch (error) {
-      console.error('Error during app installation:', error);
+      logger.error('Error during app installation:', error);
     }
   };
 

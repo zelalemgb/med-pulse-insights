@@ -1,5 +1,6 @@
 
 import { useCallback, useMemo, memo } from 'react';
+import { logger } from '@/utils/logger';
 
 // Higher-order component for automatic memoization
 export function withMemoization<P extends object>(
@@ -58,7 +59,7 @@ export function usePerformanceMonitor(componentName: string) {
   const logRenderTime = useCallback(() => {
     const renderTime = performance.now() - startTime;
     if (renderTime > 16) { // Warn if render takes longer than one frame
-      console.warn(`Slow render detected in ${componentName}: ${renderTime.toFixed(2)}ms`);
+      logger.warn(`Slow render detected in ${componentName}: ${renderTime.toFixed(2)}ms`);
     }
   }, [componentName, startTime]);
 

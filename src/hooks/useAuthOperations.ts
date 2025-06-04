@@ -5,6 +5,7 @@ import { UserProfile } from '@/types/auth';
 import { AuthService } from '@/services/auth/authService';
 import { ProfileService } from '@/services/auth/profileService';
 import { isValidPharmaceuticalRole, mapSupabaseToPharmaceuticalRole } from '@/utils/roleMapping';
+import { logger } from '@/utils/logger';
 
 export const useAuthOperations = (
   profile: UserProfile | null,
@@ -13,13 +14,13 @@ export const useAuthOperations = (
 ) => {
   const hasRole = useCallback((role: UserRole): boolean => {
     const hasRoleResult = profile?.role === role;
-    console.log(`🔍 Checking if user has role ${role}:`, hasRoleResult, 'Current role:', profile?.role);
+    logger.log(`🔍 Checking if user has role ${role}:`, hasRoleResult, 'Current role:', profile?.role);
     return hasRoleResult;
   }, [profile?.role]);
 
   const validateRole = useCallback((role: string): boolean => {
     const isValid = isValidPharmaceuticalRole(role);
-    console.log(`🔍 Validating role ${role}:`, isValid);
+    logger.log(`🔍 Validating role ${role}:`, isValid);
     return isValid;
   }, []);
 
@@ -46,7 +47,7 @@ export const useAuthOperations = (
       const effectiveRole = await getEffectiveRoleForFacility(user.id, facilityId);
       return effectiveRole === role;
     } catch (error) {
-      console.error('💥 Error checking facility role:', error);
+      logger.error('💥 Error checking facility role:', error);
       return false;
     }
   }, [user, getEffectiveRoleForFacility]);
