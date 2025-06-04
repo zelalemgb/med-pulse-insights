@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, BarChart3 } from 'lucide-react';
+import { Home, Users, BarChart3, Map } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { UserRole } from '@/types/pharmaceutical';
@@ -22,6 +23,12 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
   const navigationItems = [
     {
       href: '/',
+      label: 'Home',
+      icon: Map,
+      requiresAuth: false,
+    },
+    {
+      href: '/dashboard',
       label: 'Dashboard',
       icon: Home,
       requiresAuth: true,
