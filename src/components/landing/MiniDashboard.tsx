@@ -13,7 +13,7 @@ const MiniDashboard = () => {
   };
 
   return (
-    <div className="absolute top-20 left-4 z-40 bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-lg border border-gray-200 w-80">
+    <div className="absolute top-20 left-4 z-50 bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow-xl border border-gray-200 w-80">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-sm text-gray-900">National Overview</h3>
         <Link 
@@ -26,7 +26,7 @@ const MiniDashboard = () => {
       
       <div className="grid grid-cols-2 gap-3">
         {/* Stock Availability Rate */}
-        <div className="bg-white/60 rounded-md p-3">
+        <div className="bg-white/80 rounded-md p-3 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <TrendingUp className="w-4 h-4 text-green-600" />
             <span className="text-xs font-medium text-gray-600">Stock Rate</span>
@@ -37,7 +37,7 @@ const MiniDashboard = () => {
         </div>
 
         {/* Facilities Reporting */}
-        <div className="bg-white/60 rounded-md p-3">
+        <div className="bg-white/80 rounded-md p-3 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <Building className="w-4 h-4 text-blue-600" />
             <span className="text-xs font-medium text-gray-600">Reporting</span>
@@ -49,7 +49,7 @@ const MiniDashboard = () => {
         </div>
 
         {/* Most Reported Missing */}
-        <div className="bg-white/60 rounded-md p-3">
+        <div className="bg-white/80 rounded-md p-3 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-4 h-4 text-orange-600" />
             <span className="text-xs font-medium text-gray-600">Missing</span>
@@ -61,7 +61,7 @@ const MiniDashboard = () => {
         </div>
 
         {/* Public Reports Today */}
-        <div className="bg-white/60 rounded-md p-3">
+        <div className="bg-white/80 rounded-md p-3 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <FileText className="w-4 h-4 text-purple-600" />
             <span className="text-xs font-medium text-gray-600">Reports</span>

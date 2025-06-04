@@ -13,14 +13,14 @@ const ReportButton = () => {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsModalOpen(true)}
-          className="bg-red-600 hover:bg-red-700 text-white shadow-lg rounded-full w-14 h-14 p-0 transition-all hover:scale-105"
+          className="bg-red-600 hover:bg-red-700 text-white shadow-xl rounded-full w-14 h-14 p-0 transition-all hover:scale-110 border-2 border-white"
           title="Report drug issue"
         >
           <Plus className="w-6 h-6" />
         </Button>
         
         {/* Tooltip */}
-        <div className="absolute bottom-16 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
+        <div className="absolute bottom-16 right-0 bg-gray-900 text-white text-xs px-3 py-2 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
           Report drug issue
         </div>
       </div>
