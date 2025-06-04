@@ -1,6 +1,7 @@
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import React from 'react';
 import App from './App';
 import './index.css';
 
@@ -35,7 +36,6 @@ if ('serviceWorker' in navigator) {
 
 const container = document.getElementById("root");
 if (!container) {
-  console.error('❌ Root element not found');
   throw new Error('❌ Root element not found');
 }
 
@@ -43,34 +43,10 @@ console.log('🎯 Creating React root...');
 const root = createRoot(container);
 
 console.log('🔧 Rendering App component...');
+root.render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
 
-// Add error boundary for better debugging
-window.addEventListener('error', (event) => {
-  console.error('💥 Global error:', event.error);
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('💥 Unhandled promise rejection:', event.reason);
-});
-
-try {
-  root.render(
-    <StrictMode>
-      <App />
-    </StrictMode>
-  );
-  console.log('✅ App rendered successfully');
-} catch (error) {
-  console.error('💥 Error rendering App:', error);
-  // Fallback UI
-  root.render(
-    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1>Application Error</h1>
-      <p>Failed to load the application. Check the console for details.</p>
-      <details>
-        <summary>Error Details</summary>
-        <pre>{error instanceof Error ? error.stack : String(error)}</pre>
-      </details>
-    </div>
-  );
-}
+console.log('✅ App rendered successfully');
