@@ -6,6 +6,7 @@ import TopNavigation from './TopNavigation';
 import MiniDashboard from './MiniDashboard';
 import FacilityInfoModal from './FacilityInfoModal';
 import ReportIssueModal from './ReportIssueModal';
+import { Facility } from './types';
 
 interface InteractiveLandingPageProps {
   hideTopNavigation?: boolean;
@@ -13,7 +14,7 @@ interface InteractiveLandingPageProps {
 
 const InteractiveLandingPage = ({ hideTopNavigation = false }: InteractiveLandingPageProps) => {
   const { user } = useAuth();
-  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   return (

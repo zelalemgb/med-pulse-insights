@@ -1,8 +1,7 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Facility } from './InteractiveLandingPage';
+import { Facility } from './types';
 
 // Mock data for demonstration
 const mockFacilities: Facility[] = [
@@ -69,16 +68,11 @@ const mockFacilities: Facility[] = [
 ];
 
 interface InteractiveMapProps {
-  filters: {
-    facilityType: string;
-    region: string;
-    zone: string;
-    product: string;
-  };
-  onFacilityClick: (facility: Facility) => void;
+  onFacilitySelect: (facility: Facility) => void;
+  onReportIssue: () => void;
 }
 
-const InteractiveMap: React.FC<InteractiveMapProps> = ({ filters, onFacilityClick }) => {
+const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onReportIssue }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markersGroup = useRef<L.LayerGroup | null>(null);
@@ -130,14 +124,6 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ filters, onFacilityClic
       iconAnchor: [14, 14],
     });
   };
-
-  // Filter facilities based on current filters
-  const filteredFacilities = mockFacilities.filter(facility => {
-    if (filters.facilityType !== 'all' && facility.type !== filters.facilityType) return false;
-    if (filters.region !== 'all' && facility.region !== filters.region) return false;
-    if (filters.zone !== 'all' && facility.zone !== filters.zone) return false;
-    return true;
-  });
 
   // Get user's current location
   useEffect(() => {
@@ -219,19 +205,19 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ filters, onFacilityClic
       }
     });
 
-    // Add filtered facilities as markers
-    filteredFacilities.forEach(facility => {
+    // Add facilities as markers
+    mockFacilities.forEach(facility => {
       const marker = L.marker([facility.latitude, facility.longitude], {
         icon: getFacilityIcon(facility)
       });
 
       marker.on('click', () => {
-        onFacilityClick(facility);
+        onFacilitySelect(facility);
       });
 
       markersGroup.current?.addLayer(marker);
     });
-  }, [filteredFacilities, onFacilityClick]);
+  }, [onFacilitySelect]);
 
   return (
     <div className="w-full h-full relative">

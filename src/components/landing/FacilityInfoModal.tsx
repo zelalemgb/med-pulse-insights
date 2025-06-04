@@ -3,14 +3,17 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Calendar, BarChart3, CheckCircle } from 'lucide-react';
-import { Facility } from './InteractiveLandingPage';
+import { Facility } from './types';
 
 interface FacilityInfoModalProps {
-  facility: Facility;
+  facility: Facility | null;
+  isOpen: boolean;
   onClose: () => void;
 }
 
-const FacilityInfoModal: React.FC<FacilityInfoModalProps> = ({ facility, onClose }) => {
+const FacilityInfoModal: React.FC<FacilityInfoModalProps> = ({ facility, isOpen, onClose }) => {
+  if (!facility) return null;
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'in_stock':
@@ -55,7 +58,7 @@ const FacilityInfoModal: React.FC<FacilityInfoModalProps> = ({ facility, onClose
   };
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-start justify-between">
