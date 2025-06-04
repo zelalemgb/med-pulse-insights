@@ -5,12 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Download } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Download, BarChart3, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
 import { secureSet } from '@/utils/secureStorage';
 import { serialize } from '@/utils/serialization';
+import PageHeader from '@/components/layout/PageHeader';
 
 interface ExcelData {
   [key: string]: any;
@@ -110,6 +111,11 @@ const Import = () => {
   const [fieldMapping, setFieldMapping] = useState<Partial<FieldMapping>>({});
   const [step, setStep] = useState<'upload' | 'mapping' | 'preview'>('upload');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const breadcrumbItems = [
+    { label: 'Home', path: '/' },
+    { label: 'Import Data' }
+  ];
 
   // Auto-mapping function
   const autoMapFields = (excelHeaders: string[]) => {
@@ -382,6 +388,14 @@ const Import = () => {
       description: `${transformedData.length} products imported successfully`,
     });
     
+    // Show next steps
+    setTimeout(() => {
+      toast({
+        title: "Next Steps",
+        description: "Visit Analytics to conduct forecasting or Dashboard to monitor your data",
+      });
+    }, 2000);
+    
     // Navigate to data entry page
     navigate('/data-entry');
   };
@@ -411,12 +425,52 @@ const Import = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Import Pharmaceutical Data</h1>
-          <p className="text-gray-600 mt-2">Upload Excel files and map fields to import pharmaceutical data</p>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageHeader
+          title="Import Supply Chain Data"
+          description="Upload Excel files containing your facility's pharmaceutical supply chain and forecast data"
+          breadcrumbItems={breadcrumbItems}
+        />
+
+        {/* Workflow Context */}
+        <Card className="mb-6 bg-blue-50 border-blue-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-500 p-2 rounded-lg">
+                  <Upload className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-900">Step 1: Import Your Data</h3>
+                  <p className="text-sm text-blue-700">
+                    Upload your pharmaceutical data to begin analysis and forecasting
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/analytics')}
+                  className="text-green-600 border-green-200 hover:bg-green-50"
+                >
+                  <BarChart3 className="h-4 w-4 mr-1" />
+                  Next: Analytics
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/dashboard')}
+                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                >
+                  <Home className="h-4 w-4 mr-1" />
+                  Dashboard
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Progress Steps */}
         <div className="mb-6">

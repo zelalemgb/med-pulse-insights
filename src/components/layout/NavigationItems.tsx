@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, BarChart3, Map } from 'lucide-react';
+import { Home, Users, BarChart3, Map, Upload, Database } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +26,12 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
       requiresAuth: false,
     },
     {
+      href: '/import',
+      label: 'Import Data',
+      icon: Upload,
+      requiresAuth: true,
+    },
+    {
       href: '/dashboard',
       label: 'Dashboard',
       icon: Home,
@@ -35,6 +41,12 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
       href: '/analytics',
       label: 'Analytics',
       icon: BarChart3,
+      requiresAuth: true,
+    },
+    {
+      href: '/data-management',
+      label: 'Manage Data',
+      icon: Database,
       requiresAuth: true,
     },
     {

@@ -7,16 +7,17 @@ import FacilityManagerDashboard from './FacilityManagerDashboard';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SystemOverview from './SystemOverview';
 import SupplyChainDashboard from './SupplyChainDashboard';
+import WorkflowGuide from './WorkflowGuide';
 import { BarChart3, Settings, TrendingUp, Package, Activity } from 'lucide-react';
 
 const RoleBasedDashboard = () => {
   const { profile } = useAuth();
   
-  // All users can access all dashboard tabs
-  // Data filtering will be handled within each component based on user role
-  
   return (
     <div className="space-y-6">
+      {/* Workflow Guide - prominently displayed */}
+      <WorkflowGuide />
+      
       <Tabs defaultValue="supply-chain" className="w-full">
         <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
           <TabsTrigger value="supply-chain" className="flex items-center">
