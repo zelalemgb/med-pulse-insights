@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
-console.log('🔧 App.tsx loading...');
+console.log('🔧 App.tsx starting to load...');
 
 // Simple loading component
 const LoadingScreen = () => (
@@ -35,13 +35,25 @@ const ErrorScreen = ({ error }: { error: string }) => (
   </div>
 );
 
-// Direct imports instead of lazy loading
-import { AuthProvider } from "@/contexts/AuthContext";
-import { NavigationProvider } from "@/contexts/NavigationContext";
-import MainNavigation from "@/components/layout/MainNavigation";
-import Footer from "@/components/layout/Footer";
-import Dashboard from "./pages/Dashboard";
+// Minimal test component to verify basic React is working
+const TestComponent = () => {
+  console.log('✅ TestComponent rendered successfully');
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">App is Working!</h1>
+        <p className="text-gray-600">Basic React app is functioning correctly.</p>
+        <div className="mt-4 p-4 bg-green-100 rounded-lg">
+          <p className="text-green-800">✅ React components are rendering</p>
+          <p className="text-green-800">✅ Tailwind CSS is working</p>
+          <p className="text-green-800">✅ TypeScript compilation successful</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
+console.log('🔧 Creating QueryClient...');
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -50,51 +62,44 @@ const queryClient = new QueryClient({
     },
   },
 });
+console.log('✅ QueryClient created successfully');
 
 const App: React.FC = () => {
   console.log('🔧 App component rendering...');
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    console.log('✅ App component mounted successfully');
+    console.log('✅ App component mounted and useEffect triggered');
   }, []);
 
   if (error) {
+    console.log('❌ App has error:', error);
     return <ErrorScreen error={error} />;
   }
   
-  return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <NavigationProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <div className="min-h-screen bg-gray-50 flex flex-col">
-                <MainNavigation />
-                <main className="flex-1">
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="*" element={
-                      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                        <div className="text-center">
-                          <h1 className="text-2xl font-bold text-gray-900 mb-4">Page Not Found</h1>
-                          <p className="text-gray-600">The page you're looking for doesn't exist.</p>
-                        </div>
-                      </div>
-                    } />
-                  </Routes>
-                </main>
-                <Footer />
-              </div>
-            </TooltipProvider>
-          </NavigationProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
+  try {
+    console.log('🔧 Rendering app structure...');
+    return (
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              <Route path="/" element={<TestComponent />} />
+              <Route path="/dashboard" element={<TestComponent />} />
+              <Route path="*" element={<TestComponent />} />
+            </Routes>
+          </TooltipProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    );
+  } catch (err) {
+    console.error('💥 Error in App render:', err);
+    setError(err instanceof Error ? err.message : 'Unknown error occurred');
+    return <ErrorScreen error="Failed to render application" />;
+  }
 };
 
+console.log('✅ App component defined successfully');
 export default App;
