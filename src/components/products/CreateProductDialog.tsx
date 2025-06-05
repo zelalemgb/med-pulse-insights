@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useCreateProduct } from '@/hooks/useProducts';
 
 interface ProductFormData {
   name: string;
@@ -28,52 +28,19 @@ interface CreateProductDialogProps {
 }
 
 export const CreateProductDialog = ({ open, onOpenChange, onSuccess }: CreateProductDialogProps) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  
+  const createProduct = useCreateProduct();
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<ProductFormData>();
 
   const onSubmit = async (data: ProductFormData) => {
     try {
-      setIsSubmitting(true);
-      console.log('Creating product with data:', data);
-      
-      // Create a mock product for now - this would integrate with Supabase later
-      const newProduct = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: data.name,
-        code: data.code || `PRD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-        category: data.category,
-        unit: data.unit,
-        packageSize: data.packageSize,
-        unitPrice: data.unitPrice,
-        venClassification: data.venClassification,
-        description: data.description,
-        status: 'active' as const,
-        createdAt: new Date().toISOString(),
-      };
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log('Product created successfully:', newProduct);
+      console.log('Form data submitted:', data);
+      const product = await createProduct.mutateAsync(data);
       reset();
-      onSuccess(newProduct);
+      onSuccess(product);
       onOpenChange(false);
-      
-      toast({
-        title: "Product Created",
-        description: `${data.name} has been created successfully.`,
-      });
     } catch (error) {
-      console.error('Error creating product:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create product. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error in form submission:', error);
+      // Error handling is done in the hook
     }
   };
 
@@ -153,7 +120,8 @@ export const CreateProductDialog = ({ open, onOpenChange, onSuccess }: CreatePro
                 type="number"
                 {...register('packageSize', { 
                   required: 'Package size is required',
-                  min: { value: 1, message: 'Package size must be at least 1' }
+                  min: { value: 1, message: 'Package size must be at least 1' },
+                  valueAsNumber: true
                 })}
                 placeholder="e.g., 10, 20, 100"
               />
@@ -171,7 +139,8 @@ export const CreateProductDialog = ({ open, onOpenChange, onSuccess }: CreatePro
                 step="0.01"
                 {...register('unitPrice', { 
                   required: 'Unit price is required',
-                  min: { value: 0, message: 'Price must be positive' }
+                  min: { value: 0, message: 'Price must be positive' },
+                  valueAsNumber: true
                 })}
                 placeholder="0.00"
               />
@@ -213,16 +182,16 @@ export const CreateProductDialog = ({ open, onOpenChange, onSuccess }: CreatePro
               type="button" 
               variant="outline" 
               onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
+              disabled={createProduct.isLoading}
             >
               Cancel
             </Button>
             <Button 
               type="submit" 
-              disabled={isSubmitting}
+              disabled={createProduct.isLoading}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {createProduct.isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Create Product
             </Button>
           </div>

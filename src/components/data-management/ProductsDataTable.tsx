@@ -1,59 +1,22 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Package, Plus, DollarSign, Info } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { CreateProductDialog } from '@/components/products/CreateProductDialog';
+import { useProducts } from '@/hooks/useProducts';
 
 const ProductsDataTable = () => {
   const { canAccess } = usePermissions();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [products, setProducts] = useState([
-    {
-      id: '1',
-      name: 'Amoxicillin 500mg',
-      code: 'AMX-500',
-      category: 'Antibiotic',
-      unit: 'Capsules',
-      packageSize: 100,
-      unitPrice: 0.25,
-      venClassification: 'E',
-      status: 'Active',
-      stock: 1250,
-      description: 'Broad-spectrum antibiotic for bacterial infections',
-      lastUpdated: '2024-01-15'
-    },
-    {
-      id: '2',
-      name: 'Paracetamol 500mg',
-      code: 'PCM-500', 
-      category: 'Analgesic',
-      unit: 'Tablets',
-      packageSize: 20,
-      unitPrice: 0.15,
-      venClassification: 'V',
-      status: 'Active',
-      stock: 2800,
-      description: 'Pain reliever and fever reducer',
-      lastUpdated: '2024-01-14'
-    },
-    {
-      id: '3',
-      name: 'Insulin Glargine',
-      code: 'INS-GLA',
-      category: 'Antidiabetic',
-      unit: 'Vials',
-      packageSize: 1,
-      unitPrice: 45.00,
-      venClassification: 'V',
-      status: 'Low Stock',
-      stock: 12,
-      description: 'Long-acting insulin for diabetes management',
-      lastUpdated: '2024-01-13'
-    }
-  ]);
+  const { data: products, isLoading, error, refetch } = useProducts();
+
+  // Fetch products on component mount
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const getVenBadgeColor = (classification: string) => {
     switch (classification) {
@@ -73,23 +36,40 @@ const ProductsDataTable = () => {
     }
   };
 
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'Active': return 'bg-green-100 text-green-800 border-green-200';
-      case 'Low Stock': return 'bg-red-100 text-red-800 border-red-200';
-      case 'Out of Stock': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   const handleProductCreated = (newProduct: any) => {
     console.log('New product created:', newProduct);
-    setProducts(prev => [...prev, {
-      ...newProduct,
-      stock: 0,
-      status: 'Active'
-    }]);
+    // Refresh the products list
+    refetch();
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">Loading products...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <Package className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <p className="text-red-500">Error loading products: {error}</p>
+            <Button onClick={refetch} className="mt-2">
+              Try Again
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -117,67 +97,55 @@ const ProductsDataTable = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {products.map((product) => (
+          {products.map((product: any) => (
             <div key={product.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-lg">{product.name}</h3>
+                    <h3 className="font-semibold text-lg">{product.product_name}</h3>
                     <Badge variant="outline" className="text-xs">
-                      {product.code}
+                      {product.product_code}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{product.category}</p>
-                  {product.description && (
-                    <p className="text-sm text-gray-500 line-clamp-2">{product.description}</p>
-                  )}
+                  <p className="text-sm text-gray-600 mb-2">{product.unit}</p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <Badge 
-                    className={`${getVenBadgeColor(product.venClassification)} border`}
-                    title={getVenDescription(product.venClassification)}
+                    className={`${getVenBadgeColor(product.ven_classification)} border`}
+                    title={getVenDescription(product.ven_classification)}
                   >
-                    {product.venClassification}
-                  </Badge>
-                  <Badge className={`${getStatusBadgeColor(product.status)} border`}>
-                    {product.status}
+                    {product.ven_classification}
                   </Badge>
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500 block">Unit:</span>
                   <span className="font-medium">{product.unit}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">Package Size:</span>
-                  <span className="font-medium">{product.packageSize} {product.unit.toLowerCase()}</span>
-                </div>
-                <div>
                   <span className="text-gray-500 block">Unit Price:</span>
                   <span className="font-medium flex items-center">
                     <DollarSign className="h-3 w-3" />
-                    {product.unitPrice.toFixed(2)}
+                    {Number(product.unit_price).toFixed(2)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">Current Stock:</span>
-                  <span className={`font-medium ${product.stock < 50 ? 'text-red-600' : 'text-green-600'}`}>
-                    {product.stock.toLocaleString()} units
-                  </span>
+                  <span className="text-gray-500 block">Frequency:</span>
+                  <span className="font-medium">{product.frequency}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">Last Updated:</span>
-                  <span className="font-medium">{new Date(product.lastUpdated).toLocaleDateString()}</span>
+                  <span className="text-gray-500 block">Created:</span>
+                  <span className="font-medium">{new Date(product.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
 
               <div className="mt-3 pt-3 border-t">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-500">
-                    Package Value: <span className="font-medium text-gray-700">
-                      ${(product.unitPrice * product.packageSize).toFixed(2)}
+                    Source: <span className="font-medium text-gray-700">
+                      {product.procurement_source}
                     </span>
                   </div>
                   <div className="flex gap-2">
