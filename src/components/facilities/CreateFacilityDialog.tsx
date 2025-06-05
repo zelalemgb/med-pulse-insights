@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CreateFacilityRequest, HealthFacility } from '@/types/healthFacilities';
+import { facilityService } from '@/services/facilities/facilityService';
 
 interface CreateFacilityDialogProps {
   open: boolean;
@@ -35,29 +36,7 @@ export const CreateFacilityDialog = ({ open, onOpenChange, onSuccess }: CreateFa
       setIsSubmitting(true);
       console.log('Creating facility with data:', data);
 
-      // Create a mock facility for now - this would integrate with Supabase later
-      const newFacility: HealthFacility = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: data.name,
-        code: data.code || `FAC-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-        facility_type: data.facility_type,
-        level: data.level,
-        region: data.region,
-        zone: data.zone,
-        wereda: data.wereda,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        catchment_area: data.catchment_area,
-        capacity: data.capacity,
-        staff_count: data.staff_count,
-        services_offered: data.services_offered,
-        operational_status: data.operational_status || 'active',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const newFacility = await facilityService.createFacility(data);
       
       console.log('Facility created successfully:', newFacility);
       reset();
@@ -72,7 +51,7 @@ export const CreateFacilityDialog = ({ open, onOpenChange, onSuccess }: CreateFa
       console.error('Error creating facility:', error);
       toast({
         title: "Error",
-        description: "Failed to create facility. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create facility. Please try again.",
         variant: "destructive",
       });
     } finally {
