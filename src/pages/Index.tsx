@@ -19,7 +19,7 @@ const Index = () => {
     );
   }
 
-  // For authenticated users, show the map with the main navigation and include footer
+  // For authenticated users, show the map with the main navigation and hide the top navigation
   if (user) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -32,13 +32,8 @@ const Index = () => {
     );
   }
 
-  // For non-authenticated users, show the standalone interactive landing page with footer
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <InteractiveLandingPage />
-      <Footer />
-    </div>
-  );
+  // For non-authenticated users, show the standalone interactive landing page with top navigation
+  return <InteractiveLandingPage />;
 };
 
 export default Index;
