@@ -2,31 +2,21 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import FacilityOfficerDashboard from './FacilityOfficerDashboard';
-import FacilityManagerDashboard from './FacilityManagerDashboard';
+import WorkflowDashboard from './WorkflowDashboard';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import SystemOverview from './SystemOverview';
-import SupplyChainDashboard from './SupplyChainDashboard';
-import WorkflowGuide from './WorkflowGuide';
-import { BarChart3, Settings, TrendingUp, Package, Activity } from 'lucide-react';
+import { BarChart3, Activity, Workflow } from 'lucide-react';
 
 const RoleBasedDashboard = () => {
   const { profile } = useAuth();
   
   return (
     <div className="space-y-6">
-      {/* Workflow Guide - prominently displayed */}
-      <WorkflowGuide />
-      
-      <Tabs defaultValue="supply-chain" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
-          <TabsTrigger value="supply-chain" className="flex items-center">
-            <Package className="h-4 w-4 mr-2" />
-            Supply Chain
-          </TabsTrigger>
-          <TabsTrigger value="management" className="flex items-center">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Management
+      <Tabs defaultValue="workflow" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="workflow" className="flex items-center">
+            <Workflow className="h-4 w-4 mr-2" />
+            My Workflow
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center">
             <BarChart3 className="h-4 w-4 mr-2" />
@@ -38,12 +28,8 @@ const RoleBasedDashboard = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="supply-chain">
-          <SupplyChainDashboard />
-        </TabsContent>
-
-        <TabsContent value="management">
-          <FacilityManagerDashboard />
+        <TabsContent value="workflow">
+          <WorkflowDashboard />
         </TabsContent>
 
         <TabsContent value="analytics">
