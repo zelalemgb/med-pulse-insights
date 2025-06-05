@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Building2, Package, MapPin, Users, TrendingUp, Upload, FileText } from 'lucide-react';
+import { Plus, Building2, Package, MapPin, Users, TrendingUp, Upload, FileText, FileCheck } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,11 +12,13 @@ import DataSummaryCards from '@/components/data-management/DataSummaryCards';
 import FacilitiesDataTable from '@/components/data-management/FacilitiesDataTable';
 import ProductsDataTable from '@/components/data-management/ProductsDataTable';
 import ImportedDataTable from '@/components/data-management/ImportedDataTable';
+import IntegrationTestPanel from '@/components/testing/IntegrationTestPanel';
 
 const DataManagement = () => {
   const { canAccess, userRole } = usePermissions();
   const { profile } = useAuth();
   const [showCreateProductDialog, setShowCreateProductDialog] = useState(false);
+  const [showTestPanel, setShowTestPanel] = useState(false);
 
   const breadcrumbItems = [
     { label: 'Home', path: '/' },
@@ -61,6 +62,11 @@ const DataManagement = () => {
     // Add products tab only for national users
     if (userRole === 'national') {
       baseTabs.splice(-1, 0, { value: 'products', label: 'Products', icon: Package });
+    }
+
+    // Add test panel for development
+    if (userRole === 'national') {
+      baseTabs.push({ value: 'testing', label: 'Testing', icon: FileCheck });
     }
 
     return baseTabs;
@@ -134,7 +140,7 @@ const DataManagement = () => {
         <div className="mt-8">
           <Tabs defaultValue={defaultTab} className="space-y-6">
             <div className="flex justify-between items-center">
-              <TabsList className={`grid w-full max-w-${availableTabs.length === 2 ? 'sm' : availableTabs.length === 3 ? 'md' : 'lg'} grid-cols-${availableTabs.length}`}>
+              <TabsList className={`grid w-full max-w-${availableTabs.length === 2 ? 'sm' : availableTabs.length === 3 ? 'md' : availableTabs.length === 4 ? 'lg' : 'xl'} grid-cols-${availableTabs.length}`}>
                 {availableTabs.map((tab) => {
                   const Icon = tab.icon;
                   return (
@@ -183,7 +189,7 @@ const DataManagement = () => {
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
                       {userRole === 'national' ? 'National Coverage' : userRole === 'regional' ? 'Regional Coverage' : 'Data Completeness'}
-                    </CardTitle>
+                    CardTitle>
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -294,6 +300,12 @@ const DataManagement = () => {
             <TabsContent value="imports">
               <ImportedDataTable />
             </TabsContent>
+
+            {userRole === 'national' && (
+              <TabsContent value="testing">
+                <IntegrationTestPanel />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
 

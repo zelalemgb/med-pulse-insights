@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,7 @@ interface ProductFormData {
   code?: string;
   category: string;
   unit: string;
+  packageSize: number;
   unitPrice: number;
   venClassification: 'V' | 'E' | 'N';
   description?: string;
@@ -35,6 +36,7 @@ export const CreateProductDialog = ({ open, onOpenChange, onSuccess }: CreatePro
   const onSubmit = async (data: ProductFormData) => {
     try {
       setIsSubmitting(true);
+      console.log('Creating product with data:', data);
       
       // Create a mock product for now - this would integrate with Supabase later
       const newProduct = {
@@ -43,8 +45,10 @@ export const CreateProductDialog = ({ open, onOpenChange, onSuccess }: CreatePro
         code: data.code || `PRD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
         category: data.category,
         unit: data.unit,
+        packageSize: data.packageSize,
         unitPrice: data.unitPrice,
         venClassification: data.venClassification,
+        description: data.description,
         status: 'active' as const,
         createdAt: new Date().toISOString(),
       };
@@ -52,6 +56,7 @@ export const CreateProductDialog = ({ open, onOpenChange, onSuccess }: CreatePro
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      console.log('Product created successfully:', newProduct);
       reset();
       onSuccess(newProduct);
       onOpenChange(false);
@@ -77,6 +82,9 @@ export const CreateProductDialog = ({ open, onOpenChange, onSuccess }: CreatePro
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Pharmaceutical Product</DialogTitle>
+          <DialogDescription>
+            Add a new pharmaceutical product to the system catalog
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -116,14 +124,43 @@ export const CreateProductDialog = ({ open, onOpenChange, onSuccess }: CreatePro
 
             <div>
               <Label htmlFor="unit">Unit *</Label>
-              <Input
-                id="unit"
-                {...register('unit', { required: 'Unit is required' })}
-                placeholder="e.g., Tablets, Capsules, ml"
-              />
+              <Select onValueChange={(value) => setValue('unit', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select unit type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tablets">Tablets</SelectItem>
+                  <SelectItem value="capsules">Capsules</SelectItem>
+                  <SelectItem value="vials">Vials</SelectItem>
+                  <SelectItem value="ampoules">Ampoules</SelectItem>
+                  <SelectItem value="bottles">Bottles</SelectItem>
+                  <SelectItem value="ml">Milliliters (ml)</SelectItem>
+                  <SelectItem value="mg">Milligrams (mg)</SelectItem>
+                  <SelectItem value="sachets">Sachets</SelectItem>
+                  <SelectItem value="strips">Strips</SelectItem>
+                  <SelectItem value="boxes">Boxes</SelectItem>
+                </SelectContent>
+              </Select>
               {errors.unit && (
-                <p className="text-sm text-red-600 mt-1">{errors.unit.message}</p>
+                <p className="text-sm text-red-600 mt-1">Unit is required</p>
               )}
+            </div>
+
+            <div>
+              <Label htmlFor="packageSize">Package Size *</Label>
+              <Input
+                id="packageSize"
+                type="number"
+                {...register('packageSize', { 
+                  required: 'Package size is required',
+                  min: { value: 1, message: 'Package size must be at least 1' }
+                })}
+                placeholder="e.g., 10, 20, 100"
+              />
+              {errors.packageSize && (
+                <p className="text-sm text-red-600 mt-1">{errors.packageSize.message}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">Number of units per package</p>
             </div>
 
             <div>
@@ -143,16 +180,16 @@ export const CreateProductDialog = ({ open, onOpenChange, onSuccess }: CreatePro
               )}
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <Label htmlFor="venClassification">VEN Classification *</Label>
               <Select onValueChange={(value) => setValue('venClassification', value as 'V' | 'E' | 'N')}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select VEN classification" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="V">V - Vital</SelectItem>
-                  <SelectItem value="E">E - Essential</SelectItem>
-                  <SelectItem value="N">N - Non-essential</SelectItem>
+                  <SelectItem value="V">V - Vital (Life-saving medicines)</SelectItem>
+                  <SelectItem value="E">E - Essential (Important for healthcare)</SelectItem>
+                  <SelectItem value="N">N - Non-essential (Used for minor conditions)</SelectItem>
                 </SelectContent>
               </Select>
               {errors.venClassification && (
@@ -166,7 +203,7 @@ export const CreateProductDialog = ({ open, onOpenChange, onSuccess }: CreatePro
             <Textarea
               id="description"
               {...register('description')}
-              placeholder="Enter product description (optional)"
+              placeholder="Enter product description, indications, contraindications, etc."
               rows={3}
             />
           </div>

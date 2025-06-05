@@ -1,178 +1,94 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { healthFacilitiesService } from '@/services/healthFacilitiesService';
-import { CreateFacilityRequest } from '@/types/healthFacilities';
+
+import { useState } from 'react';
+import { CreateFacilityRequest, HealthFacility } from '@/types/healthFacilities';
 import { useToast } from '@/hooks/use-toast';
 
-export const useHealthFacilities = () => {
-  return useQuery({
-    queryKey: ['health-facilities'],
-    queryFn: () => healthFacilitiesService.getUserFacilities(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
-
-export const useHealthFacility = (facilityId: string) => {
-  return useQuery({
-    queryKey: ['health-facility', facilityId],
-    queryFn: () => healthFacilitiesService.getFacilityById(facilityId),
-    enabled: !!facilityId,
-  });
-};
-
 export const useCreateFacility = () => {
-  const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: (facilityData: CreateFacilityRequest) =>
-      healthFacilitiesService.createFacility(facilityData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['health-facilities'] });
-      queryClient.invalidateQueries({ queryKey: ['user-facility-associations'] });
+  const mutateAsync = async (data: CreateFacilityRequest): Promise<HealthFacility> => {
+    setIsLoading(true);
+    try {
+      console.log('Creating facility with data:', data);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const newFacility: HealthFacility = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: data.name,
+        code: data.code || `FAC-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+        facility_type: data.facility_type,
+        level: data.level,
+        region: data.region,
+        zone: data.zone,
+        wereda: data.wereda,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        catchment_area: data.catchment_area,
+        capacity: data.capacity,
+        staff_count: data.staff_count,
+        services_offered: data.services_offered,
+        operational_status: data.operational_status || 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log('Facility created successfully:', newFacility);
+      
       toast({
-        title: 'Success',
-        description: 'Health facility created successfully',
+        title: "Success",
+        description: `Facility "${data.name}" created successfully`,
       });
-    },
-    onError: (error: Error) => {
+
+      return newFacility;
+    } catch (error) {
+      console.error('Error creating facility:', error);
       toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to create facility. Please try again.",
+        variant: "destructive",
       });
-    },
-  });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    mutateAsync,
+    isLoading
+  };
 };
 
-export const useUpdateFacility = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useFacilities = () => {
+  // Mock facilities data for testing
+  const facilities: HealthFacility[] = [
+    {
+      id: '1',
+      name: 'Black Lion Hospital',
+      code: 'BLH-001',
+      facility_type: 'specialized_hospital',
+      level: 'tertiary',
+      region: 'addis_ababa',
+      zone: 'addis_ababa',
+      wereda: 'gulele',
+      latitude: 9.0307,
+      longitude: 38.7406,
+      capacity: 800,
+      staff_count: 1200,
+      catchment_area: 500000,
+      services_offered: ['Emergency Care', 'Surgery', 'ICU', 'Laboratory', 'Radiology'],
+      operational_status: 'active',
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+    }
+  ];
 
-  return useMutation({
-    mutationFn: ({ facilityId, updates }: { facilityId: string; updates: Partial<CreateFacilityRequest> }) =>
-      healthFacilitiesService.updateFacility(facilityId, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['health-facilities'] });
-      queryClient.invalidateQueries({ queryKey: ['user-facility-associations'] });
-      toast({
-        title: 'Success',
-        description: 'Facility updated successfully',
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-};
-
-export const useDeleteFacility = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (facilityId: string) =>
-      healthFacilitiesService.deleteFacility(facilityId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['health-facilities'] });
-      queryClient.invalidateQueries({ queryKey: ['user-facility-associations'] });
-      toast({
-        title: 'Success',
-        description: 'Facility deleted successfully',
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-};
-
-export const useUserAssociations = () => {
-  return useQuery({
-    queryKey: ['user-facility-associations'],
-    queryFn: () => healthFacilitiesService.getUserAssociations(),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-};
-
-export const useRequestFacilityAssociation = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ facilityId, notes }: { facilityId: string; notes?: string }) =>
-      healthFacilitiesService.requestFacilityAssociation(facilityId, notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-facility-associations'] });
-      queryClient.invalidateQueries({ queryKey: ['pending-facility-associations'] });
-      toast({
-        title: 'Success',
-        description: 'Facility association request submitted successfully',
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-};
-
-export const usePendingAssociations = () => {
-  return useQuery({
-    queryKey: ['pending-facility-associations'],
-    queryFn: () => healthFacilitiesService.getPendingAssociations(),
-    staleTime: 1 * 60 * 1000, // 1 minute (shorter for pending items)
-  });
-};
-
-export const useUpdateAssociationStatus = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ 
-      associationId, 
-      status, 
-      notes 
-    }: { 
-      associationId: string; 
-      status: 'approved' | 'rejected'; 
-      notes?: string; 
-    }) => healthFacilitiesService.updateAssociationStatus(associationId, status, notes),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['pending-facility-associations'] });
-      queryClient.invalidateQueries({ queryKey: ['user-facility-associations'] });
-      queryClient.invalidateQueries({ queryKey: ['health-facilities'] });
-      toast({
-        title: 'Success',
-        description: `Association ${variables.status} successfully`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-};
-
-export const useFacilityAccess = (facilityId: string, requiredType?: string) => {
-  return useQuery({
-    queryKey: ['facility-access', facilityId, requiredType],
-    queryFn: () => healthFacilitiesService.checkFacilityAccess(facilityId, requiredType),
-    enabled: !!facilityId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  return {
+    data: facilities,
+    isLoading: false,
+    error: null
+  };
 };
