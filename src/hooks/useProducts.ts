@@ -30,18 +30,18 @@ export const useCreateProduct = () => {
       }
 
       // Insert into the products table
-      const { data: product, error } = await supabase
-        .from('products')
-        .insert({
-          product_name: data.name,
-          product_code: data.code || `PRD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-          unit: data.unit,
-          unit_price: data.unitPrice,
-          ven_classification: data.venClassification,
+        const { data: product, error } = await supabase
+          .from('products')
+          .insert({
+            product_name: data.name,
+            product_code: data.code || `PRD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+            unit: data.unit,
+            package_size: data.packageSize,
+            unit_price: data.unitPrice,
+            ven_classification: data.venClassification,
           frequency: 'monthly', // Default frequency
           procurement_source: 'local', // Default procurement source
           created_by: user.id,
-          // Note: packageSize will need to be added to the products table schema
         })
         .select()
         .single();
