@@ -89,6 +89,79 @@ export const useFacilities = () => {
   return {
     data: facilities,
     isLoading: false,
+    error: null,
+    refetch: () => Promise.resolve()
+  };
+};
+
+// Export useHealthFacilities as an alias for useFacilities for backward compatibility
+export const useHealthFacilities = useFacilities;
+
+// Mock hook for updating facilities
+export const useUpdateFacility = () => {
+  const { toast } = useToast();
+  
+  return {
+    mutateAsync: async (data: any) => {
+      console.log('Updating facility:', data);
+      toast({
+        title: "Success",
+        description: "Facility updated successfully",
+      });
+      return data;
+    },
+    isPending: false
+  };
+};
+
+// Mock hook for facility association requests
+export const useRequestFacilityAssociation = () => {
+  const { toast } = useToast();
+  
+  return {
+    mutateAsync: async (data: { facilityId: string; notes?: string }) => {
+      console.log('Requesting facility association:', data);
+      toast({
+        title: "Request Sent",
+        description: "Your facility access request has been submitted",
+      });
+      return data;
+    },
+    isPending: false
+  };
+};
+
+// Mock hook for pending associations
+export const usePendingAssociations = () => {
+  return {
+    data: [],
+    isLoading: false,
+    error: null
+  };
+};
+
+// Mock hook for updating association status
+export const useUpdateAssociationStatus = () => {
+  const { toast } = useToast();
+  
+  return {
+    mutateAsync: async (data: { associationId: string; status: string; notes?: string }) => {
+      console.log('Updating association status:', data);
+      toast({
+        title: "Status Updated",
+        description: `Association ${data.status} successfully`,
+      });
+      return data;
+    },
+    isPending: false
+  };
+};
+
+// Mock hook for user associations
+export const useUserAssociations = () => {
+  return {
+    data: [],
+    isLoading: false,
     error: null
   };
 };
