@@ -15,6 +15,7 @@ export const useUserManagement = () => {
       try {
         const users = await UserManagementService.getAllUsers();
         console.log('✅ All users fetched successfully:', users.length, 'users');
+        console.log('📋 Users preview:', users.slice(0, 3).map(u => ({ id: u.id.slice(0, 8), email: u.email, role: u.role })));
         return users;
       } catch (error) {
         console.error('❌ Error in getAllUsers query:', error);
@@ -32,17 +33,19 @@ export const useUserManagement = () => {
         }
         
         toast({
-          title: 'Error',
+          title: 'Error Loading Users',
           description: errorMessage,
           variant: 'destructive',
         });
-        throw error;
+        
+        // Don't throw error to prevent UI crash - return empty array
+        return [];
       }
     },
     refetchOnWindowFocus: false,
     staleTime: 30000, // 30 seconds
     retry: (failureCount, error) => {
-      console.log('Retry attempt:', failureCount, 'Error:', error);
+      console.log('🔄 Retry attempt:', failureCount, 'Error:', error);
       // Only retry on network errors, not permission errors
       if (error instanceof Error && (
         error.message.includes('permission') || 
@@ -62,15 +65,17 @@ export const useUserManagement = () => {
       try {
         const users = await UserManagementService.getPendingUsers();
         console.log('✅ Pending users fetched successfully:', users.length, 'users');
+        console.log('📋 Pending users preview:', users.slice(0, 3).map(u => ({ id: u.id.slice(0, 8), email: u.email, role: u.role })));
         return users;
       } catch (error) {
         console.error('❌ Error in getPendingUsers query:', error);
         toast({
-          title: 'Error',
+          title: 'Error Loading Pending Users',
           description: 'Failed to fetch pending users. Please check your permissions.',
           variant: 'destructive',
         });
-        throw error;
+        // Don't throw error to prevent UI crash - return empty array
+        return [];
       }
     },
     refetchOnWindowFocus: false,
@@ -89,11 +94,12 @@ export const useUserManagement = () => {
       } catch (error) {
         console.error('❌ Error in getUserManagementLog query:', error);
         toast({
-          title: 'Error',
+          title: 'Error Loading Activity Log',
           description: 'Failed to fetch activity log. Please check your permissions.',
           variant: 'destructive',
         });
-        throw error;
+        // Don't throw error to prevent UI crash - return empty array
+        return [];
       }
     },
     refetchOnWindowFocus: false,
@@ -103,11 +109,11 @@ export const useUserManagement = () => {
 
   const approveUserMutation = useMutation({
     mutationFn: async ({ userId, newRole }: { userId: string; newRole?: UserRole }) => {
-      console.log('Approving user mutation:', userId, newRole);
+      console.log('🔧 Approving user mutation:', userId, newRole);
       return await UserManagementService.approveUser(userId, newRole);
     },
     onSuccess: (_, variables) => {
-      console.log('User approved successfully:', variables.userId);
+      console.log('✅ User approved successfully:', variables.userId);
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['user-management-log'] });
       toast({
@@ -116,10 +122,10 @@ export const useUserManagement = () => {
       });
     },
     onError: (error: Error) => {
-      console.error('Error approving user:', error);
+      console.error('❌ Error approving user:', error);
       toast({
-        title: 'Error',
-        description: error.message,
+        title: 'Error Approving User',
+        description: error.message || 'Failed to approve user',
         variant: 'destructive',
       });
     },
@@ -127,11 +133,11 @@ export const useUserManagement = () => {
 
   const rejectUserMutation = useMutation({
     mutationFn: async ({ userId, reason }: { userId: string; reason?: string }) => {
-      console.log('Rejecting user mutation:', userId, reason);
+      console.log('🔧 Rejecting user mutation:', userId, reason);
       return await UserManagementService.rejectUser(userId, reason);
     },
     onSuccess: (_, variables) => {
-      console.log('User rejected successfully:', variables.userId);
+      console.log('✅ User rejected successfully:', variables.userId);
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['user-management-log'] });
       toast({
@@ -140,10 +146,10 @@ export const useUserManagement = () => {
       });
     },
     onError: (error: Error) => {
-      console.error('Error rejecting user:', error);
+      console.error('❌ Error rejecting user:', error);
       toast({
-        title: 'Error',
-        description: error.message,
+        title: 'Error Rejecting User',
+        description: error.message || 'Failed to reject user',
         variant: 'destructive',
       });
     },
@@ -151,23 +157,23 @@ export const useUserManagement = () => {
 
   const changeRoleMutation = useMutation({
     mutationFn: async ({ userId, newRole, reason }: { userId: string; newRole: UserRole; reason?: string }) => {
-      console.log('Changing user role mutation:', userId, newRole, reason);
+      console.log('🔧 Changing user role mutation:', userId, newRole, reason);
       return await UserManagementService.changeUserRole(userId, newRole, reason);
     },
     onSuccess: (_, variables) => {
-      console.log('User role changed successfully:', variables.userId, variables.newRole);
+      console.log('✅ User role changed successfully:', variables.userId, variables.newRole);
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['user-management-log'] });
       toast({
         title: 'Success',
-        description: 'User role changed successfully',
+        description: `User role changed to ${variables.newRole}`,
       });
     },
     onError: (error: Error) => {
-      console.error('Error changing user role:', error);
+      console.error('❌ Error changing user role:', error);
       toast({
-        title: 'Error',
-        description: error.message,
+        title: 'Error Changing Role',
+        description: error.message || 'Failed to change user role',
         variant: 'destructive',
       });
     },

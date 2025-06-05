@@ -20,7 +20,7 @@ export class UserQueryService {
       throw new Error('Failed to get user profile');
     }
 
-    // Build query based on user's role hierarchy
+    // Build query based on user's role hierarchy - more permissive approach
     let query = supabase
       .from('profiles')
       .select(`
@@ -39,32 +39,31 @@ export class UserQueryService {
         login_count
       `);
 
-    // Apply hierarchical filtering based on current user's role
+    // Apply role-based filtering but be more inclusive
     switch (currentProfile.role) {
       case 'national':
-        // National users can manage regional users
-        query = query.eq('role', 'regional');
+        // National users can see all users except other national users
+        query = query.neq('role', 'national');
         break;
       
       case 'regional':
-        // Regional users can manage zonal users in their region
-        // For now, we'll implement basic filtering - in a real system, 
-        // you'd have proper region-zone mapping
-        query = query.eq('role', 'zonal');
+        // Regional users can see zonal, facility, and functional role users
+        query = query.in('role', ['zonal', 'facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
         break;
       
       case 'zonal':
-        // Zonal users can manage facility users in their zone
-        // They can manage facility_officer and facility_manager roles
-        query = query.in('role', ['facility_officer', 'facility_manager']);
+        // Zonal users can see facility and functional role users
+        query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
         break;
       
       default:
-        // Other roles cannot manage users
-        throw new Error('Insufficient permissions to manage users');
+        // Other roles have limited access - only see users they can directly manage
+        query = query.in('role', ['facility_officer', 'viewer']);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(100); // Add reasonable limit
 
     if (error) {
       console.error('Database error in getAllProfiles:', error);
@@ -92,7 +91,7 @@ export class UserQueryService {
       throw new Error('Failed to get user profile');
     }
 
-    // Build query for pending users based on hierarchy
+    // Build query for pending users with more inclusive approach
     let query = supabase
       .from('profiles')
       .select(`
@@ -112,26 +111,26 @@ export class UserQueryService {
       `)
       .eq('approval_status', 'pending');
 
-    // Apply hierarchical filtering for pending approvals
+    // Apply role-based filtering for pending approvals
     switch (currentProfile.role) {
       case 'national':
-        // National can approve regional registrations
-        query = query.eq('role', 'regional');
+        // National can approve most user registrations
+        query = query.in('role', ['regional', 'zonal', 'facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager']);
         break;
       
       case 'regional':
-        // Regional can approve zonal registrations
-        query = query.eq('role', 'zonal');
+        // Regional can approve zonal and below
+        query = query.in('role', ['zonal', 'facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager']);
         break;
       
       case 'zonal':
-        // Zonal can approve facility user registrations
-        query = query.in('role', ['facility_officer', 'facility_manager']);
+        // Zonal can approve facility and functional roles
+        query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager']);
         break;
       
       default:
-        // Other roles cannot approve users
-        throw new Error('Insufficient permissions to approve users');
+        // Other roles have limited approval rights
+        query = query.in('role', ['facility_officer']);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
