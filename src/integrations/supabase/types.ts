@@ -411,11 +411,10 @@ export type Database = {
           id: string
           procurement_source: string
           product_code: string | null
-        product_name: string
-        seasonality: Json | null
-        unit: string
-        package_size: number | null
-        unit_price: number
+          product_name: string
+          seasonality: Json | null
+          unit: string
+          unit_price: number
           updated_at: string | null
           ven_classification: string
           wastage_rate: number | null
@@ -435,9 +434,8 @@ export type Database = {
           product_code?: string | null
           product_name: string
           seasonality?: Json | null
-        unit: string
-        package_size?: number | null
-        unit_price: number
+          unit: string
+          unit_price: number
           updated_at?: string | null
           ven_classification: string
           wastage_rate?: number | null
@@ -457,9 +455,8 @@ export type Database = {
           product_code?: string | null
           product_name?: string
           seasonality?: Json | null
-        unit?: string
-        package_size?: number | null
-        unit_price?: number
+          unit?: string
+          unit_price?: number
           updated_at?: string | null
           ven_classification?: string
           wastage_rate?: number | null
