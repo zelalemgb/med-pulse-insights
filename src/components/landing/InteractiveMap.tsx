@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -142,39 +143,39 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
                       facility.status === 'partial' ? 'Partial Stock' : 'Stock Out';
 
     return `
-      <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 280px; max-width: 320px;">
-        <div style="border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 14px;">
-          <h3 style="margin: 0; font-size: 17px; font-weight: 600; color: #1f2937; line-height: 1.3;">${facility.name}</h3>
-          <p style="margin: 6px 0 0 0; font-size: 13px; color: #6b7280; text-transform: capitalize;">${facility.type.replace('_', ' ')}</p>
+      <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 250px; max-width: 300px;">
+        <div style="border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 12px;">
+          <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1f2937;">${facility.name}</h3>
+          <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280; text-transform: capitalize;">${facility.type.replace('_', ' ')}</p>
         </div>
         
-        <div style="margin-bottom: 14px;">
-          <div style="display: flex; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 13px; font-weight: 500; color: #374151; margin-right: 10px;">Status:</span>
-            <span style="background-color: ${statusColor}; color: white; padding: 3px 10px; border-radius: 14px; font-size: 12px; font-weight: 500;">${statusText}</span>
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 12px; font-weight: 500; color: #374151; margin-right: 8px;">Status:</span>
+            <span style="background-color: ${statusColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">${statusText}</span>
           </div>
           
-          <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px; line-height: 1.4;">
+          <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">
             <strong>Location:</strong> ${facility.wereda}, ${facility.zone}
           </div>
           
-          <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px; line-height: 1.4;">
+          <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">
             <strong>Stock Availability:</strong> ${facility.stockAvailability}%
           </div>
           
-          <div style="font-size: 13px; color: #6b7280; margin-bottom: 6px; line-height: 1.4;">
+          <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">
             <strong>Tracer Items:</strong> ${facility.tracerItems.available}/${facility.tracerItems.total} available
           </div>
           
-          <div style="font-size: 13px; color: #6b7280; line-height: 1.4;">
+          <div style="font-size: 12px; color: #6b7280;">
             <strong>Last Reported:</strong> ${new Date(facility.lastReported).toLocaleDateString()}
           </div>
         </div>
         
-        <div style="display: flex; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #e5e7eb;">
+        <div style="display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
           <button 
             onclick="window.selectFacility('${facility.id}')"
-            style="flex: 1; background-color: #3b82f6; color: white; border: none; padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 0.2s;"
+            style="flex: 1; background-color: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: background-color 0.2s;"
             onmouseover="this.style.backgroundColor='#2563eb'"
             onmouseout="this.style.backgroundColor='#3b82f6'"
           >
@@ -182,7 +183,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
           </button>
           <button 
             onclick="window.hidePopup()"
-            style="background-color: #6b7280; color: white; border: none; padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 0.2s;"
+            style="background-color: #6b7280; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: background-color 0.2s;"
             onmouseover="this.style.backgroundColor='#4b5563'"
             onmouseout="this.style.backgroundColor='#6b7280'"
           >
@@ -224,11 +225,11 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
 
     console.log('Initializing map at location:', userLocation);
 
-    // Initialize map with zoom level 14 for better 1km radius view
+    // Initialize map with zoom level 16 for ~1km radius view
     map.current = L.map(mapContainer.current, {
       zoomControl: false,
       attributionControl: false,
-    }).setView(userLocation, 14);
+    }).setView(userLocation, 16);
 
     // Add tile layer
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -269,43 +270,10 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
       map.current?.closePopup();
     };
 
-    // Add CSS styles to head for proper popup styling
-    const styleElement = document.createElement('style');
-    styleElement.textContent = `
-      .leaflet-popup-content-wrapper {
-        border-radius: 10px !important;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15) !important;
-        border: 1px solid #e5e7eb !important;
-        padding: 0 !important;
-        min-width: 280px !important;
-      }
-      .leaflet-popup-content {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: auto !important;
-        max-width: none !important;
-      }
-      .leaflet-popup-tip {
-        border-top-color: #e5e7eb !important;
-        width: 20px !important;
-        height: 20px !important;
-      }
-      .leaflet-popup {
-        margin-bottom: 20px !important;
-      }
-      .leaflet-popup-close-button {
-        display: none !important;
-      }
-    `;
-    document.head.appendChild(styleElement);
-
     return () => {
-      // Clean up global functions and styles
+      // Clean up global functions
       delete (window as any).selectFacility;
       delete (window as any).hidePopup;
-      if (document.head.contains(styleElement)) {
-        document.head.removeChild(styleElement);
-      }
       
       if (map.current) {
         map.current.remove();
@@ -337,20 +305,17 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
         icon: getFacilityIcon(facility)
       });
 
-      // Bind popup with facility details
+      // Bind popup with facility details and open by default
       marker.bindPopup(createFacilityPopup(facility), {
-        maxWidth: 350,
-        minWidth: 280,
+        maxWidth: 300,
         closeButton: false,
         autoClose: false,
-        className: 'facility-popup',
-        offset: [0, -10]
+        className: 'facility-popup'
       });
 
-      // Keep the original click handler for backward compatibility
+      // Open popup by default when marker is clicked
       marker.on('click', () => {
-        // The popup will show automatically, but we can still trigger the callback
-        // onFacilitySelect(facility);
+        marker.openPopup();
       });
 
       markersGroup.current?.addLayer(marker);
@@ -383,6 +348,24 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
           </div>
         </button>
       </div>
+
+      {/* Custom styles for popup */}
+      <style>
+        {`
+          .facility-popup .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+          }
+          .facility-popup .leaflet-popup-content {
+            margin: 0;
+            padding: 0;
+          }
+          .facility-popup .leaflet-popup-tip {
+            border-top-color: #e5e7eb;
+          }
+        `}
+      </style>
     </div>
   );
 };
