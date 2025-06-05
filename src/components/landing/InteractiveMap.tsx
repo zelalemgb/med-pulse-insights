@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -304,7 +305,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
         icon: getFacilityIcon(facility)
       });
 
-      // Bind popup with facility details
+      // Bind popup with facility details and open by default
       marker.bindPopup(createFacilityPopup(facility), {
         maxWidth: 300,
         closeButton: false,
@@ -312,10 +313,9 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
         className: 'facility-popup'
       });
 
-      // Keep the original click handler for backward compatibility
+      // Open popup by default when marker is clicked
       marker.on('click', () => {
-        // The popup will show automatically, but we can still trigger the callback
-        // onFacilitySelect(facility);
+        marker.openPopup();
       });
 
       markersGroup.current?.addLayer(marker);
@@ -350,20 +350,22 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
       </div>
 
       {/* Custom styles for popup */}
-      <style jsx>{`
-        :global(.facility-popup .leaflet-popup-content-wrapper) {
-          border-radius: 8px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-          border: 1px solid #e5e7eb;
-        }
-        :global(.facility-popup .leaflet-popup-content) {
-          margin: 0;
-          padding: 0;
-        }
-        :global(.facility-popup .leaflet-popup-tip) {
-          border-top-color: #e5e7eb;
-        }
-      `}</style>
+      <style>
+        {`
+          .facility-popup .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+          }
+          .facility-popup .leaflet-popup-content {
+            margin: 0;
+            padding: 0;
+          }
+          .facility-popup .leaflet-popup-tip {
+            border-top-color: #e5e7eb;
+          }
+        `}
+      </style>
     </div>
   );
 };
