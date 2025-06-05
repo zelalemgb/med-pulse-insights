@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -224,11 +225,11 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
 
     console.log('Initializing map at location:', userLocation);
 
-    // Initialize map with zoom level 16 for ~1km radius view
+    // Initialize map with zoom level 15 for ~1km radius view (more accurate for 1km)
     map.current = L.map(mapContainer.current, {
       zoomControl: false,
       attributionControl: false,
-    }).setView(userLocation, 16);
+    }).setView(userLocation, 15);
 
     // Add tile layer
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -269,10 +270,29 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
       map.current?.closePopup();
     };
 
+    // Add CSS styles to head for proper popup styling
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+      .facility-popup .leaflet-popup-content-wrapper {
+        border-radius: 8px !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+        border: 1px solid #e5e7eb !important;
+      }
+      .facility-popup .leaflet-popup-content {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .facility-popup .leaflet-popup-tip {
+        border-top-color: #e5e7eb !important;
+      }
+    `;
+    document.head.appendChild(styleElement);
+
     return () => {
-      // Clean up global functions
+      // Clean up global functions and styles
       delete (window as any).selectFacility;
       delete (window as any).hidePopup;
+      document.head.removeChild(styleElement);
       
       if (map.current) {
         map.current.remove();
@@ -348,22 +368,6 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
           </div>
         </button>
       </div>
-
-      {/* Custom styles for popup */}
-      <style>{`
-        .facility-popup .leaflet-popup-content-wrapper {
-          border-radius: 8px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-          border: 1px solid #e5e7eb;
-        }
-        .facility-popup .leaflet-popup-content {
-          margin: 0;
-          padding: 0;
-        }
-        .facility-popup .leaflet-popup-tip {
-          border-top-color: #e5e7eb;
-        }
-      `}</style>
     </div>
   );
 };
