@@ -119,10 +119,14 @@ const ProductsDataTable = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500 block">Unit:</span>
                   <span className="font-medium">{product.unit}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Package Size:</span>
+                  <span className="font-medium">{product.package_size ?? 'N/A'}</span>
                 </div>
                 <div>
                   <span className="text-gray-500 block">Unit Price:</span>
