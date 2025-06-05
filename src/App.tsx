@@ -19,7 +19,6 @@ import Products from "./pages/Products";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import UserManagement from '@/pages/UserManagement';
-import Footer from '@/components/layout/Footer';
 
 const queryClient = new QueryClient();
 
@@ -41,7 +40,6 @@ function App() {
                       <main className="flex-1">
                         <Dashboard />
                       </main>
-                      <Footer />
                     </div>
                   } />
                   <Route path="/analytics" element={
@@ -50,7 +48,6 @@ function App() {
                       <main className="flex-1">
                         <Analytics />
                       </main>
-                      <Footer />
                     </div>
                   } />
                   <Route path="/import" element={
@@ -59,7 +56,6 @@ function App() {
                       <main className="flex-1">
                         <Import />
                       </main>
-                      <Footer />
                     </div>
                   } />
                   <Route path="/data-entry" element={
@@ -68,7 +64,6 @@ function App() {
                       <main className="flex-1">
                         <DataEntry />
                       </main>
-                      <Footer />
                     </div>
                   } />
                   <Route path="/data-management" element={
@@ -77,7 +72,6 @@ function App() {
                       <main className="flex-1">
                         <DataManagement />
                       </main>
-                      <Footer />
                     </div>
                   } />
                   <Route path="/auth" element={<Auth />} />
@@ -87,7 +81,6 @@ function App() {
                       <main className="flex-1">
                         <Facilities />
                       </main>
-                      <Footer />
                     </div>
                   } />
                   <Route path="/products" element={
@@ -96,7 +89,6 @@ function App() {
                       <main className="flex-1">
                         <Products />
                       </main>
-                      <Footer />
                     </div>
                   } />
                   <Route path="/profile" element={
@@ -105,7 +97,6 @@ function App() {
                       <main className="flex-1">
                         <Profile />
                       </main>
-                      <Footer />
                     </div>
                   } />
                   <Route path="/user-management" element={
@@ -114,7 +105,6 @@ function App() {
                       <main className="flex-1">
                         <UserManagement />
                       </main>
-                      <Footer />
                     </div>
                   } />
                   <Route path="*" element={<NotFound />} />
