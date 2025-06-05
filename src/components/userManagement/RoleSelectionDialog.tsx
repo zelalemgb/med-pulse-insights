@@ -59,6 +59,10 @@ export const RoleSelectionDialog: React.FC<RoleSelectionDialogProps> = ({
     onOpenChange(false);
   };
 
+  const handleRoleChange = (value: string) => {
+    setSelectedRole(value as UserRole | '');
+  };
+
   const selectedRoleInfo = assignableRoles.find(role => role.value === selectedRole);
 
   return (
@@ -77,7 +81,7 @@ export const RoleSelectionDialog: React.FC<RoleSelectionDialogProps> = ({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="role">Select Role</Label>
-            <Select value={selectedRole} onValueChange={setSelectedRole}>
+            <Select value={selectedRole} onValueChange={handleRoleChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Choose a role to assign" />
               </SelectTrigger>
