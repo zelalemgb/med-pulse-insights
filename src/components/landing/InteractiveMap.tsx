@@ -143,7 +143,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
                       facility.status === 'partial' ? 'Partial Stock' : 'Stock Out';
 
     return `
-      <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 250px; max-width: 300px;">
+      <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 250px; max-width: 300px; border-radius: 8px; overflow: hidden;">
         <div style="border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 12px;">
           <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1f2937;">${facility.name}</h3>
           <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280; text-transform: capitalize;">${facility.type.replace('_', ' ')}</p>
@@ -357,13 +357,19 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
           border-radius: 8px;
           box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
           border: 1px solid #e5e7eb;
+          padding: 0;
+          overflow: hidden;
         }
         .facility-popup .leaflet-popup-content {
           margin: 0;
-          padding: 0;
+          padding: 16px;
+          border-radius: 8px;
         }
         .facility-popup .leaflet-popup-tip {
           border-top-color: #e5e7eb;
+        }
+        .facility-popup .leaflet-popup-close-button {
+          display: none;
         }
         `}
       </style>
