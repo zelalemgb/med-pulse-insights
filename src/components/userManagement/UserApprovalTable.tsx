@@ -1,240 +1,173 @@
 
 import React, { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Check, X, Loader2, Clock } from 'lucide-react';
-import { UserManagementRecord } from '@/services/userManagement/userManagementService';
 import { useUserManagement } from '@/hooks/useUserManagement';
+import { useAssignableRoles } from '@/hooks/useAssignableRoles';
+import { RoleSelectionDialog } from './RoleSelectionDialog';
+import { UserManagementRecord } from '@/services/userManagement/types';
 import { UserRole } from '@/types/pharmaceutical';
+import { UserCheck, UserX, Calendar, Mail, Building } from 'lucide-react';
 import { getRoleDisplayName } from '@/utils/roleMapping';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface UserApprovalTableProps {
   users: UserManagementRecord[];
   isLoading: boolean;
 }
 
-export const UserApprovalTable: React.FC<UserApprovalTableProps> = ({ users, isLoading }) => {
+export const UserApprovalTable: React.FC<UserApprovalTableProps> = ({
+  users,
+  isLoading,
+}) => {
   const { approveUser, rejectUser, isApproving, isRejecting } = useUserManagement();
-  const { profile } = useAuth();
-  const [selectedRole, setSelectedRole] = useState<Record<string, UserRole>>({});
-  const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
-  const [openRejectDialog, setOpenRejectDialog] = useState<string | null>(null);
+  const assignableRoles = useAssignableRoles();
+  const [approvalDialog, setApprovalDialog] = useState<{
+    open: boolean;
+    userId: string;
+    userEmail: string;
+  }>({
+    open: false,
+    userId: '',
+    userEmail: '',
+  });
 
-  const handleApprove = (userId: string) => {
-    const role = selectedRole[userId] || getDefaultRoleForUserLevel();
-    console.log('Approving user:', userId, 'with role:', role);
-    approveUser({ userId, newRole: role });
+  const handleApprove = (userId: string, userEmail: string) => {
+    setApprovalDialog({
+      open: true,
+      userId,
+      userEmail,
+    });
+  };
+
+  const handleApprovalConfirm = (role: UserRole, reason?: string) => {
+    approveUser({ 
+      userId: approvalDialog.userId, 
+      newRole: role 
+    });
+    setApprovalDialog({ open: false, userId: '', userEmail: '' });
   };
 
   const handleReject = (userId: string) => {
-    const reason = rejectReason[userId];
-    console.log('Rejecting user:', userId, 'with reason:', reason);
-    rejectUser({ userId, reason });
-    setOpenRejectDialog(null);
-    setRejectReason(prev => ({ ...prev, [userId]: '' }));
+    rejectUser({ userId, reason: 'Application rejected' });
   };
-
-  // Get appropriate role options based on current user's role
-  const getAvailableRoles = (): UserRole[] => {
-    switch (profile?.role) {
-      case 'national':
-        return ['regional'];
-      case 'regional':
-        return ['zonal'];
-      case 'zonal':
-        return ['facility_officer', 'facility_manager'];
-      default:
-        return ['facility_officer'];
-    }
-  };
-
-  const getDefaultRoleForUserLevel = (): UserRole => {
-    switch (profile?.role) {
-      case 'national':
-        return 'regional';
-      case 'regional':
-        return 'zonal';
-      case 'zonal':
-        return 'facility_officer';
-      default:
-        return 'facility_officer';
-    }
-  };
-
-  const roleOptions = getAvailableRoles();
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-12 bg-white rounded-lg border">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-500" />
-          <p className="text-gray-600">Loading pending users...</p>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-20 bg-gray-200 rounded-lg"></div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (users.length === 0) {
     return (
-      <div className="text-center p-12 bg-white rounded-lg border">
-        <Clock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No pending approvals</h3>
-        <p className="text-gray-600">
-          All user registration requests in your jurisdiction have been processed.
-        </p>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center py-8">
+            <UserCheck className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No Pending Approvals
+            </h3>
+            <p className="text-gray-600">
+              All user registrations have been processed.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg border overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-gray-50">
-            <TableHead className="font-semibold">Name</TableHead>
-            <TableHead className="font-semibold">Email</TableHead>
-            <TableHead className="font-semibold">Registration Date</TableHead>
-            <TableHead className="font-semibold">Assign Role</TableHead>
-            <TableHead className="font-semibold">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((user) => (
-            <TableRow key={user.id} className="hover:bg-gray-50">
-              <TableCell className="font-medium">
-                {user.full_name || 'No name provided'}
-              </TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>
-                {new Date(user.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </TableCell>
-              <TableCell>
-                <Select
-                  value={selectedRole[user.id] || getDefaultRoleForUserLevel()}
-                  onValueChange={(value: UserRole) =>
-                    setSelectedRole(prev => ({ ...prev, [user.id]: value }))
-                  }
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roleOptions.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {getRoleDisplayName(role)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
+    <>
+      <div className="space-y-4">
+        {users.map((user) => (
+          <Card key={user.id} className="border-l-4 border-l-yellow-500">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">
+                        {user.full_name || 'No Name Provided'}
+                      </h4>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Mail className="h-4 w-4" />
+                        {user.email}
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="bg-yellow-50 border-yellow-200 text-yellow-800">
+                      Pending Approval
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-600">
+                        Registered: {new Date(user.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-600">
+                        Current Role: {getRoleDisplayName(user.role)}
+                      </span>
+                    </div>
+                    {user.department && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600">
+                          Department: {user.department}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 ml-4">
                   <Button
                     size="sm"
-                    onClick={() => handleApprove(user.id)}
-                    disabled={isApproving}
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => handleApprove(user.id, user.email)}
+                    disabled={isApproving || isRejecting || assignableRoles.length === 0}
+                    className="bg-green-600 hover:bg-green-700"
                   >
-                    {isApproving ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                    ) : (
-                      <Check className="h-4 w-4 mr-1" />
-                    )}
-                    Approve
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    {isApproving ? 'Approving...' : 'Approve'}
                   </Button>
-                  
-                  <Dialog 
-                    open={openRejectDialog === user.id} 
-                    onOpenChange={(open) => setOpenRejectDialog(open ? user.id : null)}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleReject(user.id)}
+                    disabled={isApproving || isRejecting}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
                   >
-                    <DialogTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={isRejecting}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Reject
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Reject User Registration</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <p className="text-gray-700">
-                          Are you sure you want to reject the registration for{' '}
-                          <span className="font-semibold">{user.email}</span>?
-                        </p>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">
-                            Reason for rejection (optional)
-                          </label>
-                          <Textarea
-                            placeholder="Provide a reason for rejection..."
-                            value={rejectReason[user.id] || ''}
-                            onChange={(e) =>
-                              setRejectReason(prev => ({ ...prev, [user.id]: e.target.value }))
-                            }
-                            rows={3}
-                          />
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => setOpenRejectDialog(null)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            onClick={() => handleReject(user.id)}
-                            disabled={isRejecting}
-                          >
-                            {isRejecting ? (
-                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                            ) : (
-                              'Reject User'
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                    <UserX className="h-4 w-4 mr-2" />
+                    {isRejecting ? 'Rejecting...' : 'Reject'}
+                  </Button>
                 </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <RoleSelectionDialog
+        open={approvalDialog.open}
+        onOpenChange={(open) => setApprovalDialog({ ...approvalDialog, open })}
+        onConfirm={handleApprovalConfirm}
+        title="Approve User Registration"
+        description={`Select the role to assign to ${approvalDialog.userEmail}. You can only assign roles that are within your authority level.`}
+        confirmText="Approve User"
+        isLoading={isApproving}
+      />
+    </>
   );
 };
