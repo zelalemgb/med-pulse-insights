@@ -19,16 +19,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [authInitialized, setAuthInitialized] = useState(false);
 
-  console.log('🔧 AuthProvider state initialized');
+  console.log('🔧 AuthProvider state initialized - User:', !!user, 'Profile:', !!profile, 'Loading:', loading);
 
   // Create a stable reference to the profile refresh function
   const refreshProfile = useCallback(async () => {
     const currentUser = user;
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('🔍 No user to refresh profile for');
+      return;
+    }
 
     try {
+      console.log('🔄 Refreshing profile for user:', currentUser.id);
       const updatedProfile = await ProfileService.fetchUserProfile(currentUser.id, currentUser.email);
       setProfile(updatedProfile);
+      console.log('✅ Profile refreshed:', updatedProfile);
     } catch (error) {
       console.error('💥 Error refreshing profile:', error);
     }
@@ -40,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🔍 Fetching profile for user:', userId);
       const userProfile = await ProfileService.fetchUserProfile(userId, userEmail);
       setProfile(userProfile);
+      console.log('✅ Profile fetched and set:', userProfile);
     } catch (error) {
       console.error('💥 Error fetching profile:', error);
       // Set a default profile on error to prevent hanging
@@ -47,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: userId,
         email: userEmail || '',
         full_name: null,
-        role: 'viewer',
+        role: 'facility_officer',
         facility_id: null,
         department: null,
         is_active: true
@@ -63,19 +69,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initializeAuth = async () => {
       try {
+        console.log('🚀 Initializing authentication...');
+        
         // Get initial session first
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        console.log('🔍 Initial session check:', initialSession?.user?.id);
+        console.log('🔍 Initial session check:', initialSession?.user?.id || 'No session');
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
         
         if (initialSession?.user) {
+          console.log('👤 Found existing user, fetching profile...');
           await fetchUserProfile(initialSession.user.id, initialSession.user.email);
+        } else {
+          console.log('🚫 No existing session found');
         }
         
         setLoading(false);
         setAuthInitialized(true);
+        console.log('✅ Auth initialization complete');
       } catch (error) {
         console.error('💥 Error during auth initialization:', error);
         setLoading(false);
@@ -88,15 +100,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         if (!authInitialized) return; // Skip events until initialized
         
-        console.log('🔄 Auth state changed:', event, session?.user?.id);
+        console.log('🔄 Auth state changed:', event, session?.user?.id || 'No user');
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user && event !== 'TOKEN_REFRESHED') {
-          // Only fetch profile for meaningful auth events, not token refreshes
+          console.log('👤 User authenticated, fetching profile...');
           await fetchUserProfile(session.user.id, session.user.email);
         } else if (!session?.user) {
-          // Clear profile for unauthenticated user
+          console.log('🚫 User signed out, clearing profile');
           setProfile(null);
         }
       }
@@ -115,15 +127,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const authOperations = useAuthOperations(profile, user, refreshProfile);
 
   const signIn = async (email: string, password: string) => {
+    console.log('🔐 Signing in user:', email);
     const { data, error } = await AuthService.signIn(email, password);
-    if (!error) {
-      const {
-        data: { session: currentSession },
-      } = await supabase.auth.getSession();
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      if (currentSession?.user) {
-        await fetchUserProfile(currentSession.user.id, currentSession.user.email);
+    if (!error && data?.session) {
+      console.log('✅ Sign in successful, updating state');
+      setSession(data.session);
+      setUser(data.session.user);
+      if (data.session.user) {
+        await fetchUserProfile(data.session.user.id, data.session.user.email);
       }
     }
     return { data, error };
@@ -137,13 +148,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await AuthService.signOut();
   };
 
+  const signUp = async (email: string, password: string, fullName?: string) => {
+    console.log('📝 Signing up user:', email);
+    return await AuthService.signUp(email, password, fullName);
+  };
+
   const value: AuthContextType = {
     user,
     session,
     profile,
     loading,
     signIn,
-    signUp: AuthService.signUp,
+    signUp,
     signOut,
     refreshProfile,
     ...authOperations,

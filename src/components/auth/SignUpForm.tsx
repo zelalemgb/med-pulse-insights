@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { ProfileService } from '@/services/auth/profileService';
 import { toast } from 'sonner';
 
 interface SignUpFormProps {
@@ -40,6 +39,11 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
       return;
     }
 
+    if (signUpData.password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -52,19 +56,26 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
 
       if (error) {
         console.error('❌ Signup error:', error);
-        toast.error(error.message || 'Failed to sign up');
-      } else {
-        console.log('✅ Signup successful for:', signUpData.email);
-
-        if (data?.user) {
-          await ProfileService.createProfile(
-            data.user.id,
-            signUpData.email,
-            signUpData.fullName
-          );
+        
+        // Handle specific error types
+        if (error.message?.includes('User already registered')) {
+          toast.error('This email is already registered. Please try signing in instead.');
+        } else if (error.message?.includes('Invalid email')) {
+          toast.error('Please enter a valid email address');
+        } else if (error.message?.includes('Password')) {
+          toast.error('Password requirements not met. Please use at least 6 characters.');
+        } else {
+          toast.error(error.message || 'Failed to create account');
         }
-
+      } else if (data?.user) {
+        console.log('✅ Signup successful for:', signUpData.email);
+        console.log('📋 User created with ID:', data.user.id);
+        
+        // Note: Profile creation is handled by the database trigger
+        // No need to manually create profile here
+        
         toast.success('Account created successfully! Please check your email for verification.');
+        
         // Clear form after successful signup
         setSignUpData({
           email: '',
@@ -72,10 +83,13 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
           confirmPassword: '',
           fullName: '',
         });
+      } else {
+        console.warn('⚠️ Unexpected signup response:', { data, error });
+        toast.error('Something went wrong during account creation');
       }
     } catch (error) {
       console.error('❌ Unexpected signup error:', error);
-      toast.error('An unexpected error occurred');
+      toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -112,11 +126,12 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
         <Input
           id="signup-password"
           type="password"
-          placeholder="Enter your password"
+          placeholder="Enter your password (min 6 characters)"
           value={signUpData.password}
           onChange={(e) => setSignUpData(prev => ({ ...prev, password: e.target.value }))}
           disabled={isLoading}
           required
+          minLength={6}
         />
       </div>
       <div className="space-y-2">
@@ -129,6 +144,7 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
           onChange={(e) => setSignUpData(prev => ({ ...prev, confirmPassword: e.target.value }))}
           disabled={isLoading}
           required
+          minLength={6}
         />
       </div>
       <Button type="submit" className="w-full" disabled={isLoading}>
