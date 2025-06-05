@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -350,20 +351,22 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
       </div>
 
       {/* Custom styles for popup */}
-      <style jsx>{`
-        :global(.facility-popup .leaflet-popup-content-wrapper) {
+      <style>
+        {`
+        .facility-popup .leaflet-popup-content-wrapper {
           border-radius: 8px;
           box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
           border: 1px solid #e5e7eb;
         }
-        :global(.facility-popup .leaflet-popup-content) {
+        .facility-popup .leaflet-popup-content {
           margin: 0;
           padding: 0;
         }
-        :global(.facility-popup .leaflet-popup-tip) {
+        .facility-popup .leaflet-popup-tip {
           border-top-color: #e5e7eb;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };
