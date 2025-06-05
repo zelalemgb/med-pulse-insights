@@ -29,18 +29,18 @@ export const useCreateProduct = () => {
         throw new Error('User not authenticated');
       }
 
-      // Insert into the products table
-        const { data: product, error } = await supabase
-          .from('products')
-          .insert({
-            product_name: data.name,
-            product_code: data.code || `PRD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-            unit: data.unit,
-            package_size: data.packageSize,
-            unit_price: data.unitPrice,
-            ven_classification: data.venClassification,
-          frequency: 'monthly', // Default frequency
-          procurement_source: 'local', // Default procurement source
+      // Insert into the products table with proper field mapping
+      const { data: product, error } = await supabase
+        .from('products')
+        .insert({
+          product_name: data.name,
+          product_code: data.code || `PRD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          unit: data.unit,
+          package_size: data.packageSize,
+          unit_price: data.unitPrice,
+          ven_classification: data.venClassification,
+          frequency: 'monthly',
+          procurement_source: 'local',
           created_by: user.id,
         })
         .select()
