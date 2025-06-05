@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -164,11 +165,11 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ onFacilitySelect, onRep
 
     console.log('Initializing map at location:', userLocation);
 
-    // Initialize map
+    // Initialize map with zoom level 16 for ~1km radius view
     map.current = L.map(mapContainer.current, {
       zoomControl: false,
       attributionControl: false,
-    }).setView(userLocation, 12);
+    }).setView(userLocation, 16);
 
     // Add tile layer
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
