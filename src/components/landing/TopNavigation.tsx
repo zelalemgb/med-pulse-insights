@@ -15,10 +15,10 @@ const TopNavigation = () => {
               <Shield className="w-4 h-4 text-blue-600" />
             </div>
             <span className="text-xl font-semibold text-gray-900 hidden sm:block">
-              Pharmaceutical Analytics
+              Forlab+
             </span>
             <span className="text-lg font-semibold text-gray-900 sm:hidden">
-              PharmAnalytics
+              Forlab+
             </span>
           </div>
 

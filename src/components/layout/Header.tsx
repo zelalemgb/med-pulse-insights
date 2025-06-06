@@ -37,7 +37,7 @@ const Header = () => {
             <Shield className="w-4 h-4 text-blue-600" />
           </div>
           <h1 className="text-xl font-semibold text-gray-900">
-            Pharmaceutical Analytics
+            Forlab+
           </h1>
         </div>
 

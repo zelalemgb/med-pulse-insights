@@ -15,9 +15,9 @@ export const AuthCard = () => {
         <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
           <Shield className="w-8 h-8 text-blue-600" />
         </div>
-        <CardTitle className="text-2xl">Pharmaceutical Analytics</CardTitle>
+        <CardTitle className="text-2xl">Forlab+</CardTitle>
         <CardDescription>
-          Access your pharmaceutical supply chain analytics
+          Access your laboratory analytics platform
         </CardDescription>
       </CardHeader>
       <CardContent>
