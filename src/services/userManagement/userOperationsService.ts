@@ -10,26 +10,8 @@ export class UserOperationsService {
     console.log('🔍 Fetching all users...');
     
     try {
-      // Validate current user authentication
-      const currentUser = await AuthValidationService.getCurrentUserInfo();
-      
-      // Check current user's profile and permissions
-      await AuthValidationService.getCurrentUserProfile(currentUser.id);
-
       // Fetch all profiles
       const data = await UserQueryService.getAllProfiles();
-
-      // Check for users in auth who might not have profiles
-      const profileUserIds = data.map(p => p.id);
-      const profilesCreated = await AuthValidationService.validateAuthUsers(profileUserIds);
-      
-      if (profilesCreated) {
-        // Re-fetch profiles after creating missing ones
-        const updatedData = await UserQueryService.getAllProfiles();
-        console.log('✅ Re-fetched profiles after creating missing ones:', updatedData.length);
-        return UserQueryService.mapUsersToRecords(updatedData);
-      }
-
       console.log('✅ Successfully fetched all users:', data.length);
       return UserQueryService.mapUsersToRecords(data);
     } catch (error) {
