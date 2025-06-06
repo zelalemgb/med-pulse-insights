@@ -90,7 +90,9 @@ export class UserQueryService {
       throw new Error('Failed to get user profile');
     }
 
-    // Build query for pending users - exclude admin users from pending list
+    console.log('🔍 Current user role for pending query:', currentProfile.role);
+
+    // Build query for pending users - be more inclusive in the base query
     let query = supabase
       .from('profiles')
       .select(`
@@ -108,28 +110,29 @@ export class UserQueryService {
         last_login_at,
         login_count
       `)
-      .eq('approval_status', 'pending')
-      .not('role', 'in', '(national,regional,zonal)'); // Exclude admin roles from pending list
+      .eq('approval_status', 'pending');
 
-    // Apply additional role-based filtering for pending approvals
-    switch (currentProfile.role) {
-      case 'national':
-        // National can see all pending non-admin users - no additional filtering needed
-        break;
-      
-      case 'regional':
-        // Regional can approve zonal and below (but we already filtered out admin roles above)
-        query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
-        break;
-      
-      case 'zonal':
-        // Zonal can approve facility and functional roles
-        query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
-        break;
-      
-      default:
-        // Other roles have limited approval rights
-        query = query.in('role', ['facility_officer', 'viewer']);
+    // Only apply role-based filtering if not national admin
+    if (currentProfile.role === 'national') {
+      // National users can see all pending users - no role filtering
+      console.log('🌟 National user - showing all pending users');
+    } else {
+      // Apply role-based filtering for other admin levels
+      switch (currentProfile.role) {
+        case 'regional':
+          // Regional can approve non-admin roles
+          query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
+          break;
+        
+        case 'zonal':
+          // Zonal can approve facility and functional roles
+          query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
+          break;
+        
+        default:
+          // Other roles have limited approval rights
+          query = query.in('role', ['facility_officer', 'viewer']);
+      }
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -145,6 +148,19 @@ export class UserQueryService {
       email: u.email, 
       role: u.role, 
       approval_status: u.approval_status 
+    })));
+
+    // Additional debugging - let's see ALL users with pending status
+    const { data: allPendingUsers } = await supabase
+      .from('profiles')
+      .select('id, email, full_name, role, approval_status')
+      .eq('approval_status', 'pending');
+    
+    console.log('🔍 ALL pending users in database:', allPendingUsers?.map(u => ({
+      id: u.id.slice(0, 8),
+      email: u.email,
+      role: u.role,
+      approval_status: u.approval_status
     })));
 
     return data || [];
