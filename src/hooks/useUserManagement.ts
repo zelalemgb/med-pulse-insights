@@ -15,12 +15,10 @@ export const useUserManagement = () => {
       try {
         const users = await UserManagementService.getAllUsers();
         console.log('✅ All users fetched successfully:', users.length, 'users');
-        console.log('📋 Users preview:', users.slice(0, 3).map(u => ({ id: u.id.slice(0, 8), email: u.email, role: u.role })));
         return users;
       } catch (error) {
         console.error('❌ Error in getAllUsers query:', error);
         
-        // Provide more specific error messages
         let errorMessage = 'Failed to fetch users.';
         if (error instanceof Error) {
           if (error.message.includes('permission') || error.message.includes('policy')) {
@@ -38,24 +36,12 @@ export const useUserManagement = () => {
           variant: 'destructive',
         });
         
-        // Don't throw error to prevent UI crash - return empty array
         return [];
       }
     },
     refetchOnWindowFocus: false,
-    staleTime: 30000, // 30 seconds
-    retry: (failureCount, error) => {
-      console.log('🔄 Retry attempt:', failureCount, 'Error:', error);
-      // Only retry on network errors, not permission errors
-      if (error instanceof Error && (
-        error.message.includes('permission') || 
-        error.message.includes('policy') ||
-        error.message.includes('Authentication required')
-      )) {
-        return false;
-      }
-      return failureCount < 2;
-    },
+    staleTime: 30000,
+    retry: 2,
   });
 
   const pendingUsersQuery = useQuery({
@@ -65,7 +51,6 @@ export const useUserManagement = () => {
       try {
         const users = await UserManagementService.getPendingUsers();
         console.log('✅ Pending users fetched successfully:', users.length, 'users');
-        console.log('📋 Pending users preview:', users.slice(0, 3).map(u => ({ id: u.id.slice(0, 8), email: u.email, role: u.role })));
         return users;
       } catch (error) {
         console.error('❌ Error in getPendingUsers query:', error);
@@ -74,12 +59,57 @@ export const useUserManagement = () => {
           description: 'Failed to fetch pending users. Please check your permissions.',
           variant: 'destructive',
         });
-        // Don't throw error to prevent UI crash - return empty array
         return [];
       }
     },
     refetchOnWindowFocus: false,
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
+    retry: 2,
+  });
+
+  const approvedUsersQuery = useQuery({
+    queryKey: ['users', 'approved'],
+    queryFn: async () => {
+      console.log('🚀 Starting getApprovedUsers query...');
+      try {
+        const users = await UserManagementService.getApprovedUsers();
+        console.log('✅ Approved users fetched successfully:', users.length, 'users');
+        return users;
+      } catch (error) {
+        console.error('❌ Error in getApprovedUsers query:', error);
+        toast({
+          title: 'Error Loading Approved Users',
+          description: 'Failed to fetch approved users. Please check your permissions.',
+          variant: 'destructive',
+        });
+        return [];
+      }
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 30000,
+    retry: 2,
+  });
+
+  const rejectedUsersQuery = useQuery({
+    queryKey: ['users', 'rejected'],
+    queryFn: async () => {
+      console.log('🚀 Starting getRejectedUsers query...');
+      try {
+        const users = await UserManagementService.getRejectedUsers();
+        console.log('✅ Rejected users fetched successfully:', users.length, 'users');
+        return users;
+      } catch (error) {
+        console.error('❌ Error in getRejectedUsers query:', error);
+        toast({
+          title: 'Error Loading Rejected Users',
+          description: 'Failed to fetch rejected users. Please check your permissions.',
+          variant: 'destructive',
+        });
+        return [];
+      }
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 30000,
     retry: 2,
   });
 
@@ -98,12 +128,11 @@ export const useUserManagement = () => {
           description: 'Failed to fetch activity log. Please check your permissions.',
           variant: 'destructive',
         });
-        // Don't throw error to prevent UI crash - return empty array
         return [];
       }
     },
     refetchOnWindowFocus: false,
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
     retry: 2,
   });
 
@@ -182,9 +211,11 @@ export const useUserManagement = () => {
   return {
     allUsers: allUsersQuery.data || [],
     pendingUsers: pendingUsersQuery.data || [],
+    approvedUsers: approvedUsersQuery.data || [],
+    rejectedUsers: rejectedUsersQuery.data || [],
     userManagementLog: userManagementLogQuery.data || [],
-    isLoading: allUsersQuery.isLoading || pendingUsersQuery.isLoading || userManagementLogQuery.isLoading,
-    error: allUsersQuery.error || pendingUsersQuery.error || userManagementLogQuery.error,
+    isLoading: allUsersQuery.isLoading || pendingUsersQuery.isLoading || approvedUsersQuery.isLoading || rejectedUsersQuery.isLoading || userManagementLogQuery.isLoading,
+    error: allUsersQuery.error || pendingUsersQuery.error || approvedUsersQuery.error || rejectedUsersQuery.error || userManagementLogQuery.error,
     approveUser: approveUserMutation.mutate,
     rejectUser: rejectUserMutation.mutate,
     changeUserRole: changeRoleMutation.mutate,
