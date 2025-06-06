@@ -62,7 +62,7 @@ export class UserQueryService {
 
     const { data, error } = await query
       .order('created_at', { ascending: false })
-      .limit(500);
+      .limit(500); // Increase limit to see more users
 
     if (error) {
       console.error('Database error in getAllProfiles:', error);
@@ -90,11 +90,8 @@ export class UserQueryService {
       throw new Error('Failed to get user profile');
     }
 
-    console.log('🔍 Current user role for pending query:', currentProfile.role);
-
-    // Query for pending users, excluding admin roles (national, regional, zonal)
-    // These are legitimate user registrations that need approval
-    const { data, error } = await supabase
+    // Build query for pending users - exclude admin users from pending list
+    let query = supabase
       .from('profiles')
       .select(`
         id,
@@ -112,8 +109,30 @@ export class UserQueryService {
         login_count
       `)
       .eq('approval_status', 'pending')
-      .not('role', 'in', '(national,regional,zonal)') // Exclude admin roles from pending list
-      .order('created_at', { ascending: false });
+      .not('role', 'in', '(national,regional,zonal)'); // Exclude admin roles from pending list
+
+    // Apply additional role-based filtering for pending approvals
+    switch (currentProfile.role) {
+      case 'national':
+        // National can see all pending non-admin users - no additional filtering needed
+        break;
+      
+      case 'regional':
+        // Regional can approve zonal and below (but we already filtered out admin roles above)
+        query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
+        break;
+      
+      case 'zonal':
+        // Zonal can approve facility and functional roles
+        query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
+        break;
+      
+      default:
+        // Other roles have limited approval rights
+        query = query.in('role', ['facility_officer', 'viewer']);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error('Database error in getPendingProfiles:', error);
@@ -125,145 +144,8 @@ export class UserQueryService {
       id: u.id.slice(0, 8), 
       email: u.email, 
       role: u.role, 
-      approval_status: u.approval_status,
-      full_name: u.full_name
+      approval_status: u.approval_status 
     })));
-
-    return data || [];
-  }
-
-  static async getApprovedProfiles(): Promise<any[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      throw new Error('Authentication required');
-    }
-
-    // Get current user's profile to determine their role and scope
-    const { data: currentProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, facility_id, primary_facility_id')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !currentProfile) {
-      throw new Error('Failed to get user profile');
-    }
-
-    let query = supabase
-      .from('profiles')
-      .select(`
-        id,
-        email,
-        full_name,
-        role,
-        facility_id,
-        department,
-        is_active,
-        approval_status,
-        created_at,
-        approved_at,
-        approved_by,
-        last_login_at,
-        login_count
-      `)
-      .eq('approval_status', 'approved');
-
-    // Apply role-based filtering for approved users
-    switch (currentProfile.role) {
-      case 'national':
-        // National users can see all approved users - no filtering needed
-        break;
-      
-      case 'regional':
-        // Regional users can see zonal, facility, and functional role users
-        query = query.in('role', ['zonal', 'facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
-        break;
-      
-      case 'zonal':
-        // Zonal users can see facility and functional role users
-        query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
-        break;
-      
-      default:
-        // Other roles have limited access
-        query = query.in('role', ['facility_officer', 'viewer']);
-    }
-
-    const { data, error } = await query.order('approved_at', { ascending: false });
-
-    if (error) {
-      console.error('Database error in getApprovedProfiles:', error);
-      throw new Error(`Failed to fetch approved users: ${error.message}`);
-    }
-
-    return data || [];
-  }
-
-  static async getRejectedProfiles(): Promise<any[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      throw new Error('Authentication required');
-    }
-
-    // Get current user's profile to determine their role and scope
-    const { data: currentProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, facility_id, primary_facility_id')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !currentProfile) {
-      throw new Error('Failed to get user profile');
-    }
-
-    let query = supabase
-      .from('profiles')
-      .select(`
-        id,
-        email,
-        full_name,
-        role,
-        facility_id,
-        department,
-        is_active,
-        approval_status,
-        created_at,
-        approved_at,
-        approved_by,
-        last_login_at,
-        login_count
-      `)
-      .eq('approval_status', 'rejected');
-
-    // Apply role-based filtering for rejected users
-    switch (currentProfile.role) {
-      case 'national':
-        // National users can see all rejected users - no filtering needed
-        break;
-      
-      case 'regional':
-        // Regional users can see zonal, facility, and functional role users
-        query = query.in('role', ['zonal', 'facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
-        break;
-      
-      case 'zonal':
-        // Zonal users can see facility and functional role users
-        query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
-        break;
-      
-      default:
-        // Other roles have limited access
-        query = query.in('role', ['facility_officer', 'viewer']);
-    }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Database error in getRejectedProfiles:', error);
-      throw new Error(`Failed to fetch rejected users: ${error.message}`);
-    }
 
     return data || [];
   }

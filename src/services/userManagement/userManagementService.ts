@@ -15,14 +15,6 @@ export class UserManagementService {
     return UserOperationsService.getPendingUsers();
   }
 
-  static async getApprovedUsers() {
-    return UserOperationsService.getApprovedUsers();
-  }
-
-  static async getRejectedUsers() {
-    return UserOperationsService.getRejectedUsers();
-  }
-
   static async approveUser(userId: string, newRole: UserRole = 'facility_officer') {
     return UserOperationsService.approveUser(userId, newRole);
   }
