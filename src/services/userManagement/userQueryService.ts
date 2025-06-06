@@ -69,16 +69,6 @@ export class UserQueryService {
       throw new Error(`Failed to fetch users: ${error.message}`);
     }
 
-    console.log('📊 All profiles query result:', data?.length || 0, 'total users found');
-    console.log('🔍 Sample profiles:', data?.slice(0, 3).map(u => ({ 
-      id: u.id.slice(0, 8), 
-      email: u.email, 
-      role: u.role, 
-      approval_status: u.approval_status,
-      full_name: u.full_name,
-      created_at: u.created_at
-    })));
-
     return data || [];
   }
 
@@ -102,43 +92,7 @@ export class UserQueryService {
 
     console.log('🔍 Current user role for pending query:', currentProfile.role);
 
-    // Query for ALL pending users first, then we'll see what we get
-    console.log('🔍 Querying ALL pending users...');
-    const { data: allPendingData, error: allPendingError } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        email,
-        full_name,
-        role,
-        facility_id,
-        department,
-        is_active,
-        approval_status,
-        created_at,
-        approved_at,
-        approved_by,
-        last_login_at,
-        login_count
-      `)
-      .eq('approval_status', 'pending')
-      .order('created_at', { ascending: false });
-
-    if (allPendingError) {
-      console.error('Database error in getAllPending:', allPendingError);
-    } else {
-      console.log('📊 ALL pending users found:', allPendingData?.length || 0);
-      console.log('🔍 All pending users details:', allPendingData?.map(u => ({ 
-        id: u.id.slice(0, 8), 
-        email: u.email, 
-        role: u.role, 
-        approval_status: u.approval_status,
-        full_name: u.full_name,
-        created_at: u.created_at
-      })));
-    }
-
-    // Now query for pending users, excluding admin roles (national, regional, zonal)
+    // Query for pending users, excluding admin roles (national, regional, zonal)
     // These are legitimate user registrations that need approval
     const { data, error } = await supabase
       .from('profiles')
@@ -166,14 +120,13 @@ export class UserQueryService {
       throw new Error(`Failed to fetch pending users: ${error.message}`);
     }
 
-    console.log('📊 Filtered pending users query result:', data?.length || 0, 'users found');
-    console.log('🔍 Filtered pending users details:', data?.map(u => ({ 
+    console.log('🔍 Pending users query result:', data?.length || 0, 'users found');
+    console.log('📋 Pending users details:', data?.map(u => ({ 
       id: u.id.slice(0, 8), 
       email: u.email, 
       role: u.role, 
       approval_status: u.approval_status,
-      full_name: u.full_name,
-      created_at: u.created_at
+      full_name: u.full_name
     })));
 
     return data || [];
