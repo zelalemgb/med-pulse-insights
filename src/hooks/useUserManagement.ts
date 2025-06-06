@@ -39,7 +39,7 @@ export const useUserManagement = () => {
       }
     },
     refetchOnWindowFocus: false,
-    staleTime: 5000, // Even more aggressive refresh for testing
+    staleTime: 10000, // Reduced stale time to 10 seconds for more frequent updates
     retry: 2,
   });
 
@@ -56,7 +56,6 @@ export const useUserManagement = () => {
           email: u.email,
           full_name: u.full_name,
           role: u.role,
-          approval_status: u.approval_status,
           created_at: u.created_at
         })));
         return users;
@@ -71,7 +70,7 @@ export const useUserManagement = () => {
       }
     },
     refetchOnWindowFocus: false,
-    staleTime: 5000, // More aggressive refresh for testing
+    staleTime: 10000, // Reduced stale time for more frequent updates
     retry: 2,
   });
 
