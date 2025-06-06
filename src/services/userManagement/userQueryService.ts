@@ -90,7 +90,7 @@ export class UserQueryService {
       throw new Error('Failed to get user profile');
     }
 
-    // Build query for pending users
+    // Build query for pending users - exclude admin users from pending list
     let query = supabase
       .from('profiles')
       .select(`
@@ -108,27 +108,28 @@ export class UserQueryService {
         last_login_at,
         login_count
       `)
-      .eq('approval_status', 'pending');
+      .eq('approval_status', 'pending')
+      .not('role', 'in', '(national,regional,zonal)'); // Exclude admin roles from pending list
 
-    // Apply role-based filtering for pending approvals
+    // Apply additional role-based filtering for pending approvals
     switch (currentProfile.role) {
       case 'national':
-        // National can see all pending users
+        // National can see all pending non-admin users - no additional filtering needed
         break;
       
       case 'regional':
-        // Regional can approve zonal and below
-        query = query.in('role', ['zonal', 'facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager']);
+        // Regional can approve zonal and below (but we already filtered out admin roles above)
+        query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
         break;
       
       case 'zonal':
         // Zonal can approve facility and functional roles
-        query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager']);
+        query = query.in('role', ['facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager', 'viewer']);
         break;
       
       default:
         // Other roles have limited approval rights
-        query = query.in('role', ['facility_officer']);
+        query = query.in('role', ['facility_officer', 'viewer']);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -137,6 +138,14 @@ export class UserQueryService {
       console.error('Database error in getPendingProfiles:', error);
       throw new Error(`Failed to fetch pending users: ${error.message}`);
     }
+
+    console.log('🔍 Pending users query result:', data?.length || 0, 'users found');
+    console.log('📋 Pending users details:', data?.map(u => ({ 
+      id: u.id.slice(0, 8), 
+      email: u.email, 
+      role: u.role, 
+      approval_status: u.approval_status 
+    })));
 
     return data || [];
   }
