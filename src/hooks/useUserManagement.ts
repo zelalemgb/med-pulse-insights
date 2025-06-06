@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { UserManagementService } from '@/services/userManagement/userManagementService';
 import { UserRole } from '@/types/pharmaceutical';
@@ -40,7 +39,7 @@ export const useUserManagement = () => {
       }
     },
     refetchOnWindowFocus: false,
-    staleTime: 30000,
+    staleTime: 10000, // Reduced stale time to 10 seconds for more frequent updates
     retry: 2,
   });
 
@@ -48,9 +47,17 @@ export const useUserManagement = () => {
     queryKey: ['users', 'pending'],
     queryFn: async () => {
       console.log('🚀 Starting getPendingUsers query...');
+      console.log('🕐 Current time:', new Date().toISOString());
       try {
         const users = await UserManagementService.getPendingUsers();
         console.log('✅ Pending users fetched successfully:', users.length, 'users');
+        console.log('📋 Pending users summary:', users.map(u => ({
+          id: u.id.slice(0, 8),
+          email: u.email,
+          full_name: u.full_name,
+          role: u.role,
+          created_at: u.created_at
+        })));
         return users;
       } catch (error) {
         console.error('❌ Error in getPendingUsers query:', error);
@@ -63,7 +70,7 @@ export const useUserManagement = () => {
       }
     },
     refetchOnWindowFocus: false,
-    staleTime: 30000,
+    staleTime: 10000, // Reduced stale time for more frequent updates
     retry: 2,
   });
 
