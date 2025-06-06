@@ -102,7 +102,7 @@ export class UserQueryService {
 
     console.log('🔍 Current user role for pending query:', currentProfile.role);
 
-    // Query for ALL pending users first, then we'll see what we get
+    // Query for ALL pending users first for debugging
     console.log('🔍 Querying ALL pending users...');
     const { data: allPendingData, error: allPendingError } = await supabase
       .from('profiles')
@@ -138,45 +138,16 @@ export class UserQueryService {
       })));
     }
 
-    // Now query for pending users, excluding admin roles (national, regional, zonal)
-    // These are legitimate user registrations that need approval
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        email,
-        full_name,
-        role,
-        facility_id,
-        department,
-        is_active,
-        approval_status,
-        created_at,
-        approved_at,
-        approved_by,
-        last_login_at,
-        login_count
-      `)
-      .eq('approval_status', 'pending')
-      .not('role', 'in', '(national,regional,zonal)') // Exclude admin roles from pending list
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Database error in getPendingProfiles:', error);
-      throw new Error(`Failed to fetch pending users: ${error.message}`);
+    // For testing, let's return ALL pending users regardless of role filtering
+    // This will help us see if the issue is with role filtering or profile creation
+    if (allPendingData && allPendingData.length > 0) {
+      console.log('🎯 Returning ALL pending users for debugging');
+      return allPendingData;
     }
 
-    console.log('📊 Filtered pending users query result:', data?.length || 0, 'users found');
-    console.log('🔍 Filtered pending users details:', data?.map(u => ({ 
-      id: u.id.slice(0, 8), 
-      email: u.email, 
-      role: u.role, 
-      approval_status: u.approval_status,
-      full_name: u.full_name,
-      created_at: u.created_at
-    })));
-
-    return data || [];
+    // If no pending users found at all, there might be an issue with profile creation
+    console.log('⚠️ No pending users found in the database');
+    return [];
   }
 
   static async getApprovedProfiles(): Promise<any[]> {
