@@ -92,7 +92,8 @@ export class UserQueryService {
 
     console.log('🔍 Current user role for pending query:', currentProfile.role);
 
-    // Simple query for pending users - no role filtering
+    // Query for pending users, excluding admin roles (national, regional, zonal)
+    // These are legitimate user registrations that need approval
     const { data, error } = await supabase
       .from('profiles')
       .select(`
@@ -111,6 +112,7 @@ export class UserQueryService {
         login_count
       `)
       .eq('approval_status', 'pending')
+      .not('role', 'in', '(national,regional,zonal)') // Exclude admin roles from pending list
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -123,7 +125,8 @@ export class UserQueryService {
       id: u.id.slice(0, 8), 
       email: u.email, 
       role: u.role, 
-      approval_status: u.approval_status 
+      approval_status: u.approval_status,
+      full_name: u.full_name
     })));
 
     return data || [];
