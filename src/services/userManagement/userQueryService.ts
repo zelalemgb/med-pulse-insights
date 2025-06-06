@@ -39,11 +39,10 @@ export class UserQueryService {
         login_count
       `);
 
-    // Apply role-based filtering but be more inclusive
+    // Apply role-based filtering with more inclusive logic
     switch (currentProfile.role) {
       case 'national':
-        // National users can see all users except other national users
-        query = query.neq('role', 'national');
+        // National users can see all users - no filtering needed
         break;
       
       case 'regional':
@@ -63,7 +62,7 @@ export class UserQueryService {
 
     const { data, error } = await query
       .order('created_at', { ascending: false })
-      .limit(100); // Add reasonable limit
+      .limit(500); // Increase limit to see more users
 
     if (error) {
       console.error('Database error in getAllProfiles:', error);
@@ -91,7 +90,7 @@ export class UserQueryService {
       throw new Error('Failed to get user profile');
     }
 
-    // Build query for pending users with more inclusive approach
+    // Build query for pending users
     let query = supabase
       .from('profiles')
       .select(`
@@ -114,8 +113,7 @@ export class UserQueryService {
     // Apply role-based filtering for pending approvals
     switch (currentProfile.role) {
       case 'national':
-        // National can approve most user registrations
-        query = query.in('role', ['regional', 'zonal', 'facility_officer', 'facility_manager', 'data_analyst', 'procurement', 'finance', 'qa', 'program_manager']);
+        // National can see all pending users
         break;
       
       case 'regional':
