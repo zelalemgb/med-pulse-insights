@@ -11,8 +11,6 @@ export class AssociationService {
       throw new Error('User not authenticated');
     }
 
-    console.log('Requesting facility association for facility:', facilityId);
-
     const { data, error } = await supabase
       .from('user_facility_associations')
       .insert({
@@ -29,15 +27,13 @@ export class AssociationService {
       if (error.code === '23505') { // Unique constraint violation
         throw new Error('You have already requested access to this facility');
       }
-      console.error('Supabase error creating association:', error);
       throw new Error(`Failed to request facility association: ${error.message}`);
     }
 
-    console.log('Association request created successfully:', data);
     return data as UserFacilityAssociation;
   }
 
-  // Get user's facility associations
+  // Get user's facility associations (RLS will filter automatically)
   async getUserAssociations(): Promise<UserFacilityAssociation[]> {
     const { data, error } = await supabase
       .from('user_facility_associations')
@@ -54,14 +50,13 @@ export class AssociationService {
       .order('requested_at', { ascending: false });
 
     if (error) {
-      console.error('Supabase error fetching associations:', error);
       throw new Error(`Failed to fetch user associations: ${error.message}`);
     }
 
     return data as UserFacilityAssociation[];
   }
 
-  // Approve or reject facility association
+  // Approve or reject facility association (RLS will check permissions)
   async updateAssociationStatus(
     associationId: string, 
     status: 'approved' | 'rejected',
@@ -97,14 +92,13 @@ export class AssociationService {
       .single();
 
     if (error) {
-      console.error('Supabase error updating association:', error);
       throw new Error(`Failed to update association status: ${error.message}`);
     }
 
     return data as UserFacilityAssociation;
   }
 
-  // Get pending associations for facilities
+  // Get pending associations for facilities owned by the current user (RLS will filter)
   async getPendingAssociations(): Promise<UserFacilityAssociation[]> {
     const { data, error } = await supabase
       .from('user_facility_associations')
@@ -126,7 +120,6 @@ export class AssociationService {
       .order('requested_at', { ascending: false });
 
     if (error) {
-      console.error('Supabase error fetching pending associations:', error);
       throw new Error(`Failed to fetch pending associations: ${error.message}`);
     }
 

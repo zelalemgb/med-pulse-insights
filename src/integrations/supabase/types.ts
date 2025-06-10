@@ -409,7 +409,6 @@ export type Database = {
           forecast: Json | null
           frequency: string
           id: string
-          package_size: number | null
           procurement_source: string
           product_code: string | null
           product_name: string
@@ -431,7 +430,6 @@ export type Database = {
           forecast?: Json | null
           frequency: string
           id?: string
-          package_size?: number | null
           procurement_source: string
           product_code?: string | null
           product_name: string
@@ -453,7 +451,6 @@ export type Database = {
           forecast?: Json | null
           frequency?: string
           id?: string
-          package_size?: number | null
           procurement_source?: string
           product_code?: string | null
           product_name?: string
@@ -849,10 +846,6 @@ export type Database = {
         }
         Returns: string
       }
-      get_current_user_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -886,10 +879,6 @@ export type Database = {
       }
       is_admin_user: {
         Args: { user_id: string }
-        Returns: boolean
-      }
-      is_facility_creator: {
-        Args: { facility_id: string }
         Returns: boolean
       }
       is_super_admin: {

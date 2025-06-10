@@ -51,32 +51,6 @@ export class UserOperationsService {
     }
   }
 
-  static async getApprovedUsers(): Promise<UserManagementRecord[]> {
-    console.log('🔍 Fetching approved users...');
-    
-    try {
-      const data = await UserQueryService.getApprovedProfiles();
-      console.log('✅ Successfully fetched approved users:', data.length);
-      return UserQueryService.mapUsersToRecords(data);
-    } catch (error) {
-      console.error('❌ Error in getApprovedUsers:', error);
-      throw error;
-    }
-  }
-
-  static async getRejectedUsers(): Promise<UserManagementRecord[]> {
-    console.log('🔍 Fetching rejected users...');
-    
-    try {
-      const data = await UserQueryService.getRejectedProfiles();
-      console.log('✅ Successfully fetched rejected users:', data.length);
-      return UserQueryService.mapUsersToRecords(data);
-    } catch (error) {
-      console.error('❌ Error in getRejectedUsers:', error);
-      throw error;
-    }
-  }
-
   static async approveUser(userId: string, newRole: UserRole = 'facility_officer'): Promise<void> {
     console.log('🔧 Approving user:', userId, 'with role:', newRole);
     return UserActionsService.approveUser(userId, newRole);

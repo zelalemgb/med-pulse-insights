@@ -1,8 +1,8 @@
 
 {
-  "name": "Forlab+ - Laboratory Analytics Platform",
-  "short_name": "Forlab+",
-  "description": "Advanced laboratory analytics and supply chain management platform",
+  "name": "Pharmaceutical Supply Chain Management",
+  "short_name": "PharmaSupply",
+  "description": "Advanced pharmaceutical supply chain management and analytics platform",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -1,75 +1,78 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Package, Plus, DollarSign, Info } from 'lucide-react';
+import { Package, Plus, DollarSign } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { CreateProductDialog } from '@/components/products/CreateProductDialog';
-import { useProducts } from '@/hooks/useProducts';
 
 const ProductsDataTable = () => {
   const { canAccess } = usePermissions();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const { data: products, isLoading, error, refetch } = useProducts();
 
-  // Fetch products on component mount
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
+  // Mock products data
+  const products = [
+    {
+      id: '1',
+      name: 'Amoxicillin 500mg',
+      code: 'AMX-500',
+      category: 'Antibiotic',
+      unit: 'Capsules',
+      unitPrice: 0.25,
+      venClassification: 'E',
+      status: 'Active',
+      stock: 1250,
+      lastUpdated: '2024-01-15'
+    },
+    {
+      id: '2',
+      name: 'Paracetamol 500mg',
+      code: 'PCM-500', 
+      category: 'Analgesic',
+      unit: 'Tablets',
+      unitPrice: 0.15,
+      venClassification: 'V',
+      status: 'Active',
+      stock: 2800,
+      lastUpdated: '2024-01-14'
+    },
+    {
+      id: '3',
+      name: 'Insulin Glargine',
+      code: 'INS-GLA',
+      category: 'Antidiabetic',
+      unit: 'Vials',
+      unitPrice: 45.00,
+      venClassification: 'V',
+      status: 'Low Stock',
+      stock: 12,
+      lastUpdated: '2024-01-13'
+    }
+  ];
 
   const getVenBadgeColor = (classification: string) => {
     switch (classification) {
-      case 'V': return 'bg-green-100 text-green-800 border-green-200';
-      case 'E': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'N': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'V': return 'bg-green-100 text-green-800';
+      case 'E': return 'bg-yellow-100 text-yellow-800';
+      case 'N': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getVenDescription = (classification: string) => {
-    switch (classification) {
-      case 'V': return 'Vital - Life-saving medicines';
-      case 'E': return 'Essential - Important for healthcare';
-      case 'N': return 'Non-essential - Used for minor conditions';
-      default: return 'Unknown classification';
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'Active': return 'bg-green-100 text-green-800';
+      case 'Low Stock': return 'bg-red-100 text-red-800';
+      case 'Out of Stock': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const handleProductCreated = (newProduct: any) => {
     console.log('New product created:', newProduct);
-    // Refresh the products list
-    refetch();
+    // In real app, this would update the products list
   };
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center p-8">
-          <div className="text-center">
-            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">Loading products...</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center p-8">
-          <div className="text-center">
-            <Package className="h-12 w-12 text-red-400 mx-auto mb-4" />
-            <p className="text-red-500">Error loading products: {error}</p>
-            <Button onClick={refetch} className="mt-2">
-              Try Again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card>
@@ -78,10 +81,10 @@ const ProductsDataTable = () => {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Products Catalog ({products.length} products)
+              Products Catalog
             </CardTitle>
             <CardDescription>
-              Manage pharmaceutical products, pricing, and inventory
+              Manage pharmaceutical products and inventory
             </CardDescription>
           </div>
           {canAccess.createProducts && (
@@ -97,67 +100,44 @@ const ProductsDataTable = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {products.map((product: any) => (
+          {products.map((product) => (
             <div key={product.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
               <div className="flex justify-between items-start mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-lg">{product.product_name}</h3>
-                    <Badge variant="outline" className="text-xs">
-                      {product.product_code}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">{product.unit}</p>
+                <div>
+                  <h3 className="font-semibold text-lg">{product.name}</h3>
+                  <p className="text-sm text-gray-600">Code: {product.code} • {product.category}</p>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  <Badge 
-                    className={`${getVenBadgeColor(product.ven_classification)} border`}
-                    title={getVenDescription(product.ven_classification)}
-                  >
-                    {product.ven_classification}
+                <div className="flex gap-2">
+                  <Badge className={getVenBadgeColor(product.venClassification)}>
+                    {product.venClassification}
+                  </Badge>
+                  <Badge className={getStatusBadgeColor(product.status)}>
+                    {product.status}
                   </Badge>
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-500 block">Unit:</span>
-                  <span className="font-medium">{product.unit}</span>
+                  <span className="text-gray-500">Unit:</span>
+                  <span className="font-medium ml-2">{product.unit}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">Package Size:</span>
-                  <span className="font-medium">{product.package_size ?? 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500 block">Unit Price:</span>
-                  <span className="font-medium flex items-center">
+                  <span className="text-gray-500">Price:</span>
+                  <span className="font-medium ml-2 flex items-center">
                     <DollarSign className="h-3 w-3" />
-                    {Number(product.unit_price).toFixed(2)}
+                    {product.unitPrice.toFixed(2)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">Frequency:</span>
-                  <span className="font-medium">{product.frequency}</span>
+                  <span className="text-gray-500">Stock:</span>
+                  <span className={`font-medium ml-2 ${product.stock < 50 ? 'text-red-600' : 'text-green-600'}`}>
+                    {product.stock.toLocaleString()}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">Created:</span>
-                  <span className="font-medium">{new Date(product.created_at).toLocaleDateString()}</span>
-                </div>
-              </div>
-
-              <div className="mt-3 pt-3 border-t">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    Source: <span className="font-medium text-gray-700">
-                      {product.procurement_source}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Info className="h-4 w-4 mr-1" />
-                      Details
-                    </Button>
-                  </div>
+                  <span className="text-gray-500">Updated:</span>
+                  <span className="font-medium ml-2">{new Date(product.lastUpdated).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
@@ -168,7 +148,7 @@ const ProductsDataTable = () => {
           <div className="text-center py-8">
             <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-            <p className="text-gray-500 mb-4">Start by adding your first pharmaceutical product</p>
+            <p className="text-gray-500 mb-4">Start by adding your first product</p>
             {canAccess.createProducts && (
               <Button onClick={() => setShowCreateDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />

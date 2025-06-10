@@ -10,10 +10,10 @@ export const BrandLogo = () => {
         <Shield className="w-4 h-4 text-blue-600" />
       </div>
       <span className="text-xl font-semibold text-gray-900 hidden sm:block">
-        Forlab+
+        Pharmaceutical Analytics
       </span>
       <span className="text-lg font-semibold text-gray-900 sm:hidden">
-        Forlab+
+        PharmAnalytics
       </span>
     </Link>
   );

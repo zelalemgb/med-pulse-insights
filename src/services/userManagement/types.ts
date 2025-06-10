@@ -6,15 +6,11 @@ export interface UserManagementRecord {
   email: string;
   full_name: string | null;
   role: UserRole;
-  facility_id: string | null;
-  department: string | null;
   approval_status: 'pending' | 'approved' | 'rejected';
   is_active: boolean;
   created_at: string;
   approved_by: string | null;
   approved_at: string | null;
-  last_login_at: string | null;
-  login_count: number;
 }
 
 export interface UserManagementLogEntry {
