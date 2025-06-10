@@ -10,8 +10,26 @@ export class UserOperationsService {
     console.log('🔍 Fetching all users...');
     
     try {
+      // Validate current user authentication
+      const currentUser = await AuthValidationService.getCurrentUserInfo();
+      
+      // Check current user's profile and permissions
+      await AuthValidationService.getCurrentUserProfile(currentUser.id);
+
       // Fetch all profiles
       const data = await UserQueryService.getAllProfiles();
+
+      // Check for users in auth who might not have profiles
+      const profileUserIds = data.map(p => p.id);
+      const profilesCreated = await AuthValidationService.validateAuthUsers(profileUserIds);
+      
+      if (profilesCreated) {
+        // Re-fetch profiles after creating missing ones
+        const updatedData = await UserQueryService.getAllProfiles();
+        console.log('✅ Re-fetched profiles after creating missing ones:', updatedData.length);
+        return UserQueryService.mapUsersToRecords(updatedData);
+      }
+
       console.log('✅ Successfully fetched all users:', data.length);
       return UserQueryService.mapUsersToRecords(data);
     } catch (error) {
@@ -29,6 +47,32 @@ export class UserOperationsService {
       return UserQueryService.mapUsersToRecords(data);
     } catch (error) {
       console.error('❌ Error in getPendingUsers:', error);
+      throw error;
+    }
+  }
+
+  static async getApprovedUsers(): Promise<UserManagementRecord[]> {
+    console.log('🔍 Fetching approved users...');
+    
+    try {
+      const data = await UserQueryService.getApprovedProfiles();
+      console.log('✅ Successfully fetched approved users:', data.length);
+      return UserQueryService.mapUsersToRecords(data);
+    } catch (error) {
+      console.error('❌ Error in getApprovedUsers:', error);
+      throw error;
+    }
+  }
+
+  static async getRejectedUsers(): Promise<UserManagementRecord[]> {
+    console.log('🔍 Fetching rejected users...');
+    
+    try {
+      const data = await UserQueryService.getRejectedProfiles();
+      console.log('✅ Successfully fetched rejected users:', data.length);
+      return UserQueryService.mapUsersToRecords(data);
+    } catch (error) {
+      console.error('❌ Error in getRejectedUsers:', error);
       throw error;
     }
   }

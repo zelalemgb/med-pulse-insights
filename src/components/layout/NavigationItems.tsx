@@ -28,13 +28,6 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
   // Core workflow navigation items organized by mental model
   const coreWorkflow = [
     {
-      href: '/',
-      label: 'Home',
-      icon: Home,
-      requiresAuth: false,
-      description: 'Home page and map'
-    },
-    {
       href: '/dashboard',
       label: 'Dashboard',
       icon: Home,
@@ -66,13 +59,6 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
       icon: Database,
       requiresAuth: true,
       description: 'Data oversight and quality'
-    },
-    {
-      href: '/facilities',
-      label: 'Facilities',
-      icon: Map,
-      requiresAuth: true,
-      description: 'Facility management'
     },
     ...(canManageUsers ? [{
       href: '/user-management',
@@ -118,17 +104,25 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
 
   const quickActions = getQuickActions();
 
-  // Filter items based on authentication status
-  const visibleCoreItems = coreWorkflow.filter(item => 
-    !item.requiresAuth || (item.requiresAuth && profile)
-  );
-
-  const visibleManagementItems = profile ? managementItems : [];
-
   return (
     <div className={cn('flex flex-col lg:flex-row space-y-1 lg:space-y-0 lg:space-x-1', className)}>
+      {/* Public navigation */}
+      {!profile && (
+        <Link
+          to="/"
+          onClick={onClick}
+          className={cn(
+            "flex items-center space-x-1 lg:space-x-2 py-2 px-2 lg:px-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm whitespace-nowrap",
+            isActive(location, '/')
+          )}
+        >
+          <Map className="h-4 w-4 flex-shrink-0" />
+          <span className="truncate text-xs lg:text-sm">Home</span>
+        </Link>
+      )}
+
       {/* Core workflow items */}
-      {visibleCoreItems.map((item) => (
+      {profile && coreWorkflow.map((item) => (
         <div key={item.label} className="flex-shrink-0 group relative">
           <Link
             to={item.href}
@@ -155,10 +149,10 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
       ))}
 
       {/* Management items */}
-      {profile && visibleManagementItems.length > 0 && (
+      {profile && managementItems.length > 0 && (
         <>
           <div className="hidden lg:block w-px bg-gray-200 mx-2"></div>
-          {visibleManagementItems.map((item) => (
+          {managementItems.map((item) => (
             <div key={item.label} className="flex-shrink-0 group relative">
               <Link
                 to={item.href}

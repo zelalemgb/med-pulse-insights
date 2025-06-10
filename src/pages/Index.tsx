@@ -19,7 +19,7 @@ const Index = () => {
     );
   }
 
-  // For authenticated users, show the map with the main navigation
+  // For authenticated users, show the map with the main navigation and hide the top navigation
   if (user) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
