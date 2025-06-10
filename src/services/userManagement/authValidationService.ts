@@ -24,7 +24,13 @@ export class AuthValidationService {
 
     console.log('Current user profile:', currentProfile, 'Error:', profileError);
     
-    // Check if user has admin privileges
+    // More permissive access check - allow national users regardless of approval status
+    if (currentProfile && currentProfile.role === 'national') {
+      console.log('✅ National user detected - granting access regardless of approval status');
+      return { profile: currentProfile, error: profileError };
+    }
+    
+    // Check if user has admin privileges for non-national users
     if (currentProfile && !['national', 'regional', 'zonal'].includes(currentProfile.role)) {
       console.warn('⚠️ User does not have admin privileges:', currentProfile.role);
       throw new Error(`Access denied. Your role (${currentProfile.role}) does not have permission to view all users. Contact a system administrator.`);

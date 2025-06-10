@@ -34,8 +34,8 @@ const Footer = () => {
       title: 'Support',
       links: [
         { label: 'Help Center', to: '#', icon: HelpCircle },
-        { label: 'Contact Support', to: 'mailto:support@pharma-analytics.com', icon: Mail },
-        { label: 'Emergency Line', to: 'tel:+1-800-PHARMA', icon: Phone },
+        { label: 'Contact Support', to: 'mailto:support@forlab.com', icon: Mail },
+        { label: 'Emergency Line', to: 'tel:+1-800-FORLAB', icon: Phone },
         { label: 'Training Resources', to: '#', icon: FileText },
       ]
     }
@@ -52,11 +52,11 @@ const Footer = () => {
                 <Shield className="w-4 h-4 text-blue-600" />
               </div>
               <span className="text-lg font-semibold text-gray-900">
-                Pharmaceutical Analytics
+                Forlab+
               </span>
             </div>
             <p className="text-sm text-gray-600 mb-4 max-w-xs">
-              Comprehensive pharmaceutical usage monitoring and analytics platform for healthcare facilities.
+              Advanced laboratory analytics and supply chain management platform for healthcare facilities.
             </p>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -116,7 +116,7 @@ const Footer = () => {
         <div className="mt-8 pt-8 border-t border-gray-200">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-gray-600">
-              <p>© {currentYear} Pharmaceutical Analytics Platform. All rights reserved.</p>
+              <p>© {currentYear} Forlab+ Platform. All rights reserved.</p>
               <div className="flex gap-4">
                 <a href="#" className="hover:text-gray-900 transition-colors duration-200">
                   Privacy Policy

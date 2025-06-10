@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { AdminStatusChecker } from '@/components/admin/AdminStatusChecker';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { TestRegistrationButton } from '@/components/auth/TestRegistrationButton';
@@ -30,16 +29,9 @@ const Auth = () => {
 
   return (
     <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
-      <div className="w-full max-w-6xl space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Authentication Card */}
-          <AuthCard />
-
-          {/* Admin Status Card */}
-          <div className="w-full">
-            <AdminStatusChecker />
-          </div>
-        </div>
+      <div className="w-full max-w-md space-y-6">
+        {/* Authentication Card */}
+        <AuthCard />
         
         {/* Registration Test Component - Only show in development */}
         {process.env.NODE_ENV === 'development' && (

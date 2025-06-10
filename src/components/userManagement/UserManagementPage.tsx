@@ -25,11 +25,11 @@ export const UserManagementPage = () => {
   const getRoleBasedTitle = () => {
     switch (profile?.role) {
       case 'national':
-        return 'Regional User Management';
+        return 'User Management Dashboard';
       case 'regional':
-        return 'Zonal User Management';
+        return 'Regional User Management';
       case 'zonal':
-        return 'Facility User Management';
+        return 'Zonal User Management';
       default:
         return 'User Management';
     }
@@ -38,9 +38,9 @@ export const UserManagementPage = () => {
   const getRoleBasedDescription = () => {
     switch (profile?.role) {
       case 'national':
-        return 'Manage regional administrators and their access across the system';
+        return 'Manage users across all levels of the system hierarchy';
       case 'regional':
-        return 'Manage zonal administrators within your regional jurisdiction';
+        return 'Manage zonal administrators and facility users within your regional jurisdiction';
       case 'zonal':
         return 'Manage facility users (officers and managers) within your zone';
       default:
@@ -51,11 +51,11 @@ export const UserManagementPage = () => {
   const getUserTypeLabel = () => {
     switch (profile?.role) {
       case 'national':
-        return 'Regional Users';
+        return 'System Users';
       case 'regional':
-        return 'Zonal Users';
+        return 'Regional Users';
       case 'zonal':
-        return 'Facility Users';
+        return 'Zonal Users';
       default:
         return 'Users';
     }
@@ -101,8 +101,8 @@ export const UserManagementPage = () => {
             <span className="font-medium">Hierarchical Access Control</span>
           </div>
           <p className="text-blue-700 text-sm mt-1">
-            {profile?.role === 'national' && 'You can manage regional administrators across the entire system.'}
-            {profile?.role === 'regional' && 'You can manage zonal administrators within your regional jurisdiction.'}
+            {profile?.role === 'national' && 'You can manage users across all levels of the system.'}
+            {profile?.role === 'regional' && 'You can manage zonal administrators and facility users within your regional jurisdiction.'}
             {profile?.role === 'zonal' && 'You can manage facility officers and managers within your zone.'}
           </p>
         </CardContent>

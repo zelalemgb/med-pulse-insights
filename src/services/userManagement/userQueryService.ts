@@ -1,164 +1,79 @@
-import { supabase } from '@/integrations/supabase/client';
+
 import { UserManagementRecord } from './types';
+import { BaseQueryService } from './baseQueryService';
+import { QueryFilterService } from './queryFilterService';
+import { UserDataMapper } from './userDataMapper';
+import { AuthValidationService } from './authValidationService';
 
 export class UserQueryService {
   static async getAllProfiles(): Promise<any[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    console.log('🔍 Fetching all users...');
     
-    if (!user) {
-      throw new Error('Authentication required');
-    }
-
-    // Get current user's profile to determine their role and scope
-    const { data: currentProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, facility_id, primary_facility_id')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !currentProfile) {
-      throw new Error('Failed to get user profile');
-    }
-
-    // Build query based on user's role hierarchy
-    let query = supabase
-      .from('profiles')
-      .select(`
-        id,
-        email,
-        full_name,
-        role,
-        facility_id,
-        department,
-        is_active,
-        approval_status,
-        created_at,
-        approved_at,
-        approved_by,
-        last_login_at,
-        login_count
-      `);
-
-    // Apply hierarchical filtering based on current user's role
-    switch (currentProfile.role) {
-      case 'national':
-        // National users can manage regional users
-        query = query.eq('role', 'regional');
-        break;
+    try {
+      // Validate current user authentication
+      const currentUser = await BaseQueryService.getCurrentUserInfo();
       
-      case 'regional':
-        // Regional users can manage zonal users in their region
-        // For now, we'll implement basic filtering - in a real system, 
-        // you'd have proper region-zone mapping
-        query = query.eq('role', 'zonal');
-        break;
+      // Check current user's profile and permissions
+      const currentProfile = await BaseQueryService.getCurrentUserProfile(currentUser.id);
+
+      // Build role-based query
+      const query = QueryFilterService.buildAllUsersQuery(currentProfile.role);
+
+      // Execute query
+      const data = await BaseQueryService.executeProfileQuery(query);
+
+      // Check for users in auth who might not have profiles
+      const profileUserIds = data.map(p => p.id);
+      const profilesCreated = await AuthValidationService.validateAuthUsers(profileUserIds);
       
-      case 'zonal':
-        // Zonal users can manage facility users in their zone
-        // They can manage facility_officer and facility_manager roles
-        query = query.in('role', ['facility_officer', 'facility_manager']);
-        break;
-      
-      default:
-        // Other roles cannot manage users
-        throw new Error('Insufficient permissions to manage users');
+      if (profilesCreated) {
+        // Re-fetch profiles after creating missing ones
+        const updatedQuery = QueryFilterService.buildAllUsersQuery(currentProfile.role);
+        const updatedData = await BaseQueryService.executeProfileQuery(updatedQuery);
+        console.log('✅ Re-fetched profiles after creating missing ones:', updatedData.length);
+        return updatedData;
+      }
+
+      console.log('✅ Successfully fetched all users:', data.length);
+      return data;
+    } catch (error) {
+      console.error('❌ Error in getAllProfiles:', error);
+      throw error;
     }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Database error in getAllProfiles:', error);
-      throw new Error(`Failed to fetch users: ${error.message}`);
-    }
-
-    return data || [];
   }
 
   static async getPendingProfiles(): Promise<any[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    console.log('🔍 Fetching pending users...');
     
-    if (!user) {
-      throw new Error('Authentication required');
-    }
-
-    // Get current user's profile to determine their role and scope
-    const { data: currentProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, facility_id, primary_facility_id')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !currentProfile) {
-      throw new Error('Failed to get user profile');
-    }
-
-    // Build query for pending users based on hierarchy
-    let query = supabase
-      .from('profiles')
-      .select(`
-        id,
-        email,
-        full_name,
-        role,
-        facility_id,
-        department,
-        is_active,
-        approval_status,
-        created_at,
-        approved_at,
-        approved_by,
-        last_login_at,
-        login_count
-      `)
-      .eq('approval_status', 'pending');
-
-    // Apply hierarchical filtering for pending approvals
-    switch (currentProfile.role) {
-      case 'national':
-        // National can approve regional registrations
-        query = query.eq('role', 'regional');
-        break;
+    try {
+      // Validate current user authentication
+      const currentUser = await BaseQueryService.getCurrentUserInfo();
       
-      case 'regional':
-        // Regional can approve zonal registrations
-        query = query.eq('role', 'zonal');
-        break;
-      
-      case 'zonal':
-        // Zonal can approve facility user registrations
-        query = query.in('role', ['facility_officer', 'facility_manager']);
-        break;
-      
-      default:
-        // Other roles cannot approve users
-        throw new Error('Insufficient permissions to approve users');
+      // Check current user's profile and permissions
+      const currentProfile = await BaseQueryService.getCurrentUserProfile(currentUser.id);
+
+      // Build role-based query for pending users
+      const query = QueryFilterService.buildPendingUsersQuery(currentProfile.role);
+
+      // Execute query
+      const data = await BaseQueryService.executeProfileQuery(query);
+
+      console.log('🔍 Pending users query result:', data?.length || 0, 'users found');
+      console.log('📋 Pending users details:', data?.map(u => ({ 
+        id: u.id.slice(0, 8), 
+        email: u.email, 
+        role: u.role, 
+        approval_status: u.approval_status 
+      })));
+
+      return data;
+    } catch (error) {
+      console.error('❌ Error in getPendingProfiles:', error);
+      throw error;
     }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Database error in getPendingProfiles:', error);
-      throw new Error(`Failed to fetch pending users: ${error.message}`);
-    }
-
-    return data || [];
   }
 
   static mapUsersToRecords(profiles: any[]): UserManagementRecord[] {
-    return profiles.map(profile => ({
-      id: profile.id,
-      email: profile.email,
-      full_name: profile.full_name,
-      role: profile.role,
-      facility_id: profile.facility_id,
-      department: profile.department,
-      is_active: profile.is_active,
-      approval_status: profile.approval_status || 'pending',
-      created_at: profile.created_at,
-      approved_at: profile.approved_at,
-      approved_by: profile.approved_by,
-      last_login_at: profile.last_login_at,
-      login_count: profile.login_count || 0,
-    }));
+    return UserDataMapper.mapUsersToRecords(profiles);
   }
 }
