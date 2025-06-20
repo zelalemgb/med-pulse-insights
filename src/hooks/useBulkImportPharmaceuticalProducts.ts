@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -53,35 +52,132 @@ export const useBulkImportPharmaceuticalProducts = () => {
     return result;
   };
 
-  const streamParseFile = async (file: File): Promise<ParsedRow[]> => {
-    console.log('Starting streaming parse for large file:', file.name, 'Size:', file.size);
+  const parseFileStream = async (file: File): Promise<ParsedRow[]> => {
+    console.log('Starting streaming parse for:', file.name, 'Size:', file.size);
     
+    // For very large files, use streaming approach
+    if (file.size > 50 * 1024 * 1024) { // 50MB threshold
+      return parseCSVStream(file);
+    }
+    
+    // For smaller files, use standard text reading
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      const parsedRows: ParsedRow[] = [];
-      let headers: string[] = [];
-      let columnMap = new Map<string, number>();
-      let buffer = '';
-      let lineCount = 0;
-      const chunkSize = 64 * 1024; // 64KB chunks
-      let position = 0;
       
-      const processChunk = () => {
-        const chunk = file.slice(position, position + chunkSize);
-        position += chunkSize;
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string;
+          if (!text) {
+            reject(new Error('Failed to read file content'));
+            return;
+          }
+          
+          const parsedRows = parseCSVText(text);
+          resolve(parsedRows);
+        } catch (error) {
+          console.error('File parsing error:', error);
+          reject(new Error('Failed to parse file content'));
+        }
+      };
+      
+      reader.onerror = () => {
+        reject(new Error('Failed to read file'));
+      };
+      
+      reader.readAsText(file);
+    });
+  };
+
+  const parseCSVStream = async (file: File): Promise<ParsedRow[]> => {
+    const parsedRows: ParsedRow[] = [];
+    let headers: string[] = [];
+    let columnMap = new Map<string, number>();
+    let buffer = '';
+    let lineCount = 0;
+    const chunkSize = 1024 * 1024; // 1MB chunks
+    let position = 0;
+    
+    const setupColumnMapping = (headerRow: string[]) => {
+      headers = headerRow;
+      headers.forEach((header, index) => {
+        if (!header) return;
         
-        if (chunk.size === 0) {
-          // End of file, process remaining buffer
+        const normalizedHeader = header.toLowerCase().trim();
+        
+        if (normalizedHeader.includes('region')) {
+          columnMap.set('region', index);
+        } else if (normalizedHeader.includes('zone')) {
+          columnMap.set('zone', index);
+        } else if (normalizedHeader.includes('woreda') || normalizedHeader.includes('ward')) {
+          columnMap.set('woreda', index);
+        } else if (normalizedHeader.includes('facility') || normalizedHeader.includes('health center') || normalizedHeader.includes('hospital')) {
+          columnMap.set('facility', index);
+        } else if (normalizedHeader.includes('product') && normalizedHeader.includes('name')) {
+          columnMap.set('product_name', index);
+        } else if (normalizedHeader.includes('unit') && !normalizedHeader.includes('price')) {
+          columnMap.set('unit', index);
+        } else if (normalizedHeader.includes('category') || normalizedHeader.includes('type')) {
+          columnMap.set('product_category', index);
+        } else if (normalizedHeader.includes('price') && !normalizedHeader.includes('miazia')) {
+          columnMap.set('price', index);
+        } else if (normalizedHeader.includes('procurement') || normalizedHeader.includes('source')) {
+          columnMap.set('procurement_source', index);
+        } else if (normalizedHeader.includes('quantity') || normalizedHeader.includes('qty')) {
+          columnMap.set('quantity', index);
+        } else if (normalizedHeader.includes('miazia') && normalizedHeader.includes('price')) {
+          columnMap.set('miazia_price', index);
+        }
+      });
+      
+      console.log('Column mapping:', Object.fromEntries(columnMap));
+      
+      if (!columnMap.has('facility') || !columnMap.has('product_name')) {
+        throw new Error('Required columns missing: facility and product_name are mandatory');
+      }
+    };
+    
+    const parseRowData = (values: string[]): ParsedRow | null => {
+      const parsedRow: ParsedRow = {
+        facility: '',
+        product_name: ''
+      };
+      
+      columnMap.forEach((colIndex, field) => {
+        const value = values[colIndex];
+        if (value != null && value.trim() !== '') {
+          if (field === 'price' || field === 'quantity' || field === 'miazia_price') {
+            const numValue = parseFloat(value.replace(/[^\d.-]/g, ''));
+            if (!isNaN(numValue)) {
+              (parsedRow as any)[field] = numValue;
+            }
+          } else {
+            (parsedRow as any)[field] = value.trim();
+          }
+        }
+      });
+      
+      return parsedRow.facility && parsedRow.product_name ? parsedRow : null;
+    };
+
+    return new Promise((resolve, reject) => {
+      const processNextChunk = () => {
+        if (position >= file.size) {
+          // Process remaining buffer
           if (buffer.trim()) {
-            processLine(buffer);
+            const lines = buffer.split('\n').filter(line => line.trim());
+            for (const line of lines) {
+              processLine(line);
+            }
           }
           console.log('Streaming parse complete. Total valid rows:', parsedRows.length);
           resolve(parsedRows);
           return;
         }
         
-        const chunkReader = new FileReader();
-        chunkReader.onload = (e) => {
+        const chunk = file.slice(position, position + chunkSize);
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
           const text = e.target?.result as string || '';
           buffer += text;
           
@@ -96,18 +192,20 @@ export const useBulkImportPharmaceuticalProducts = () => {
           }
           
           // Update progress
-          const progressPercent = Math.min((position / file.size) * 50, 50); // First 50% for parsing
+          const progressPercent = Math.min((position / file.size) * 50, 50);
           setProgress(Math.round(progressPercent));
           
-          // Continue with next chunk
-          setTimeout(processChunk, 1); // Small delay to prevent UI blocking
+          position += chunkSize;
+          
+          // Continue processing next chunk
+          setTimeout(processNextChunk, 10);
         };
         
-        chunkReader.onerror = () => {
+        reader.onerror = () => {
           reject(new Error('Failed to read file chunk'));
         };
         
-        chunkReader.readAsText(chunk);
+        reader.readAsText(chunk);
       };
       
       const processLine = (line: string) => {
@@ -115,8 +213,8 @@ export const useBulkImportPharmaceuticalProducts = () => {
         
         if (lineCount === 1) {
           // Process headers
-          headers = parseCSVLine(line);
-          setupColumnMapping();
+          const headerValues = parseCSVLine(line);
+          setupColumnMapping(headerValues);
           return;
         }
         
@@ -124,54 +222,70 @@ export const useBulkImportPharmaceuticalProducts = () => {
           console.log(`Processed ${lineCount} lines, found ${parsedRows.length} valid rows`);
         }
         
-        const values = parseCSVLine(line);
-        const parsedRow = parseRowData(values);
-        
-        if (parsedRow && parsedRow.facility && parsedRow.product_name) {
-          parsedRows.push(parsedRow);
-        }
-      };
-      
-      const setupColumnMapping = () => {
-        headers.forEach((header, index) => {
-          if (!header) return;
+        try {
+          const values = parseCSVLine(line);
+          const parsedRow = parseRowData(values);
           
-          const normalizedHeader = header.toLowerCase().trim();
-          
-          if (normalizedHeader.includes('region')) {
-            columnMap.set('region', index);
-          } else if (normalizedHeader.includes('zone')) {
-            columnMap.set('zone', index);
-          } else if (normalizedHeader.includes('woreda') || normalizedHeader.includes('ward')) {
-            columnMap.set('woreda', index);
-          } else if (normalizedHeader.includes('facility') || normalizedHeader.includes('health center') || normalizedHeader.includes('hospital')) {
-            columnMap.set('facility', index);
-          } else if (normalizedHeader.includes('product') && normalizedHeader.includes('name')) {
-            columnMap.set('product_name', index);
-          } else if (normalizedHeader.includes('unit') && !normalizedHeader.includes('price')) {
-            columnMap.set('unit', index);
-          } else if (normalizedHeader.includes('category') || normalizedHeader.includes('type')) {
-            columnMap.set('product_category', index);
-          } else if (normalizedHeader.includes('price') && !normalizedHeader.includes('miazia')) {
-            columnMap.set('price', index);
-          } else if (normalizedHeader.includes('procurement') || normalizedHeader.includes('source')) {
-            columnMap.set('procurement_source', index);
-          } else if (normalizedHeader.includes('quantity') || normalizedHeader.includes('qty')) {
-            columnMap.set('quantity', index);
-          } else if (normalizedHeader.includes('miazia') && normalizedHeader.includes('price')) {
-            columnMap.set('miazia_price', index);
+          if (parsedRow && parsedRow.facility && parsedRow.product_name) {
+            parsedRows.push(parsedRow);
           }
-        });
-        
-        console.log('Column mapping:', Object.fromEntries(columnMap));
-        
-        if (!columnMap.has('facility') || !columnMap.has('product_name')) {
-          reject(new Error('Required columns missing: facility and product_name are mandatory'));
-          return;
+        } catch (error) {
+          console.warn(`Error parsing line ${lineCount}:`, error);
         }
       };
       
-      const parseRowData = (values: string[]): ParsedRow | null => {
+      processNextChunk();
+    });
+  };
+
+  const parseCSVText = (text: string): ParsedRow[] => {
+    const lines = text.split('\n').filter(line => line.trim());
+    if (lines.length === 0) return [];
+    
+    const headers = parseCSVLine(lines[0]);
+    const columnMap = new Map<string, number>();
+    
+    // Set up column mapping
+    headers.forEach((header, index) => {
+      if (!header) return;
+      
+      const normalizedHeader = header.toLowerCase().trim();
+      
+      if (normalizedHeader.includes('region')) {
+        columnMap.set('region', index);
+      } else if (normalizedHeader.includes('zone')) {
+        columnMap.set('zone', index);
+      } else if (normalizedHeader.includes('woreda') || normalizedHeader.includes('ward')) {
+        columnMap.set('woreda', index);
+      } else if (normalizedHeader.includes('facility') || normalizedHeader.includes('health center') || normalizedHeader.includes('hospital')) {
+        columnMap.set('facility', index);
+      } else if (normalizedHeader.includes('product') && normalizedHeader.includes('name')) {
+        columnMap.set('product_name', index);
+      } else if (normalizedHeader.includes('unit') && !normalizedHeader.includes('price')) {
+        columnMap.set('unit', index);
+      } else if (normalizedHeader.includes('category') || normalizedHeader.includes('type')) {
+        columnMap.set('product_category', index);
+      } else if (normalizedHeader.includes('price') && !normalizedHeader.includes('miazia')) {
+        columnMap.set('price', index);
+      } else if (normalizedHeader.includes('procurement') || normalizedHeader.includes('source')) {
+        columnMap.set('procurement_source', index);
+      } else if (normalizedHeader.includes('quantity') || normalizedHeader.includes('qty')) {
+        columnMap.set('quantity', index);
+      } else if (normalizedHeader.includes('miazia') && normalizedHeader.includes('price')) {
+        columnMap.set('miazia_price', index);
+      }
+    });
+    
+    if (!columnMap.has('facility') || !columnMap.has('product_name')) {
+      throw new Error('Required columns missing: facility and product_name are mandatory');
+    }
+    
+    const parsedRows: ParsedRow[] = [];
+    
+    // Process data rows
+    for (let i = 1; i < lines.length; i++) {
+      try {
+        const values = parseCSVLine(lines[i]);
         const parsedRow: ParsedRow = {
           facility: '',
           product_name: ''
@@ -191,12 +305,15 @@ export const useBulkImportPharmaceuticalProducts = () => {
           }
         });
         
-        return parsedRow.facility && parsedRow.product_name ? parsedRow : null;
-      };
-      
-      // Start processing
-      processChunk();
-    });
+        if (parsedRow.facility && parsedRow.product_name) {
+          parsedRows.push(parsedRow);
+        }
+      } catch (error) {
+        console.warn(`Error parsing line ${i + 1}:`, error);
+      }
+    }
+    
+    return parsedRows;
   };
 
   const validateRow = (row: ParsedRow, rowIndex: number): string[] => {
@@ -278,9 +395,10 @@ export const useBulkImportPharmaceuticalProducts = () => {
     };
     
     try {
-      // Parse file with streaming approach
-      console.log('Starting streaming file parse for large file:', file.name, 'Size:', file.size);
-      const parsedRows = await streamParseFile(file);
+      console.log('Starting file import for:', file.name, 'Size:', file.size);
+      
+      // Parse file with streaming approach for large files
+      const parsedRows = await parseFileStream(file);
       result.totalRows = parsedRows.length;
       
       if (parsedRows.length === 0) {
@@ -325,7 +443,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       setProgress(65);
       
       // Process in smaller batches for large files
-      const batchSize = file.size > 50 * 1024 * 1024 ? 25 : 50; // Smaller batches for very large files
+      const batchSize = file.size > 50 * 1024 * 1024 ? 25 : 50;
       const totalBatches = Math.ceil(validRows.length / batchSize);
       
       console.log(`Processing ${validRows.length} rows in ${totalBatches} batches of ${batchSize}`);
@@ -345,7 +463,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
           const progressPercent = 65 + ((i + 1) / totalBatches) * 35;
           setProgress(Math.round(progressPercent));
           
-          // Longer delay for large files to prevent overwhelming the database
+          // Longer delay for large files
           if (i < totalBatches - 1) {
             const delay = file.size > 100 * 1024 * 1024 ? 300 : 150;
             await new Promise(resolve => setTimeout(resolve, delay));
