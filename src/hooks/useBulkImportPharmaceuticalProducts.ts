@@ -6,6 +6,7 @@ interface ImportResult {
   totalRows: number;
   successfulRows: number;
   errorRows: number;
+  skippedRows: number;
   errors: string[];
   warnings: string[];
 }
@@ -342,11 +343,82 @@ export const useBulkImportPharmaceuticalProducts = () => {
     return errors;
   };
 
-  const processBatch = async (batch: ParsedRow[]): Promise<{ success: number; errors: string[] }> => {
+  const checkExistingRecords = async (batch: ParsedRow[]): Promise<{ existingKeys: Set<string>; error?: string }> => {
     try {
+      // Create unique keys for the batch (facility + product_name combination)
+      const uniqueKeys = batch.map(row => `${row.facility.toLowerCase().trim()}|${row.product_name.toLowerCase().trim()}`);
+      
+      // Query existing records with matching facility and product_name combinations
+      const facilityProductPairs = batch.map(row => ({
+        facility: row.facility.toLowerCase().trim(),
+        product_name: row.product_name.toLowerCase().trim()
+      }));
+      
+      const { data: existingRecords, error } = await supabase
+        .from('pharmaceutical_products')
+        .select('facility, product_name')
+        .or(
+          facilityProductPairs.map(pair => 
+            `and(facility.ilike.${pair.facility},product_name.ilike.${pair.product_name})`
+          ).join(',')
+        );
+
+      if (error) {
+        console.error('Error checking existing records:', error);
+        return { existingKeys: new Set(), error: error.message };
+      }
+
+      // Create a set of existing keys for quick lookup
+      const existingKeys = new Set(
+        (existingRecords || []).map(record => 
+          `${record.facility.toLowerCase().trim()}|${record.product_name.toLowerCase().trim()}`
+        )
+      );
+
+      return { existingKeys };
+    } catch (error) {
+      console.error('Error in checkExistingRecords:', error);
+      return { 
+        existingKeys: new Set(), 
+        error: error instanceof Error ? error.message : 'Unknown error checking existing records' 
+      };
+    }
+  };
+
+  const processBatch = async (batch: ParsedRow[]): Promise<{ success: number; skipped: number; errors: string[] }> => {
+    try {
+      // Check for existing records
+      const { existingKeys, error: checkError } = await checkExistingRecords(batch);
+      
+      if (checkError) {
+        return {
+          success: 0,
+          skipped: 0,
+          errors: [`Error checking existing records: ${checkError}`]
+        };
+      }
+
+      // Filter out existing records
+      const newRecords = batch.filter(row => {
+        const key = `${row.facility.toLowerCase().trim()}|${row.product_name.toLowerCase().trim()}`;
+        return !existingKeys.has(key);
+      });
+
+      const skippedCount = batch.length - newRecords.length;
+
+      if (newRecords.length === 0) {
+        // All records already exist
+        return {
+          success: 0,
+          skipped: skippedCount,
+          errors: []
+        };
+      }
+
+      // Insert only new records
       const { data, error } = await supabase
         .from('pharmaceutical_products')
-        .insert(batch.map(row => ({
+        .insert(newRecords.map(row => ({
           region: row.region || null,
           zone: row.zone || null,
           woreda: row.woreda || null,
@@ -364,18 +436,21 @@ export const useBulkImportPharmaceuticalProducts = () => {
         console.error('Batch insert error:', error);
         return {
           success: 0,
+          skipped: skippedCount,
           errors: [`Database error: ${error.message}`]
         };
       }
       
       return {
-        success: batch.length,
+        success: newRecords.length,
+        skipped: skippedCount,
         errors: []
       };
     } catch (error) {
       console.error('Batch processing error:', error);
       return {
         success: 0,
+        skipped: 0,
         errors: [`Batch processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`]
       };
     }
@@ -390,6 +465,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       totalRows: 0,
       successfulRows: 0,
       errorRows: 0,
+      skippedRows: 0,
       errors: [],
       warnings: []
     };
@@ -443,7 +519,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       setProgress(65);
       
       // Process in smaller batches for large files
-      const batchSize = file.size > 50 * 1024 * 1024 ? 25 : 50;
+      const batchSize = file.size > 50 * 1024 * 1024 ? 50 : 100;
       const totalBatches = Math.ceil(validRows.length / batchSize);
       
       console.log(`Processing ${validRows.length} rows in ${totalBatches} batches of ${batchSize}`);
@@ -457,15 +533,16 @@ export const useBulkImportPharmaceuticalProducts = () => {
           console.log(`Processing batch ${i + 1}/${totalBatches}, rows: ${start}-${end}`);
           const batchResult = await processBatch(batch);
           result.successfulRows += batchResult.success;
+          result.skippedRows += batchResult.skipped;
           result.errors.push(...batchResult.errors);
           
           // Update progress
           const progressPercent = 65 + ((i + 1) / totalBatches) * 35;
           setProgress(Math.round(progressPercent));
           
-          // Longer delay for large files
+          // Shorter delay since we're now doing duplicate checking
           if (i < totalBatches - 1) {
-            const delay = file.size > 100 * 1024 * 1024 ? 300 : 150;
+            const delay = file.size > 100 * 1024 * 1024 ? 200 : 100;
             await new Promise(resolve => setTimeout(resolve, delay));
           }
         } catch (error) {
@@ -480,8 +557,12 @@ export const useBulkImportPharmaceuticalProducts = () => {
         result.warnings.push(`${result.errorRows} rows were skipped due to validation errors`);
       }
       
+      if (result.skippedRows > 0) {
+        result.warnings.push(`${result.skippedRows} rows were skipped because they already exist in the database`);
+      }
+      
       if (result.successfulRows > 0) {
-        result.warnings.push(`Successfully imported ${result.successfulRows} products`);
+        result.warnings.push(`Successfully imported ${result.successfulRows} new products`);
       }
       
       if (file.size > 100 * 1024 * 1024) {
@@ -493,7 +574,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       
       toast({
         title: "Import completed",
-        description: `Successfully processed ${result.successfulRows} out of ${result.totalRows} rows`,
+        description: `Successfully imported ${result.successfulRows} new rows, skipped ${result.skippedRows} duplicates out of ${result.totalRows} total rows`,
       });
       
     } catch (error) {

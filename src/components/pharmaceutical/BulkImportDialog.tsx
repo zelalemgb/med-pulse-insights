@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, X, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useBulkImportPharmaceuticalProducts } from '@/hooks/useBulkImportPharmaceuticalProducts';
 
@@ -13,6 +13,7 @@ interface ImportResult {
   totalRows: number;
   successfulRows: number;
   errorRows: number;
+  skippedRows: number;
   errors: string[];
   warnings: string[];
 }
@@ -144,12 +145,22 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
         <DialogHeader>
           <DialogTitle>Bulk Import Pharmaceutical Products</DialogTitle>
           <DialogDescription>
-            Import pharmaceutical products from Excel or CSV files. Large files are processed in batches for optimal performance.
+            Import pharmaceutical products from Excel or CSV files. Duplicate records are automatically detected and skipped.
           </DialogDescription>
         </DialogHeader>
 
         {!importResult && (
           <div className="space-y-4">
+            {/* Duplicate Detection Notice */}
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <div className="font-medium mb-1">Smart Duplicate Detection</div>
+                Records are checked against existing data using facility + product name combination. 
+                Duplicates will be automatically skipped to prevent data redundancy.
+              </AlertDescription>
+            </Alert>
+
             {/* Template Download */}
             <Card>
               <CardHeader className="pb-3">
@@ -236,7 +247,7 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
         {/* Import Results */}
         {importResult && (
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4 text-center">
                   <p className="text-2xl font-bold text-blue-600">{importResult.totalRows}</p>
@@ -246,7 +257,13 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
               <Card>
                 <CardContent className="p-4 text-center">
                   <p className="text-2xl font-bold text-green-600">{importResult.successfulRows}</p>
-                  <p className="text-sm text-gray-600">Successful</p>
+                  <p className="text-sm text-gray-600">Imported</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-orange-600">{importResult.skippedRows}</p>
+                  <p className="text-sm text-gray-600">Skipped</p>
                 </CardContent>
               </Card>
               <Card>
@@ -278,13 +295,13 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <div className="font-medium mb-2">Warnings:</div>
+                  <div className="font-medium mb-2">Summary:</div>
                   <ul className="list-disc list-inside space-y-1 text-sm">
                     {importResult.warnings.slice(0, 3).map((warning, index) => (
                       <li key={index}>{warning}</li>
                     ))}
                     {importResult.warnings.length > 3 && (
-                      <li>... and {importResult.warnings.length - 3} more warnings</li>
+                      <li>... and {importResult.warnings.length - 3} more details</li>
                     )}
                   </ul>
                 </AlertDescription>
@@ -295,7 +312,8 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
               <Alert>
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Successfully imported {importResult.successfulRows} pharmaceutical products.
+                  Successfully imported {importResult.successfulRows} new pharmaceutical products.
+                  {importResult.skippedRows > 0 && ` ${importResult.skippedRows} duplicates were automatically skipped.`}
                 </AlertDescription>
               </Alert>
             )}
