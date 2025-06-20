@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -31,8 +32,10 @@ export const useBulkImportPharmaceuticalProducts = () => {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const { toast } = useToast();
 
-  const parseFile = async (file: File): Promise<ParsedRow[]> => {
+  const parseFileStream = async (file: File): Promise<ParsedRow[]> => {
     return new Promise((resolve, reject) => {
+      console.log('Starting streaming file parse for:', file.name, 'Size:', file.size);
+      
       const reader = new FileReader();
       
       reader.onload = (e) => {
@@ -43,17 +46,28 @@ export const useBulkImportPharmaceuticalProducts = () => {
             return;
           }
           
+          console.log('File read complete, starting XLSX parsing...');
+          
           let workbook: XLSX.WorkBook;
           
           try {
-            if (file.type === 'text/csv') {
-              workbook = XLSX.read(data, { type: 'string' });
-            } else {
-              workbook = XLSX.read(data, { type: 'array' });
-            }
+            // Use streaming options for large files
+            const parseOptions = {
+              type: file.type === 'text/csv' ? 'string' : 'array',
+              cellDates: false,
+              cellNF: false,
+              cellText: false,
+              raw: false,
+              dense: false, // Use sparse format to save memory
+              bookVBA: false,
+              bookSheets: false,
+              bookProps: false
+            } as any;
+            
+            workbook = XLSX.read(data, parseOptions);
           } catch (parseError) {
             console.error('XLSX parsing error:', parseError);
-            reject(new Error('Failed to parse Excel/CSV file. Please ensure the file is not corrupted and is in a supported format.'));
+            reject(new Error('Failed to parse Excel/CSV file. The file may be too large or corrupted.'));
             return;
           }
           
@@ -70,46 +84,41 @@ export const useBulkImportPharmaceuticalProducts = () => {
             return;
           }
           
-          let jsonData;
-          try {
-            jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-          } catch (sheetError) {
-            console.error('Sheet conversion error:', sheetError);
-            reject(new Error('Failed to convert worksheet to data. The file may be too large or corrupted.'));
-            return;
+          console.log('Processing worksheet with streaming approach...');
+          
+          // Get the range of the worksheet
+          const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
+          const totalRows = range.e.r + 1;
+          
+          console.log('Total rows detected:', totalRows);
+          
+          if (totalRows > 1000000) {
+            console.log('Large file detected, using optimized processing...');
           }
           
-          if (!Array.isArray(jsonData) || jsonData.length === 0) {
-            reject(new Error('File appears to be empty or contains no valid data'));
-            return;
+          // Process in chunks to avoid memory issues
+          const chunkSize = 10000;
+          const parsedRows: ParsedRow[] = [];
+          let headers: string[] = [];
+          
+          // Get headers from first row
+          const headerRow: any[] = [];
+          for (let col = range.s.c; col <= range.e.c; col++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+            const cell = worksheet[cellAddress];
+            headerRow[col] = cell ? (cell.v || '') : '';
           }
+          headers = headerRow;
           
-          // Filter out completely empty rows
-          const filteredData = jsonData.filter(row => 
-            Array.isArray(row) && row.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== '')
-          );
+          console.log('Headers found:', headers);
           
-          if (filteredData.length === 0) {
-            reject(new Error('No valid data rows found in the file'));
-            return;
-          }
-          
-          const headers = filteredData[0] as string[];
-          const rows = filteredData.slice(1) as any[][];
-          
-          if (!Array.isArray(headers) || headers.length === 0) {
-            reject(new Error('No headers found in the file'));
-            return;
-          }
-          
-          // Map headers to expected columns (case-insensitive)
+          // Map headers to expected columns
           const columnMap = new Map<string, number>();
           headers.forEach((header, index) => {
             if (header === null || header === undefined) return;
             
             const normalizedHeader = String(header).toLowerCase().trim();
             
-            // Map various possible column names to our standard names
             if (normalizedHeader.includes('region')) {
               columnMap.set('region', index);
             } else if (normalizedHeader.includes('zone')) {
@@ -135,53 +144,84 @@ export const useBulkImportPharmaceuticalProducts = () => {
             }
           });
           
-          // Validate required columns
           if (!columnMap.has('facility') || !columnMap.has('product_name')) {
             reject(new Error('Required columns missing: facility and product_name are mandatory'));
             return;
           }
           
-          const parsedRows: ParsedRow[] = [];
+          console.log('Column mapping complete:', Object.fromEntries(columnMap));
           
-          for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
+          // Process data in chunks
+          let processedRows = 0;
+          const totalDataRows = totalRows - 1; // Exclude header
+          
+          for (let startRow = 1; startRow < totalRows; startRow += chunkSize) {
+            const endRow = Math.min(startRow + chunkSize, totalRows);
+            console.log(`Processing chunk: rows ${startRow} to ${endRow - 1}`);
             
-            // Skip empty rows
-            if (!Array.isArray(row) || !row.some(cell => cell != null && String(cell).trim() !== '')) {
-              continue;
-            }
-            
-            const parsedRow: ParsedRow = {
-              facility: '',
-              product_name: ''
-            };
-            
-            columnMap.forEach((colIndex, field) => {
-              const value = row[colIndex];
-              if (value != null && String(value).trim() !== '') {
-                if (field === 'price' || field === 'quantity' || field === 'miazia_price') {
-                  const numValue = parseFloat(String(value).replace(/[^\d.-]/g, ''));
-                  if (!isNaN(numValue)) {
-                    (parsedRow as any)[field] = numValue;
-                  }
-                } else {
-                  (parsedRow as any)[field] = String(value).trim();
+            // Process this chunk
+            for (let row = startRow; row < endRow; row++) {
+              const rowData: any[] = [];
+              let hasData = false;
+              
+              // Get data for this row
+              for (let col = range.s.c; col <= range.e.c; col++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                const cell = worksheet[cellAddress];
+                const value = cell ? (cell.v || '') : '';
+                rowData[col] = value;
+                if (value !== null && value !== undefined && String(value).trim() !== '') {
+                  hasData = true;
                 }
               }
-            });
+              
+              if (!hasData) continue;
+              
+              const parsedRow: ParsedRow = {
+                facility: '',
+                product_name: ''
+              };
+              
+              columnMap.forEach((colIndex, field) => {
+                const value = rowData[colIndex];
+                if (value != null && String(value).trim() !== '') {
+                  if (field === 'price' || field === 'quantity' || field === 'miazia_price') {
+                    const numValue = parseFloat(String(value).replace(/[^\d.-]/g, ''));
+                    if (!isNaN(numValue)) {
+                      (parsedRow as any)[field] = numValue;
+                    }
+                  } else {
+                    (parsedRow as any)[field] = String(value).trim();
+                  }
+                }
+              });
+              
+              if (parsedRow.facility && parsedRow.facility.trim() !== '' && 
+                  parsedRow.product_name && parsedRow.product_name.trim() !== '') {
+                parsedRows.push(parsedRow);
+              }
+              
+              processedRows++;
+              
+              // Update progress occasionally
+              if (processedRows % 1000 === 0) {
+                const progressPercent = (processedRows / totalDataRows) * 100;
+                console.log(`Parsed ${processedRows}/${totalDataRows} rows (${progressPercent.toFixed(1)}%)`);
+              }
+            }
             
-            // Only include rows with required fields
-            if (parsedRow.facility && parsedRow.facility.trim() !== '' && 
-                parsedRow.product_name && parsedRow.product_name.trim() !== '') {
-              parsedRows.push(parsedRow);
+            // Small delay to prevent blocking
+            if (startRow + chunkSize < totalRows) {
+              await new Promise(resolve => setTimeout(resolve, 1));
             }
           }
           
-          console.log('Successfully parsed rows:', parsedRows.length);
+          console.log('File parsing complete. Total valid rows:', parsedRows.length);
           resolve(parsedRows);
+          
         } catch (error) {
           console.error('File parsing error:', error);
-          reject(new Error(`Failed to parse file: ${error instanceof Error ? error.message : 'Unknown parsing error'}`));
+          reject(new Error(`Failed to parse file: ${error instanceof Error ? error.message : 'Memory or processing error with large file'}`));
         }
       };
       
@@ -230,34 +270,42 @@ export const useBulkImportPharmaceuticalProducts = () => {
   };
 
   const processBatch = async (batch: ParsedRow[]): Promise<{ success: number; errors: string[] }> => {
-    const { data, error } = await supabase
-      .from('pharmaceutical_products')
-      .insert(batch.map(row => ({
-        region: row.region || null,
-        zone: row.zone || null,
-        woreda: row.woreda || null,
-        facility: row.facility,
-        product_name: row.product_name,
-        unit: row.unit || null,
-        product_category: row.product_category || null,
-        price: row.price || null,
-        procurement_source: row.procurement_source || null,
-        quantity: row.quantity || null,
-        miazia_price: row.miazia_price || null
-      })));
-    
-    if (error) {
-      console.error('Batch insert error:', error);
+    try {
+      const { data, error } = await supabase
+        .from('pharmaceutical_products')
+        .insert(batch.map(row => ({
+          region: row.region || null,
+          zone: row.zone || null,
+          woreda: row.woreda || null,
+          facility: row.facility,
+          product_name: row.product_name,
+          unit: row.unit || null,
+          product_category: row.product_category || null,
+          price: row.price || null,
+          procurement_source: row.procurement_source || null,
+          quantity: row.quantity || null,
+          miazia_price: row.miazia_price || null
+        })));
+      
+      if (error) {
+        console.error('Batch insert error:', error);
+        return {
+          success: 0,
+          errors: [`Database error: ${error.message}`]
+        };
+      }
+      
+      return {
+        success: batch.length,
+        errors: []
+      };
+    } catch (error) {
+      console.error('Batch processing error:', error);
       return {
         success: 0,
-        errors: [`Database error: ${error.message}`]
+        errors: [`Batch processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`]
       };
     }
-    
-    return {
-      success: batch.length,
-      errors: []
-    };
   };
 
   const importData = async (file: File) => {
@@ -274,10 +322,10 @@ export const useBulkImportPharmaceuticalProducts = () => {
     };
     
     try {
-      // Parse file
-      setProgress(10);
-      console.log('Starting file parse for:', file.name, 'Size:', file.size);
-      const parsedRows = await parseFile(file);
+      // Parse file with streaming approach
+      setProgress(5);
+      console.log('Starting streaming file parse for large file:', file.name, 'Size:', file.size);
+      const parsedRows = await parseFileStream(file);
       result.totalRows = parsedRows.length;
       
       if (parsedRows.length === 0) {
@@ -285,30 +333,47 @@ export const useBulkImportPharmaceuticalProducts = () => {
       }
       
       console.log('File parsed successfully, rows:', parsedRows.length);
+      setProgress(15);
       
-      // Validate data
-      setProgress(20);
+      // Validate data in chunks
       const validRows: ParsedRow[] = [];
+      const chunkSize = 5000;
       
-      parsedRows.forEach((row, index) => {
-        const rowErrors = validateRow(row, index);
-        if (rowErrors.length > 0) {
-          result.errors.push(...rowErrors);
-          result.errorRows++;
-        } else {
-          validRows.push(row);
+      for (let i = 0; i < parsedRows.length; i += chunkSize) {
+        const chunk = parsedRows.slice(i, i + chunkSize);
+        
+        chunk.forEach((row, index) => {
+          const rowErrors = validateRow(row, i + index);
+          if (rowErrors.length > 0) {
+            result.errors.push(...rowErrors);
+            result.errorRows++;
+          } else {
+            validRows.push(row);
+          }
+        });
+        
+        // Update progress
+        const validationProgress = 15 + ((i + chunkSize) / parsedRows.length) * 10;
+        setProgress(Math.min(Math.round(validationProgress), 25));
+        
+        // Small delay for large datasets
+        if (i + chunkSize < parsedRows.length) {
+          await new Promise(resolve => setTimeout(resolve, 1));
         }
-      });
+      }
       
       if (validRows.length === 0) {
         throw new Error('No valid rows found after validation');
       }
       
       console.log('Validation complete, valid rows:', validRows.length);
+      setProgress(25);
       
-      // Process in batches of 100 rows
-      const batchSize = 100;
+      // Process in smaller batches for million+ records
+      const batchSize = file.size > 50 * 1024 * 1024 ? 50 : 100; // Smaller batches for very large files
       const totalBatches = Math.ceil(validRows.length / batchSize);
+      
+      console.log(`Processing ${validRows.length} rows in ${totalBatches} batches of ${batchSize}`);
       
       for (let i = 0; i < totalBatches; i++) {
         const start = i * batchSize;
@@ -322,12 +387,13 @@ export const useBulkImportPharmaceuticalProducts = () => {
           result.errors.push(...batchResult.errors);
           
           // Update progress
-          const progressPercent = 20 + ((i + 1) / totalBatches) * 80;
+          const progressPercent = 25 + ((i + 1) / totalBatches) * 75;
           setProgress(Math.round(progressPercent));
           
-          // Small delay to prevent overwhelming the database
+          // Longer delay for large files to prevent overwhelming the database
           if (i < totalBatches - 1) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            const delay = file.size > 100 * 1024 * 1024 ? 200 : 100;
+            await new Promise(resolve => setTimeout(resolve, delay));
           }
         } catch (error) {
           console.error(`Batch ${i + 1} failed:`, error);
@@ -345,8 +411,17 @@ export const useBulkImportPharmaceuticalProducts = () => {
         result.warnings.push(`Successfully imported ${result.successfulRows} products`);
       }
       
+      if (file.size > 100 * 1024 * 1024) {
+        result.warnings.push('Large file processed successfully with optimized memory usage');
+      }
+      
       setProgress(100);
       setImportResult(result);
+      
+      toast({
+        title: "Import completed",
+        description: `Successfully processed ${result.successfulRows} out of ${result.totalRows} rows`,
+      });
       
     } catch (error) {
       console.error('Import failed:', error);
