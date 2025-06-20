@@ -46,10 +46,10 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
       return;
     }
 
-    if (selectedFile.size > 50 * 1024 * 1024) { // 50MB limit
+    if (selectedFile.size > 200 * 1024 * 1024) { // 200MB limit
       toast({
         title: "File too large",
-        description: "Please select a file smaller than 50MB",
+        description: "Please select a file smaller than 200MB",
         variant: "destructive",
       });
       return;
@@ -214,7 +214,7 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
                     </Button>
                   </label>
                   <p className="text-xs text-gray-500">
-                    Supports Excel (.xlsx, .xls) and CSV files up to 50MB
+                    Supports Excel (.xlsx, .xls) and CSV files up to 200MB
                   </p>
                 </div>
               )}
