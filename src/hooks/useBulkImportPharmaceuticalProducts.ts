@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -38,7 +37,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       
       const reader = new FileReader();
       
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const data = e.target?.result;
           if (!data) {
@@ -155,8 +154,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
           let processedRows = 0;
           const totalDataRows = totalRows - 1; // Exclude header
           
-          for (let startRow = 1; startRow < totalRows; startRow += chunkSize) {
-            const endRow = Math.min(startRow + chunkSize, totalRows);
+          const processChunk = async (startRow: number, endRow: number) => {
             console.log(`Processing chunk: rows ${startRow} to ${endRow - 1}`);
             
             // Process this chunk
@@ -209,6 +207,12 @@ export const useBulkImportPharmaceuticalProducts = () => {
                 console.log(`Parsed ${processedRows}/${totalDataRows} rows (${progressPercent.toFixed(1)}%)`);
               }
             }
+          };
+          
+          // Process all chunks
+          for (let startRow = 1; startRow < totalRows; startRow += chunkSize) {
+            const endRow = Math.min(startRow + chunkSize, totalRows);
+            await processChunk(startRow, endRow);
             
             // Small delay to prevent blocking
             if (startRow + chunkSize < totalRows) {
