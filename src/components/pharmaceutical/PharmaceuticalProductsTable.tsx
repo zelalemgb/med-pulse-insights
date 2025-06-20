@@ -8,10 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Package, Building, MapPin, DollarSign } from 'lucide-react';
 import { usePharmaceuticalProducts } from '@/hooks/usePharmaceuticalProducts';
 import { PharmaceuticalProductFilters } from '@/types/pharmaceuticalProducts';
+import BulkImportDialog from './BulkImportDialog';
 
 const PharmaceuticalProductsTable = () => {
   const [filters, setFilters] = useState<PharmaceuticalProductFilters>({});
-  const { products, isLoading, error } = usePharmaceuticalProducts(filters);
+  const { products, isLoading, error, refetch } = usePharmaceuticalProducts(filters);
 
   // Get unique values for filter dropdowns
   const filterOptions = useMemo(() => {
@@ -48,6 +49,10 @@ const PharmaceuticalProductsTable = () => {
     return quantity.toLocaleString('en-US', { maximumFractionDigits: 6 });
   };
 
+  const handleImportComplete = () => {
+    refetch();
+  };
+
   if (error) {
     return (
       <Card>
@@ -61,13 +66,18 @@ const PharmaceuticalProductsTable = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Package className="h-5 w-5" />
-          Pharmaceutical Products
-        </CardTitle>
-        <CardDescription>
-          Comprehensive pharmaceutical product inventory with pricing and availability data
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Pharmaceutical Products
+            </CardTitle>
+            <CardDescription>
+              Comprehensive pharmaceutical product inventory with pricing and availability data
+            </CardDescription>
+          </div>
+          <BulkImportDialog onImportComplete={handleImportComplete} />
+        </div>
       </CardHeader>
       
       <CardContent>
