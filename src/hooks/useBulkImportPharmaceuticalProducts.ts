@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -362,7 +363,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       // Process records one by one with detailed progress tracking
       for (let i = 0; i < batch.length; i++) {
         const row = batch[i];
-        const recordProgress = ((i + 1) / batch.length) * 100;
+        const checkProgress = ((i + 1) / batch.length) * 100;
         
         setImportProgress({
           phase: 'Checking for duplicates',
@@ -399,9 +400,9 @@ export const useBulkImportPharmaceuticalProducts = () => {
         // Update progress within the 65-70% range for duplicate checking
         const baseProgress = 65;
         const duplicateCheckRange = 5; // 65% to 70%
-        const batchProgress = ((batchIndex) / totalBatches) * duplicateCheckRange;
-        const recordProgress = ((i + 1) / batch.length) * (duplicateCheckRange / totalBatches);
-        const currentProgress = Math.min(baseProgress + batchProgress + recordProgress, 70);
+        const batchProgressPercent = ((batchIndex) / totalBatches) * duplicateCheckRange;
+        const recordProgressPercent = ((i + 1) / batch.length) * (duplicateCheckRange / totalBatches);
+        const currentProgress = Math.min(baseProgress + batchProgressPercent + recordProgressPercent, 70);
         setProgress(Math.round(currentProgress));
         
         // Small delay to prevent overwhelming the database and show progress
