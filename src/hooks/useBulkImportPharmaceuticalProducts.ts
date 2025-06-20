@@ -32,219 +32,210 @@ export const useBulkImportPharmaceuticalProducts = () => {
   const { toast } = useToast();
 
   const parseFileStream = async (file: File): Promise<ParsedRow[]> => {
-    return new Promise((resolve, reject) => {
-      console.log('Starting streaming file parse for:', file.name, 'Size:', file.size);
-      
-      const reader = new FileReader();
-      
-      reader.onload = async (e) => {
-        try {
-          const data = e.target?.result;
-          if (!data) {
+    console.log('Starting streaming file parse for:', file.name, 'Size:', file.size);
+    
+    try {
+      const data = await new Promise<any>((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+          const result = e.target?.result;
+          if (!result) {
             reject(new Error('No data found in file'));
             return;
           }
-          
-          console.log('File read complete, starting XLSX parsing...');
-          
-          let workbook: XLSX.WorkBook;
-          
-          try {
-            // Use streaming options for large files
-            const parseOptions = {
-              type: file.type === 'text/csv' ? 'string' : 'array',
-              cellDates: false,
-              cellNF: false,
-              cellText: false,
-              raw: false,
-              dense: false, // Use sparse format to save memory
-              bookVBA: false,
-              bookSheets: false,
-              bookProps: false
-            } as any;
-            
-            workbook = XLSX.read(data, parseOptions);
-          } catch (parseError) {
-            console.error('XLSX parsing error:', parseError);
-            reject(new Error('Failed to parse Excel/CSV file. The file may be too large or corrupted.'));
-            return;
+          resolve(result);
+        };
+        
+        reader.onerror = () => {
+          reject(new Error('Failed to read file'));
+        };
+        
+        try {
+          if (file.type === 'text/csv') {
+            reader.readAsText(file);
+          } else {
+            reader.readAsArrayBuffer(file);
           }
+        } catch (readerError) {
+          console.error('FileReader setup error:', readerError);
+          reject(new Error('Failed to initialize file reader'));
+        }
+      });
+
+      console.log('File read complete, starting XLSX parsing...');
+      
+      let workbook: XLSX.WorkBook;
+      
+      try {
+        // Use streaming options for large files
+        const parseOptions = {
+          type: file.type === 'text/csv' ? 'string' : 'array',
+          cellDates: false,
+          cellNF: false,
+          cellText: false,
+          raw: false,
+          dense: false, // Use sparse format to save memory
+          bookVBA: false,
+          bookSheets: false,
+          bookProps: false
+        } as any;
+        
+        workbook = XLSX.read(data, parseOptions);
+      } catch (parseError) {
+        console.error('XLSX parsing error:', parseError);
+        throw new Error('Failed to parse Excel/CSV file. The file may be too large or corrupted.');
+      }
+      
+      if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+        throw new Error('No worksheets found in the file');
+      }
+      
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      
+      if (!worksheet) {
+        throw new Error('Cannot read the first worksheet');
+      }
+      
+      console.log('Processing worksheet with streaming approach...');
+      
+      // Get the range of the worksheet
+      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
+      const totalRows = range.e.r + 1;
+      
+      console.log('Total rows detected:', totalRows);
+      
+      if (totalRows > 1000000) {
+        console.log('Large file detected, using optimized processing...');
+      }
+      
+      // Process in chunks to avoid memory issues
+      const chunkSize = 10000;
+      const parsedRows: ParsedRow[] = [];
+      let headers: string[] = [];
+      
+      // Get headers from first row
+      const headerRow: any[] = [];
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+        const cell = worksheet[cellAddress];
+        headerRow[col] = cell ? (cell.v || '') : '';
+      }
+      headers = headerRow;
+      
+      console.log('Headers found:', headers);
+      
+      // Map headers to expected columns
+      const columnMap = new Map<string, number>();
+      headers.forEach((header, index) => {
+        if (header === null || header === undefined) return;
+        
+        const normalizedHeader = String(header).toLowerCase().trim();
+        
+        if (normalizedHeader.includes('region')) {
+          columnMap.set('region', index);
+        } else if (normalizedHeader.includes('zone')) {
+          columnMap.set('zone', index);
+        } else if (normalizedHeader.includes('woreda') || normalizedHeader.includes('ward')) {
+          columnMap.set('woreda', index);
+        } else if (normalizedHeader.includes('facility') || normalizedHeader.includes('health center') || normalizedHeader.includes('hospital')) {
+          columnMap.set('facility', index);
+        } else if (normalizedHeader.includes('product') && normalizedHeader.includes('name')) {
+          columnMap.set('product_name', index);
+        } else if (normalizedHeader.includes('unit') && !normalizedHeader.includes('price')) {
+          columnMap.set('unit', index);
+        } else if (normalizedHeader.includes('category') || normalizedHeader.includes('type')) {
+          columnMap.set('product_category', index);
+        } else if (normalizedHeader.includes('price') && !normalizedHeader.includes('miazia')) {
+          columnMap.set('price', index);
+        } else if (normalizedHeader.includes('procurement') || normalizedHeader.includes('source')) {
+          columnMap.set('procurement_source', index);
+        } else if (normalizedHeader.includes('quantity') || normalizedHeader.includes('qty')) {
+          columnMap.set('quantity', index);
+        } else if (normalizedHeader.includes('miazia') && normalizedHeader.includes('price')) {
+          columnMap.set('miazia_price', index);
+        }
+      });
+      
+      if (!columnMap.has('facility') || !columnMap.has('product_name')) {
+        throw new Error('Required columns missing: facility and product_name are mandatory');
+      }
+      
+      console.log('Column mapping complete:', Object.fromEntries(columnMap));
+      
+      // Process data in chunks
+      let processedRows = 0;
+      const totalDataRows = totalRows - 1; // Exclude header
+      
+      const processChunk = (startRow: number, endRow: number) => {
+        console.log(`Processing chunk: rows ${startRow} to ${endRow - 1}`);
+        
+        // Process this chunk
+        for (let row = startRow; row < endRow; row++) {
+          const rowData: any[] = [];
+          let hasData = false;
           
-          if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-            reject(new Error('No worksheets found in the file'));
-            return;
-          }
-          
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          
-          if (!worksheet) {
-            reject(new Error('Cannot read the first worksheet'));
-            return;
-          }
-          
-          console.log('Processing worksheet with streaming approach...');
-          
-          // Get the range of the worksheet
-          const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
-          const totalRows = range.e.r + 1;
-          
-          console.log('Total rows detected:', totalRows);
-          
-          if (totalRows > 1000000) {
-            console.log('Large file detected, using optimized processing...');
-          }
-          
-          // Process in chunks to avoid memory issues
-          const chunkSize = 10000;
-          const parsedRows: ParsedRow[] = [];
-          let headers: string[] = [];
-          
-          // Get headers from first row
-          const headerRow: any[] = [];
+          // Get data for this row
           for (let col = range.s.c; col <= range.e.c; col++) {
-            const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+            const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
             const cell = worksheet[cellAddress];
-            headerRow[col] = cell ? (cell.v || '') : '';
+            const value = cell ? (cell.v || '') : '';
+            rowData[col] = value;
+            if (value !== null && value !== undefined && String(value).trim() !== '') {
+              hasData = true;
+            }
           }
-          headers = headerRow;
           
-          console.log('Headers found:', headers);
+          if (!hasData) continue;
           
-          // Map headers to expected columns
-          const columnMap = new Map<string, number>();
-          headers.forEach((header, index) => {
-            if (header === null || header === undefined) return;
-            
-            const normalizedHeader = String(header).toLowerCase().trim();
-            
-            if (normalizedHeader.includes('region')) {
-              columnMap.set('region', index);
-            } else if (normalizedHeader.includes('zone')) {
-              columnMap.set('zone', index);
-            } else if (normalizedHeader.includes('woreda') || normalizedHeader.includes('ward')) {
-              columnMap.set('woreda', index);
-            } else if (normalizedHeader.includes('facility') || normalizedHeader.includes('health center') || normalizedHeader.includes('hospital')) {
-              columnMap.set('facility', index);
-            } else if (normalizedHeader.includes('product') && normalizedHeader.includes('name')) {
-              columnMap.set('product_name', index);
-            } else if (normalizedHeader.includes('unit') && !normalizedHeader.includes('price')) {
-              columnMap.set('unit', index);
-            } else if (normalizedHeader.includes('category') || normalizedHeader.includes('type')) {
-              columnMap.set('product_category', index);
-            } else if (normalizedHeader.includes('price') && !normalizedHeader.includes('miazia')) {
-              columnMap.set('price', index);
-            } else if (normalizedHeader.includes('procurement') || normalizedHeader.includes('source')) {
-              columnMap.set('procurement_source', index);
-            } else if (normalizedHeader.includes('quantity') || normalizedHeader.includes('qty')) {
-              columnMap.set('quantity', index);
-            } else if (normalizedHeader.includes('miazia') && normalizedHeader.includes('price')) {
-              columnMap.set('miazia_price', index);
+          const parsedRow: ParsedRow = {
+            facility: '',
+            product_name: ''
+          };
+          
+          columnMap.forEach((colIndex, field) => {
+            const value = rowData[colIndex];
+            if (value != null && String(value).trim() !== '') {
+              if (field === 'price' || field === 'quantity' || field === 'miazia_price') {
+                const numValue = parseFloat(String(value).replace(/[^\d.-]/g, ''));
+                if (!isNaN(numValue)) {
+                  (parsedRow as any)[field] = numValue;
+                }
+              } else {
+                (parsedRow as any)[field] = String(value).trim();
+              }
             }
           });
           
-          if (!columnMap.has('facility') || !columnMap.has('product_name')) {
-            reject(new Error('Required columns missing: facility and product_name are mandatory'));
-            return;
+          if (parsedRow.facility && parsedRow.facility.trim() !== '' && 
+              parsedRow.product_name && parsedRow.product_name.trim() !== '') {
+            parsedRows.push(parsedRow);
           }
           
-          console.log('Column mapping complete:', Object.fromEntries(columnMap));
+          processedRows++;
           
-          // Process data in chunks
-          let processedRows = 0;
-          const totalDataRows = totalRows - 1; // Exclude header
-          
-          const processChunk = async (startRow: number, endRow: number) => {
-            console.log(`Processing chunk: rows ${startRow} to ${endRow - 1}`);
-            
-            // Process this chunk
-            for (let row = startRow; row < endRow; row++) {
-              const rowData: any[] = [];
-              let hasData = false;
-              
-              // Get data for this row
-              for (let col = range.s.c; col <= range.e.c; col++) {
-                const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-                const cell = worksheet[cellAddress];
-                const value = cell ? (cell.v || '') : '';
-                rowData[col] = value;
-                if (value !== null && value !== undefined && String(value).trim() !== '') {
-                  hasData = true;
-                }
-              }
-              
-              if (!hasData) continue;
-              
-              const parsedRow: ParsedRow = {
-                facility: '',
-                product_name: ''
-              };
-              
-              columnMap.forEach((colIndex, field) => {
-                const value = rowData[colIndex];
-                if (value != null && String(value).trim() !== '') {
-                  if (field === 'price' || field === 'quantity' || field === 'miazia_price') {
-                    const numValue = parseFloat(String(value).replace(/[^\d.-]/g, ''));
-                    if (!isNaN(numValue)) {
-                      (parsedRow as any)[field] = numValue;
-                    }
-                  } else {
-                    (parsedRow as any)[field] = String(value).trim();
-                  }
-                }
-              });
-              
-              if (parsedRow.facility && parsedRow.facility.trim() !== '' && 
-                  parsedRow.product_name && parsedRow.product_name.trim() !== '') {
-                parsedRows.push(parsedRow);
-              }
-              
-              processedRows++;
-              
-              // Update progress occasionally
-              if (processedRows % 1000 === 0) {
-                const progressPercent = (processedRows / totalDataRows) * 100;
-                console.log(`Parsed ${processedRows}/${totalDataRows} rows (${progressPercent.toFixed(1)}%)`);
-              }
-            }
-          };
-          
-          // Process all chunks
-          for (let startRow = 1; startRow < totalRows; startRow += chunkSize) {
-            const endRow = Math.min(startRow + chunkSize, totalRows);
-            await processChunk(startRow, endRow);
-            
-            // Small delay to prevent blocking
-            if (startRow + chunkSize < totalRows) {
-              await new Promise(resolve => setTimeout(resolve, 1));
-            }
+          // Update progress occasionally
+          if (processedRows % 1000 === 0) {
+            const progressPercent = (processedRows / totalDataRows) * 100;
+            console.log(`Parsed ${processedRows}/${totalDataRows} rows (${progressPercent.toFixed(1)}%)`);
           }
-          
-          console.log('File parsing complete. Total valid rows:', parsedRows.length);
-          resolve(parsedRows);
-          
-        } catch (error) {
-          console.error('File parsing error:', error);
-          reject(new Error(`Failed to parse file: ${error instanceof Error ? error.message : 'Memory or processing error with large file'}`));
         }
       };
       
-      reader.onerror = () => {
-        console.error('FileReader error');
-        reject(new Error('Failed to read file'));
-      };
-      
-      try {
-        if (file.type === 'text/csv') {
-          reader.readAsText(file);
-        } else {
-          reader.readAsArrayBuffer(file);
-        }
-      } catch (readerError) {
-        console.error('FileReader setup error:', readerError);
-        reject(new Error('Failed to initialize file reader'));
+      // Process all chunks synchronously to avoid memory issues
+      for (let startRow = 1; startRow < totalRows; startRow += chunkSize) {
+        const endRow = Math.min(startRow + chunkSize, totalRows);
+        processChunk(startRow, endRow);
       }
-    });
+      
+      console.log('File parsing complete. Total valid rows:', parsedRows.length);
+      return parsedRows;
+      
+    } catch (error) {
+      console.error('File parsing error:', error);
+      throw new Error(`Failed to parse file: ${error instanceof Error ? error.message : 'Memory or processing error with large file'}`);
+    }
   };
 
   const validateRow = (row: ParsedRow, rowIndex: number): string[] => {
