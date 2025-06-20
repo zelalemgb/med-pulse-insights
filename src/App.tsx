@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
@@ -12,12 +13,12 @@ import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 import { AuthProvider } from './contexts/AuthContext';
 import { NavigationProvider } from './contexts/NavigationContext';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { RoleGuard } from './components/auth/RoleGuard';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import RoleGuard from './components/auth/RoleGuard';
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/toaster"
-import { QueryClient, QueryClientProvider } from 'react-query';
-import { Sonner } from './components/ui/sonner';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster as Sonner } from './components/ui/sonner';
 
 import PharmaceuticalProducts from '@/pages/PharmaceuticalProducts';
 
