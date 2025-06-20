@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +12,8 @@ interface ImportResult {
 }
 
 interface ParsedRow {
+  region?: string;
+  zone?: string;
   woreda?: string;
   facility: string;
   product_name: string;
@@ -63,7 +64,11 @@ export const useBulkImportPharmaceuticalProducts = () => {
             const normalizedHeader = header.toString().toLowerCase().trim();
             
             // Map various possible column names to our standard names
-            if (normalizedHeader.includes('woreda') || normalizedHeader.includes('ward')) {
+            if (normalizedHeader.includes('region')) {
+              columnMap.set('region', index);
+            } else if (normalizedHeader.includes('zone')) {
+              columnMap.set('zone', index);
+            } else if (normalizedHeader.includes('woreda') || normalizedHeader.includes('ward')) {
               columnMap.set('woreda', index);
             } else if (normalizedHeader.includes('facility') || normalizedHeader.includes('health center') || normalizedHeader.includes('hospital')) {
               columnMap.set('facility', index);
@@ -162,6 +167,8 @@ export const useBulkImportPharmaceuticalProducts = () => {
     const { data, error } = await supabase
       .from('pharmaceutical_products')
       .insert(batch.map(row => ({
+        region: row.region || null,
+        zone: row.zone || null,
         woreda: row.woreda || null,
         facility: row.facility,
         product_name: row.product_name,

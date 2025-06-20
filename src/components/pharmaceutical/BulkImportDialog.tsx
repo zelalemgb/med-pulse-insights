@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -106,6 +105,8 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
 
   const downloadTemplate = () => {
     const headers = [
+      'region',
+      'zone',
       'woreda',
       'facility',
       'product_name',
@@ -118,8 +119,8 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
     ];
     
     const csvContent = headers.join(',') + '\n' +
-      'Woreda 1,Sample Health Center,Paracetamol 500mg,100 tablets,Medicines,25.50,EPSS,50,1275.00\n' +
-      'Woreda 2,Sample Hospital,Amoxicillin 250mg,50 capsules,Medicines,45.00,NON-EPSS,30,1350.00';
+      'Addis Ababa,Addis Ababa Zone,Woreda 1,Sample Health Center,Paracetamol 500mg,100 tablets,Medicines,25.50,EPSS,50,1275.00\n' +
+      'Oromia,East Shewa Zone,Woreda 2,Sample Hospital,Amoxicillin 250mg,50 capsules,Medicines,45.00,NON-EPSS,30,1350.00';
     
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -154,7 +155,7 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">Download Template</CardTitle>
                 <CardDescription className="text-xs">
-                  Download a sample CSV template with the correct column format
+                  Download a sample CSV template with the correct column format (includes Region and Zone)
                 </CardDescription>
               </CardHeader>
               <CardContent>

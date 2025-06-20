@@ -25,8 +25,16 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
         query = query.ilike('facility', `%${filters.facility}%`);
       }
       
+      if (filters?.region) {
+        query = query.eq('region', filters.region);
+      }
+      
+      if (filters?.zone) {
+        query = query.eq('zone', filters.zone);
+      }
+      
       if (filters?.woreda) {
-        query = query.ilike('woreda', `%${filters.woreda}%`);
+        query = query.eq('woreda', filters.woreda);
       }
       
       if (filters?.product_category) {

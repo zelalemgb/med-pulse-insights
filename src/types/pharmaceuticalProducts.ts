@@ -1,6 +1,8 @@
 
 export interface PharmaceuticalProduct {
   id: string;
+  region?: string;
+  zone?: string;
   woreda?: string;
   facility: string;
   product_name: string;
@@ -16,6 +18,8 @@ export interface PharmaceuticalProduct {
 
 export interface PharmaceuticalProductFilters {
   facility?: string;
+  region?: string;
+  zone?: string;
   woreda?: string;
   product_category?: string;
   procurement_source?: string;

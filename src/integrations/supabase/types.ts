@@ -408,9 +408,11 @@ export type Database = {
           product_category: string | null
           product_name: string
           quantity: number | null
+          region: string | null
           unit: string | null
           updated_at: string | null
           woreda: string | null
+          zone: string | null
         }
         Insert: {
           created_at?: string | null
@@ -422,9 +424,11 @@ export type Database = {
           product_category?: string | null
           product_name: string
           quantity?: number | null
+          region?: string | null
           unit?: string | null
           updated_at?: string | null
           woreda?: string | null
+          zone?: string | null
         }
         Update: {
           created_at?: string | null
@@ -436,9 +440,11 @@ export type Database = {
           product_category?: string | null
           product_name?: string
           quantity?: number | null
+          region?: string | null
           unit?: string | null
           updated_at?: string | null
           woreda?: string | null
+          zone?: string | null
         }
         Relationships: []
       }
