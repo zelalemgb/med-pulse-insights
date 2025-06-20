@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, FileText, AlertCircle, CheckCircle, X, Info } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, X, Info, Clock, Database, FileCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useBulkImportPharmaceuticalProducts } from '@/hooks/useBulkImportPharmaceuticalProducts';
 
@@ -28,6 +28,7 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
     isImporting, 
     progress, 
     importResult, 
+    importProgress,
     reset 
   } = useBulkImportPharmaceuticalProducts();
 
@@ -132,6 +133,23 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
     window.URL.revokeObjectURL(url);
   };
 
+  const getPhaseIcon = (phase: string) => {
+    switch (phase.toLowerCase()) {
+      case 'reading file':
+      case 'starting import':
+        return <FileCheck className="h-4 w-4" />;
+      case 'validating data':
+        return <FileText className="h-4 w-4" />;
+      case 'checking for duplicates':
+        return <Database className="h-4 w-4" />;
+      case 'processing data':
+      case 'inserting data':
+        return <Upload className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -233,12 +251,44 @@ const BulkImportDialog = ({ onImportComplete }: { onImportComplete?: () => void 
 
             {/* Progress */}
             {isImporting && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span>Processing...</span>
                   <span>{progress}%</span>
                 </div>
                 <Progress value={progress} className="w-full" />
+                
+                {/* Detailed Progress Information */}
+                {importProgress && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        {getPhaseIcon(importProgress.phase)}
+                        <span className="font-medium text-sm">{importProgress.phase}</span>
+                        {importProgress.currentBatch && importProgress.totalBatches && (
+                          <span className="text-xs text-gray-500">
+                            ({importProgress.currentBatch}/{importProgress.totalBatches})
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">{importProgress.details}</p>
+                      
+                      {importProgress.errors && importProgress.errors.length > 0 && (
+                        <div className="mt-2 p-2 bg-red-50 rounded text-xs">
+                          <div className="font-medium text-red-800 mb-1">Current Errors:</div>
+                          <ul className="list-disc list-inside text-red-700">
+                            {importProgress.errors.slice(0, 3).map((error, index) => (
+                              <li key={index}>{error}</li>
+                            ))}
+                            {importProgress.errors.length > 3 && (
+                              <li>... and {importProgress.errors.length - 3} more errors</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
           </div>

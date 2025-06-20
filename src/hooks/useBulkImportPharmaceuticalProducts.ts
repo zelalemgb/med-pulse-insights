@@ -11,6 +11,14 @@ interface ImportResult {
   warnings: string[];
 }
 
+interface ImportProgress {
+  phase: string;
+  details: string;
+  currentBatch?: number;
+  totalBatches?: number;
+  errors?: string[];
+}
+
 interface ParsedRow {
   region?: string;
   zone?: string;
@@ -29,6 +37,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const { toast } = useToast();
 
   const parseCSVLine = (line: string): string[] => {
@@ -345,35 +354,42 @@ export const useBulkImportPharmaceuticalProducts = () => {
 
   const checkExistingRecords = async (batch: ParsedRow[]): Promise<{ existingKeys: Set<string>; error?: string }> => {
     try {
-      // Create unique keys for the batch (facility + product_name combination)
-      const uniqueKeys = batch.map(row => `${row.facility.toLowerCase().trim()}|${row.product_name.toLowerCase().trim()}`);
-      
-      // Query existing records with matching facility and product_name combinations
-      const facilityProductPairs = batch.map(row => ({
-        facility: row.facility.toLowerCase().trim(),
-        product_name: row.product_name.toLowerCase().trim()
-      }));
-      
-      const { data: existingRecords, error } = await supabase
-        .from('pharmaceutical_products')
-        .select('facility, product_name')
-        .or(
-          facilityProductPairs.map(pair => 
-            `and(facility.ilike.${pair.facility},product_name.ilike.${pair.product_name})`
-          ).join(',')
-        );
+      setImportProgress({
+        phase: 'Checking for duplicates',
+        details: `Checking ${batch.length} records against existing data...`
+      });
 
-      if (error) {
-        console.error('Error checking existing records:', error);
-        return { existingKeys: new Set(), error: error.message };
+      // Instead of complex OR queries, use multiple smaller queries to avoid parsing issues
+      const existingKeys = new Set<string>();
+      const batchSize = 20; // Check in smaller chunks to avoid query complexity
+      
+      for (let i = 0; i < batch.length; i += batchSize) {
+        const chunk = batch.slice(i, i + batchSize);
+        
+        // Use simple equality checks instead of complex OR logic
+        for (const row of chunk) {
+          const { data: existingRecords, error } = await supabase
+            .from('pharmaceutical_products')
+            .select('facility, product_name')
+            .eq('facility', row.facility)
+            .eq('product_name', row.product_name)
+            .limit(1);
+
+          if (error) {
+            console.error('Error checking existing record:', error);
+            continue; // Skip this check but don't fail the entire process
+          }
+
+          if (existingRecords && existingRecords.length > 0) {
+            const key = `${row.facility.toLowerCase().trim()}|${row.product_name.toLowerCase().trim()}`;
+            existingKeys.add(key);
+          }
+        }
+        
+        // Update progress for duplicate checking
+        const duplicateCheckProgress = 65 + ((i + batchSize) / batch.length) * 5;
+        setProgress(Math.min(Math.round(duplicateCheckProgress), 70));
       }
-
-      // Create a set of existing keys for quick lookup
-      const existingKeys = new Set(
-        (existingRecords || []).map(record => 
-          `${record.facility.toLowerCase().trim()}|${record.product_name.toLowerCase().trim()}`
-        )
-      );
 
       return { existingKeys };
     } catch (error) {
@@ -385,8 +401,15 @@ export const useBulkImportPharmaceuticalProducts = () => {
     }
   };
 
-  const processBatch = async (batch: ParsedRow[]): Promise<{ success: number; skipped: number; errors: string[] }> => {
+  const processBatch = async (batch: ParsedRow[], batchIndex: number, totalBatches: number): Promise<{ success: number; skipped: number; errors: string[] }> => {
     try {
+      setImportProgress({
+        phase: 'Processing data',
+        details: `Processing batch ${batchIndex + 1} of ${totalBatches} (${batch.length} records)`,
+        currentBatch: batchIndex + 1,
+        totalBatches: totalBatches
+      });
+
       // Check for existing records
       const { existingKeys, error: checkError } = await checkExistingRecords(batch);
       
@@ -414,6 +437,13 @@ export const useBulkImportPharmaceuticalProducts = () => {
           errors: []
         };
       }
+
+      setImportProgress({
+        phase: 'Inserting data',
+        details: `Inserting ${newRecords.length} new records (skipping ${skippedCount} duplicates)`,
+        currentBatch: batchIndex + 1,
+        totalBatches: totalBatches
+      });
 
       // Insert only new records
       const { data, error } = await supabase
@@ -460,6 +490,10 @@ export const useBulkImportPharmaceuticalProducts = () => {
     setIsImporting(true);
     setProgress(0);
     setImportResult(null);
+    setImportProgress({
+      phase: 'Starting import',
+      details: 'Initializing file processing...'
+    });
     
     const result: ImportResult = {
       totalRows: 0,
@@ -473,6 +507,11 @@ export const useBulkImportPharmaceuticalProducts = () => {
     try {
       console.log('Starting file import for:', file.name, 'Size:', file.size);
       
+      setImportProgress({
+        phase: 'Reading file',
+        details: `Processing ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)...`
+      });
+
       // Parse file with streaming approach for large files
       const parsedRows = await parseFileStream(file);
       result.totalRows = parsedRows.length;
@@ -484,6 +523,11 @@ export const useBulkImportPharmaceuticalProducts = () => {
       console.log('File parsed successfully, rows:', parsedRows.length);
       setProgress(50);
       
+      setImportProgress({
+        phase: 'Validating data',
+        details: `Validating ${parsedRows.length} rows...`
+      });
+
       // Validate data in chunks
       const validRows: ParsedRow[] = [];
       const chunkSize = 5000;
@@ -518,8 +562,8 @@ export const useBulkImportPharmaceuticalProducts = () => {
       console.log('Validation complete, valid rows:', validRows.length);
       setProgress(65);
       
-      // Process in smaller batches for large files
-      const batchSize = file.size > 50 * 1024 * 1024 ? 50 : 100;
+      // Process in batches
+      const batchSize = 50;
       const totalBatches = Math.ceil(validRows.length / batchSize);
       
       console.log(`Processing ${validRows.length} rows in ${totalBatches} batches of ${batchSize}`);
@@ -531,19 +575,18 @@ export const useBulkImportPharmaceuticalProducts = () => {
         
         try {
           console.log(`Processing batch ${i + 1}/${totalBatches}, rows: ${start}-${end}`);
-          const batchResult = await processBatch(batch);
+          const batchResult = await processBatch(batch, i, totalBatches);
           result.successfulRows += batchResult.success;
           result.skippedRows += batchResult.skipped;
           result.errors.push(...batchResult.errors);
           
           // Update progress
-          const progressPercent = 65 + ((i + 1) / totalBatches) * 35;
+          const progressPercent = 70 + ((i + 1) / totalBatches) * 30;
           setProgress(Math.round(progressPercent));
           
-          // Shorter delay since we're now doing duplicate checking
+          // Short delay between batches
           if (i < totalBatches - 1) {
-            const delay = file.size > 100 * 1024 * 1024 ? 200 : 100;
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise(resolve => setTimeout(resolve, 50));
           }
         } catch (error) {
           console.error(`Batch ${i + 1} failed:`, error);
@@ -571,6 +614,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       
       setProgress(100);
       setImportResult(result);
+      setImportProgress(null);
       
       toast({
         title: "Import completed",
@@ -582,6 +626,11 @@ export const useBulkImportPharmaceuticalProducts = () => {
       const errorMessage = error instanceof Error ? error.message : 'Import failed';
       result.errors.push(errorMessage);
       setImportResult(result);
+      setImportProgress({
+        phase: 'Import failed',
+        details: errorMessage,
+        errors: [errorMessage]
+      });
       
       toast({
         title: "Import failed",
@@ -597,6 +646,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
     setIsImporting(false);
     setProgress(0);
     setImportResult(null);
+    setImportProgress(null);
   };
 
   return {
@@ -604,6 +654,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
     isImporting,
     progress,
     importResult,
+    importProgress,
     reset
   };
 };
