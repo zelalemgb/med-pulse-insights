@@ -26,7 +26,7 @@ const PharmaceuticalProductsTable = () => {
   const handleFilterChange = (key: keyof PharmaceuticalProductFilters, value: string) => {
     setFilters(prev => ({
       ...prev,
-      [key]: value || undefined
+      [key]: value === 'all' ? undefined : value
     }));
   };
 
@@ -83,48 +83,48 @@ const PharmaceuticalProductsTable = () => {
             />
           </div>
           
-          <Select value={filters.facility || ''} onValueChange={(value) => handleFilterChange('facility', value)}>
+          <Select value={filters.facility || 'all'} onValueChange={(value) => handleFilterChange('facility', value)}>
             <SelectTrigger>
               <SelectValue placeholder="All Facilities" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Facilities</SelectItem>
+              <SelectItem value="all">All Facilities</SelectItem>
               {filterOptions.facilities.map(facility => (
                 <SelectItem key={facility} value={facility}>{facility}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           
-          <Select value={filters.woreda || ''} onValueChange={(value) => handleFilterChange('woreda', value)}>
+          <Select value={filters.woreda || 'all'} onValueChange={(value) => handleFilterChange('woreda', value)}>
             <SelectTrigger>
               <SelectValue placeholder="All Woredas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Woredas</SelectItem>
+              <SelectItem value="all">All Woredas</SelectItem>
               {filterOptions.woredas.map(woreda => (
                 <SelectItem key={woreda} value={woreda}>{woreda}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           
-          <Select value={filters.product_category || ''} onValueChange={(value) => handleFilterChange('product_category', value)}>
+          <Select value={filters.product_category || 'all'} onValueChange={(value) => handleFilterChange('product_category', value)}>
             <SelectTrigger>
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               {filterOptions.categories.map(category => (
                 <SelectItem key={category} value={category}>{category}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           
-          <Select value={filters.procurement_source || ''} onValueChange={(value) => handleFilterChange('procurement_source', value)}>
+          <Select value={filters.procurement_source || 'all'} onValueChange={(value) => handleFilterChange('procurement_source', value)}>
             <SelectTrigger>
               <SelectValue placeholder="All Sources" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Sources</SelectItem>
+              <SelectItem value="all">All Sources</SelectItem>
               {filterOptions.sources.map(source => (
                 <SelectItem key={source} value={source}>{source}</SelectItem>
               ))}
