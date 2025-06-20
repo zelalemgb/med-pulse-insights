@@ -397,6 +397,51 @@ export type Database = {
           },
         ]
       }
+      pharmaceutical_products: {
+        Row: {
+          created_at: string | null
+          facility: string
+          id: string
+          miazia_price: number | null
+          price: number | null
+          procurement_source: string | null
+          product_category: string | null
+          product_name: string
+          quantity: number | null
+          unit: string | null
+          updated_at: string | null
+          woreda: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          facility: string
+          id?: string
+          miazia_price?: number | null
+          price?: number | null
+          procurement_source?: string | null
+          product_category?: string | null
+          product_name: string
+          quantity?: number | null
+          unit?: string | null
+          updated_at?: string | null
+          woreda?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          facility?: string
+          id?: string
+          miazia_price?: number | null
+          price?: number | null
+          procurement_source?: string | null
+          product_category?: string | null
+          product_name?: string
+          quantity?: number | null
+          unit?: string | null
+          updated_at?: string | null
+          woreda?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           aamc: number | null

@@ -1,101 +1,112 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Index from './pages/Index';
+import Auth from './pages/Auth';
+import Dashboard from './pages/Dashboard';
+import DataEntry from './pages/DataEntry';
+import Analytics from './pages/Analytics';
+import DataManagement from './pages/DataManagement';
+import Facilities from './pages/Facilities';
+import UserManagement from './pages/UserManagement';
+import Profile from './pages/Profile';
+import NotFound from './pages/NotFound';
+import { AuthProvider } from './contexts/AuthContext';
+import { NavigationProvider } from './contexts/NavigationContext';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { RoleGuard } from './components/auth/RoleGuard';
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/toaster"
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { Sonner } from './components/ui/sonner';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { NavigationProvider } from "@/contexts/NavigationContext";
-import MainNavigation from "@/components/layout/MainNavigation";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import Analytics from "./pages/Analytics";
-import DataEntry from "./pages/DataEntry";
-import DataManagement from "./pages/DataManagement";
-import Auth from "./pages/Auth";
-import Facilities from "./pages/Facilities";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
-import UserManagement from '@/pages/UserManagement';
-
-const queryClient = new QueryClient();
+import PharmaceuticalProducts from '@/pages/PharmaceuticalProducts';
 
 function App() {
+  const queryClient = new QueryClient();
+
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <NavigationProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/dashboard" element={
-                    <div className="min-h-screen bg-gray-50 flex flex-col">
-                      <MainNavigation />
-                      <main className="flex-1">
-                        <Dashboard />
-                      </main>
-                    </div>
-                  } />
-                  <Route path="/analytics" element={
-                    <div className="min-h-screen bg-gray-50 flex flex-col">
-                      <MainNavigation />
-                      <main className="flex-1">
-                        <Analytics />
-                      </main>
-                    </div>
-                  } />
-                  <Route path="/data-entry" element={
-                    <div className="min-h-screen bg-gray-50 flex flex-col">
-                      <MainNavigation />
-                      <main className="flex-1">
-                        <DataEntry />
-                      </main>
-                    </div>
-                  } />
-                  <Route path="/data-management" element={
-                    <div className="min-h-screen bg-gray-50 flex flex-col">
-                      <MainNavigation />
-                      <main className="flex-1">
-                        <DataManagement />
-                      </main>
-                    </div>
-                  } />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/facilities" element={
-                    <div className="min-h-screen bg-gray-50 flex flex-col">
-                      <MainNavigation />
-                      <main className="flex-1">
-                        <Facilities />
-                      </main>
-                    </div>
-                  } />
-                  <Route path="/profile" element={
-                    <div className="min-h-screen bg-gray-50 flex flex-col">
-                      <MainNavigation />
-                      <main className="flex-1">
-                        <Profile />
-                      </main>
-                    </div>
-                  } />
-                  <Route path="/user-management" element={
-                    <div className="min-h-screen bg-gray-50 flex flex-col">
-                      <MainNavigation />
-                      <main className="flex-1">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <NavigationProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/data-entry"
+                  element={
+                    <ProtectedRoute>
+                      <DataEntry />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/analytics"
+                  element={
+                    <ProtectedRoute>
+                      <Analytics />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/data-management"
+                  element={
+                    <ProtectedRoute>
+                      <DataManagement />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/pharmaceutical-products"
+                  element={
+                    <ProtectedRoute>
+                      <PharmaceuticalProducts />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/facilities"
+                  element={
+                    <ProtectedRoute>
+                      <Facilities />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/user-management"
+                  element={
+                    <ProtectedRoute>
+                      <RoleGuard allowedRoles={['national', 'regional', 'zonal']}>
                         <UserManagement />
-                      </main>
-                    </div>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
-            </TooltipProvider>
-          </NavigationProvider>
-        </AuthProvider>
-      </BrowserRouter>
+                      </RoleGuard>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </NavigationProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

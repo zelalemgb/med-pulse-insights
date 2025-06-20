@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, BarChart3, Map, Upload, Database, Plus, TrendingUp, FileText } from 'lucide-react';
+import { Home, Users, BarChart3, Map, Upload, Database, Plus, TrendingUp, FileText, Package } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -41,6 +40,13 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
       requiresAuth: true,
       description: 'Upload consumption data',
       badge: isFacilityLevel ? 'Primary' : null
+    },
+    {
+      href: '/pharmaceutical-products',
+      label: 'Products',
+      icon: Package,
+      requiresAuth: true,
+      description: 'Pharmaceutical product inventory'
     },
     {
       href: '/analytics',
