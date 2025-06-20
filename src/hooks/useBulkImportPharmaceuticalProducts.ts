@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -359,9 +360,8 @@ export const useBulkImportPharmaceuticalProducts = () => {
         details: `Checking ${batch.length} records against existing data...`
       });
 
-      // Instead of complex OR queries, use multiple smaller queries to avoid parsing issues
       const existingKeys = new Set<string>();
-      const batchSize = 20; // Check in smaller chunks to avoid query complexity
+      const batchSize = 10; // Smaller batch size to avoid query complexity
       
       for (let i = 0; i < batch.length; i += batchSize) {
         const chunk = batch.slice(i, i + batchSize);
@@ -386,9 +386,10 @@ export const useBulkImportPharmaceuticalProducts = () => {
           }
         }
         
-        // Update progress for duplicate checking
-        const duplicateCheckProgress = 65 + ((i + batchSize) / batch.length) * 5;
-        setProgress(Math.min(Math.round(duplicateCheckProgress), 70));
+        // Small delay to prevent overwhelming the database
+        if (i + batchSize < batch.length) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
       }
 
       return { existingKeys };
@@ -545,7 +546,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
           }
         });
         
-        // Update progress
+        // Update progress for validation phase (50% to 65%)
         const validationProgress = 50 + ((i + chunkSize) / parsedRows.length) * 15;
         setProgress(Math.min(Math.round(validationProgress), 65));
         
@@ -568,6 +569,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       
       console.log(`Processing ${validRows.length} rows in ${totalBatches} batches of ${batchSize}`);
       
+      // Processing phase (65% to 100%)
       for (let i = 0; i < totalBatches; i++) {
         const start = i * batchSize;
         const end = Math.min(start + batchSize, validRows.length);
@@ -580,13 +582,13 @@ export const useBulkImportPharmaceuticalProducts = () => {
           result.skippedRows += batchResult.skipped;
           result.errors.push(...batchResult.errors);
           
-          // Update progress
-          const progressPercent = 70 + ((i + 1) / totalBatches) * 30;
-          setProgress(Math.round(progressPercent));
+          // Update progress from 65% to 100%
+          const processingProgress = 65 + ((i + 1) / totalBatches) * 35;
+          setProgress(Math.round(processingProgress));
           
           // Short delay between batches
           if (i < totalBatches - 1) {
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
         } catch (error) {
           console.error(`Batch ${i + 1} failed:`, error);
