@@ -38,30 +38,76 @@ export const useBulkImportPharmaceuticalProducts = () => {
       reader.onload = (e) => {
         try {
           const data = e.target?.result;
+          if (!data) {
+            reject(new Error('No data found in file'));
+            return;
+          }
+          
           let workbook: XLSX.WorkBook;
           
-          if (file.type === 'text/csv') {
-            workbook = XLSX.read(data, { type: 'string' });
-          } else {
-            workbook = XLSX.read(data, { type: 'array' });
+          try {
+            if (file.type === 'text/csv') {
+              workbook = XLSX.read(data, { type: 'string' });
+            } else {
+              workbook = XLSX.read(data, { type: 'array' });
+            }
+          } catch (parseError) {
+            console.error('XLSX parsing error:', parseError);
+            reject(new Error('Failed to parse Excel/CSV file. Please ensure the file is not corrupted and is in a supported format.'));
+            return;
+          }
+          
+          if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+            reject(new Error('No worksheets found in the file'));
+            return;
           }
           
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           
-          if (jsonData.length === 0) {
-            reject(new Error('File is empty'));
+          if (!worksheet) {
+            reject(new Error('Cannot read the first worksheet'));
             return;
           }
           
-          const headers = jsonData[0] as string[];
-          const rows = jsonData.slice(1) as any[][];
+          let jsonData;
+          try {
+            jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+          } catch (sheetError) {
+            console.error('Sheet conversion error:', sheetError);
+            reject(new Error('Failed to convert worksheet to data. The file may be too large or corrupted.'));
+            return;
+          }
+          
+          if (!Array.isArray(jsonData) || jsonData.length === 0) {
+            reject(new Error('File appears to be empty or contains no valid data'));
+            return;
+          }
+          
+          // Filter out completely empty rows
+          const filteredData = jsonData.filter(row => 
+            Array.isArray(row) && row.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== '')
+          );
+          
+          if (filteredData.length === 0) {
+            reject(new Error('No valid data rows found in the file'));
+            return;
+          }
+          
+          const headers = filteredData[0] as string[];
+          const rows = filteredData.slice(1) as any[][];
+          
+          if (!Array.isArray(headers) || headers.length === 0) {
+            reject(new Error('No headers found in the file'));
+            return;
+          }
           
           // Map headers to expected columns (case-insensitive)
           const columnMap = new Map<string, number>();
           headers.forEach((header, index) => {
-            const normalizedHeader = header.toString().toLowerCase().trim();
+            if (header === null || header === undefined) return;
+            
+            const normalizedHeader = String(header).toLowerCase().trim();
             
             // Map various possible column names to our standard names
             if (normalizedHeader.includes('region')) {
@@ -74,7 +120,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
               columnMap.set('facility', index);
             } else if (normalizedHeader.includes('product') && normalizedHeader.includes('name')) {
               columnMap.set('product_name', index);
-            } else if (normalizedHeader.includes('unit')) {
+            } else if (normalizedHeader.includes('unit') && !normalizedHeader.includes('price')) {
               columnMap.set('unit', index);
             } else if (normalizedHeader.includes('category') || normalizedHeader.includes('type')) {
               columnMap.set('product_category', index);
@@ -95,44 +141,64 @@ export const useBulkImportPharmaceuticalProducts = () => {
             return;
           }
           
-          const parsedRows: ParsedRow[] = rows
-            .filter(row => row && row.some(cell => cell != null && cell !== ''))
-            .map((row, index) => {
-              const parsedRow: ParsedRow = {
-                facility: '',
-                product_name: ''
-              };
-              
-              columnMap.forEach((colIndex, field) => {
-                const value = row[colIndex];
-                if (value != null && value !== '') {
-                  if (field === 'price' || field === 'quantity' || field === 'miazia_price') {
-                    const numValue = parseFloat(String(value).replace(/[^\d.-]/g, ''));
-                    if (!isNaN(numValue)) {
-                      (parsedRow as any)[field] = numValue;
-                    }
-                  } else {
-                    (parsedRow as any)[field] = String(value).trim();
-                  }
-                }
-              });
-              
-              return parsedRow;
-            })
-            .filter(row => row.facility && row.product_name);
+          const parsedRows: ParsedRow[] = [];
           
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            
+            // Skip empty rows
+            if (!Array.isArray(row) || !row.some(cell => cell != null && String(cell).trim() !== '')) {
+              continue;
+            }
+            
+            const parsedRow: ParsedRow = {
+              facility: '',
+              product_name: ''
+            };
+            
+            columnMap.forEach((colIndex, field) => {
+              const value = row[colIndex];
+              if (value != null && String(value).trim() !== '') {
+                if (field === 'price' || field === 'quantity' || field === 'miazia_price') {
+                  const numValue = parseFloat(String(value).replace(/[^\d.-]/g, ''));
+                  if (!isNaN(numValue)) {
+                    (parsedRow as any)[field] = numValue;
+                  }
+                } else {
+                  (parsedRow as any)[field] = String(value).trim();
+                }
+              }
+            });
+            
+            // Only include rows with required fields
+            if (parsedRow.facility && parsedRow.facility.trim() !== '' && 
+                parsedRow.product_name && parsedRow.product_name.trim() !== '') {
+              parsedRows.push(parsedRow);
+            }
+          }
+          
+          console.log('Successfully parsed rows:', parsedRows.length);
           resolve(parsedRows);
         } catch (error) {
-          reject(new Error(`Failed to parse file: ${error instanceof Error ? error.message : 'Unknown error'}`));
+          console.error('File parsing error:', error);
+          reject(new Error(`Failed to parse file: ${error instanceof Error ? error.message : 'Unknown parsing error'}`));
         }
       };
       
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = () => {
+        console.error('FileReader error');
+        reject(new Error('Failed to read file'));
+      };
       
-      if (file.type === 'text/csv') {
-        reader.readAsText(file);
-      } else {
-        reader.readAsArrayBuffer(file);
+      try {
+        if (file.type === 'text/csv') {
+          reader.readAsText(file);
+        } else {
+          reader.readAsArrayBuffer(file);
+        }
+      } catch (readerError) {
+        console.error('FileReader setup error:', readerError);
+        reject(new Error('Failed to initialize file reader'));
       }
     });
   };
@@ -210,12 +276,15 @@ export const useBulkImportPharmaceuticalProducts = () => {
     try {
       // Parse file
       setProgress(10);
+      console.log('Starting file parse for:', file.name, 'Size:', file.size);
       const parsedRows = await parseFile(file);
       result.totalRows = parsedRows.length;
       
       if (parsedRows.length === 0) {
         throw new Error('No valid data rows found in the file');
       }
+      
+      console.log('File parsed successfully, rows:', parsedRows.length);
       
       // Validate data
       setProgress(20);
@@ -235,6 +304,8 @@ export const useBulkImportPharmaceuticalProducts = () => {
         throw new Error('No valid rows found after validation');
       }
       
+      console.log('Validation complete, valid rows:', validRows.length);
+      
       // Process in batches of 100 rows
       const batchSize = 100;
       const totalBatches = Math.ceil(validRows.length / batchSize);
@@ -245,6 +316,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
         const batch = validRows.slice(start, end);
         
         try {
+          console.log(`Processing batch ${i + 1}/${totalBatches}, rows: ${start}-${end}`);
           const batchResult = await processBatch(batch);
           result.successfulRows += batchResult.success;
           result.errors.push(...batchResult.errors);
