@@ -1,15 +1,15 @@
-
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
-import { Package, Building, MapPin, DollarSign, TrendingUp, AlertTriangle, Pill, ShoppingCart } from 'lucide-react';
+import { Package, Building, MapPin, DollarSign, TrendingUp, AlertTriangle, Pill, ShoppingCart, RefreshCw } from 'lucide-react';
 import { usePharmaceuticalProducts } from '@/hooks/usePharmaceuticalProducts';
+import { Button } from '@/components/ui/button';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
 
 const PharmaceuticalDashboard = () => {
-  const { products, allProductsMetrics, isLoading, error } = usePharmaceuticalProducts({}, { enablePagination: false });
+  const { products, allProductsMetrics, isLoading, error, refetch } = usePharmaceuticalProducts({}, { enablePagination: false });
 
   const dashboardMetrics = useMemo(() => {
     if (!products.length) return null;
@@ -103,12 +103,32 @@ const PharmaceuticalDashboard = () => {
     );
   }
 
-  if (error || !dashboardMetrics || !allProductsMetrics) {
+  if (error) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-red-600">
-            {error ? `Error: ${error}` : 'No data available for dashboard'}
+          <div className="text-center">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-red-600 mb-2">Error Loading Dashboard</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button onClick={() => refetch()} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!allProductsMetrics) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">
+            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">No Data Available</h3>
+            <p className="text-gray-500">Unable to load pharmaceutical data at this time.</p>
           </div>
         </CardContent>
       </Card>
@@ -116,38 +136,38 @@ const PharmaceuticalDashboard = () => {
   }
 
   // Prepare chart data
-  const categoryChartData = Object.entries(dashboardMetrics.categoryBreakdown).map(([name, data]) => ({
+  const categoryChartData = dashboardMetrics ? Object.entries(dashboardMetrics.categoryBreakdown).map(([name, data]) => ({
     name,
     count: data.count,
     value: data.value
-  }));
+  })) : [];
 
-  const sourceChartData = Object.entries(dashboardMetrics.sourceBreakdown).map(([name, data]) => ({
+  const sourceChartData = dashboardMetrics ? Object.entries(dashboardMetrics.sourceBreakdown).map(([name, data]) => ({
     name,
     count: data.count,
     value: data.value
-  }));
+  })) : [];
 
-  const regionalChartData = Object.entries(dashboardMetrics.regionalBreakdown).map(([name, data]) => ({
+  const regionalChartData = dashboardMetrics ? Object.entries(dashboardMetrics.regionalBreakdown).map(([name, data]) => ({
     name,
     count: data.count,
     value: data.value,
     facilities: data.facilities.size
-  }));
+  })) : [];
 
-  const topFacilitiesData = Object.entries(dashboardMetrics.facilityBreakdown)
+  const topFacilitiesData = dashboardMetrics ? Object.entries(dashboardMetrics.facilityBreakdown)
     .sort(([,a], [,b]) => b.count - a.count)
     .slice(0, 10)
     .map(([name, data]) => ({
       name: name.length > 30 ? name.substring(0, 30) + '...' : name,
       count: data.count,
       value: data.value
-    }));
+    })) : [];
 
-  const priceRangeData = Object.entries(dashboardMetrics.priceRanges).map(([range, count]) => ({
+  const priceRangeData = dashboardMetrics ? Object.entries(dashboardMetrics.priceRanges).map(([range, count]) => ({
     range,
     count
-  }));
+  })) : [];
 
   return (
     <div className="space-y-6">
@@ -203,167 +223,171 @@ const PharmaceuticalDashboard = () => {
       </div>
 
       {/* Secondary Metrics - Using Sampled Data */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Quantity (Sample)</p>
-                <p className="text-2xl font-bold text-teal-900">{dashboardMetrics.totalQuantity.toLocaleString()}</p>
-              </div>
-              <Pill className="h-8 w-8 text-teal-600" />
-            </div>
-          </CardContent>
-        </Card>
+      {dashboardMetrics && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Quantity (Sample)</p>
+                    <p className="text-2xl font-bold text-teal-900">{dashboardMetrics.totalQuantity.toLocaleString()}</p>
+                  </div>
+                  <Pill className="h-8 w-8 text-teal-600" />
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Avg Miazia Price (Sample)</p>
-                <p className="text-2xl font-bold text-indigo-900">{formatCurrency(dashboardMetrics.avgMiaziaPrice)}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-indigo-600" />
-            </div>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Avg Miazia Price (Sample)</p>
+                    <p className="text-2xl font-bold text-indigo-900">{formatCurrency(dashboardMetrics.avgMiaziaPrice)}</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-indigo-600" />
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Zones Covered (Sample)</p>
-                <p className="text-2xl font-bold text-rose-900">{dashboardMetrics.uniqueZones}</p>
-              </div>
-              <MapPin className="h-8 w-8 text-rose-600" />
-            </div>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Zones Covered (Sample)</p>
+                    <p className="text-2xl font-bold text-rose-900">{dashboardMetrics.uniqueZones}</p>
+                  </div>
+                  <MapPin className="h-8 w-8 text-rose-600" />
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Regular Price Value (Sample)</p>
-                <p className="text-2xl font-bold text-amber-900">{formatCurrency(dashboardMetrics.totalRegularValue)}</p>
-              </div>
-              <ShoppingCart className="h-8 w-8 text-amber-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Regular Price Value (Sample)</p>
+                    <p className="text-2xl font-bold text-amber-900">{formatCurrency(dashboardMetrics.totalRegularValue)}</p>
+                  </div>
+                  <ShoppingCart className="h-8 w-8 text-amber-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Product Categories Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Products by Category</CardTitle>
-            <CardDescription>Distribution of pharmaceutical products across categories (sample data)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={categoryChartData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="count"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                >
-                  {categoryChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [value, 'Products']} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Product Categories Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Products by Category</CardTitle>
+                <CardDescription>Distribution of pharmaceutical products across categories (sample data)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={categoryChartData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="count"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {categoryChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [value, 'Products']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
 
-        {/* Procurement Sources Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Procurement Sources</CardTitle>
-            <CardDescription>Products by procurement source (sample data)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={sourceChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value) => [value, 'Products']} />
-                <Bar dataKey="count" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+            {/* Procurement Sources Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Procurement Sources</CardTitle>
+                <CardDescription>Products by procurement source (sample data)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={sourceChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => [value, 'Products']} />
+                    <Bar dataKey="count" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Regional Analysis */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Regional Distribution</CardTitle>
-          <CardDescription>Products and facilities across different regions (sample data)</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={regionalChartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis yAxisId="left" />
-              <YAxis yAxisId="right" orientation="right" />
-              <Tooltip />
-              <Bar yAxisId="left" dataKey="count" fill="#3b82f6" name="Products" />
-              <Bar yAxisId="right" dataKey="facilities" fill="#10b981" name="Facilities" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+          {/* Regional Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Regional Distribution</CardTitle>
+              <CardDescription>Products and facilities across different regions (sample data)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={regionalChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Bar yAxisId="left" dataKey="count" fill="#3b82f6" name="Products" />
+                  <Bar yAxisId="right" dataKey="facilities" fill="#10b981" name="Facilities" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-      {/* Top Facilities and Price Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Facilities */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Top 10 Facilities by Product Count</CardTitle>
-            <CardDescription>Facilities with the most pharmaceutical products (sample data)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={topFacilitiesData} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={150} />
-                <Tooltip formatter={(value) => [value, 'Products']} />
-                <Bar dataKey="count" fill="#8b5cf6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          {/* Top Facilities and Price Distribution */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top Facilities */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Top 10 Facilities by Product Count</CardTitle>
+                <CardDescription>Facilities with the most pharmaceutical products (sample data)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={topFacilitiesData} layout="horizontal">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={150} />
+                    <Tooltip formatter={(value) => [value, 'Products']} />
+                    <Bar dataKey="count" fill="#8b5cf6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
 
-        {/* Price Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Price Range Distribution</CardTitle>
-            <CardDescription>Distribution of products by Miazia price ranges (sample data)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
-              <AreaChart data={priceRangeData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="range" />
-                <YAxis />
-                <Tooltip formatter={(value) => [value, 'Products']} />
-                <Area type="monotone" dataKey="count" stroke="#f59e0b" fill="#fbbf24" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+            {/* Price Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Price Range Distribution</CardTitle>
+                <CardDescription>Distribution of products by Miazia price ranges (sample data)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={400}>
+                  <AreaChart data={priceRangeData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="range" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => [value, 'Products']} />
+                    <Area type="monotone" dataKey="count" stroke="#f59e0b" fill="#fbbf24" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 };

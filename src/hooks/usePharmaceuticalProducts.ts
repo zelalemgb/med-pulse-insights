@@ -27,59 +27,64 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
     try {
       console.log('Fetching complete dataset metrics...');
       
-      // Get total count
-      let countQuery = supabase
+      // Get total count with error handling
+      const { count, error: countError } = await supabase
         .from('pharmaceutical_products')
         .select('*', { count: 'exact', head: true });
 
-      const { count } = await countQuery;
-      
-      // Get aggregated metrics from ALL data using aggregation queries
-      // This is more efficient than fetching all records
-      const { data: miaziaData, error: miaziaError } = await supabase
-        .from('pharmaceutical_products')
-        .select('miazia_price')
-        .not('miazia_price', 'is', null);
-
-      if (miaziaError) throw miaziaError;
-
-      const { data: facilitiesData, error: facilitiesError } = await supabase
-        .from('pharmaceutical_products')
-        .select('facility')
-        .not('facility', 'is', null);
-
-      if (facilitiesError) throw facilitiesError;
-
-      const { data: regionsData, error: regionsError } = await supabase
-        .from('pharmaceutical_products')
-        .select('region')
-        .not('region', 'is', null);
-
-      if (regionsError) throw regionsError;
-
-      if (miaziaData && facilitiesData && regionsData) {
-        const totalValue = miaziaData.reduce((sum, item) => sum + (item.miazia_price || 0), 0);
-        const uniqueFacilities = new Set(facilitiesData.map(item => item.facility)).size;
-        const uniqueRegions = new Set(regionsData.map(item => item.region).filter(Boolean)).size;
-
-        console.log('Complete dataset metrics:', {
-          totalProducts: count || 0,
-          totalValue,
-          uniqueFacilities,
-          uniqueRegions
-        });
-
-        setAllProductsMetrics({
-          totalProducts: count || 0,
-          totalValue,
-          uniqueFacilities,
-          uniqueRegions
-        });
+      if (countError) {
+        console.error('Error fetching count:', countError);
+        throw countError;
       }
+      
+      // Get aggregated metrics from ALL data using simpler queries
+      const [miaziaResult, facilitiesResult, regionsResult] = await Promise.all([
+        supabase
+          .from('pharmaceutical_products')
+          .select('miazia_price')
+          .not('miazia_price', 'is', null),
+        supabase
+          .from('pharmaceutical_products')
+          .select('facility')
+          .not('facility', 'is', null),
+        supabase
+          .from('pharmaceutical_products')
+          .select('region')
+          .not('region', 'is', null)
+      ]);
+
+      if (miaziaResult.error) throw miaziaResult.error;
+      if (facilitiesResult.error) throw facilitiesResult.error;
+      if (regionsResult.error) throw regionsResult.error;
+
+      const totalValue = miaziaResult.data?.reduce((sum, item) => sum + (item.miazia_price || 0), 0) || 0;
+      const uniqueFacilities = new Set(facilitiesResult.data?.map(item => item.facility)).size;
+      const uniqueRegions = new Set(regionsResult.data?.map(item => item.region).filter(Boolean)).size;
+
+      console.log('Complete dataset metrics:', {
+        totalProducts: count || 0,
+        totalValue,
+        uniqueFacilities,
+        uniqueRegions
+      });
+
+      setAllProductsMetrics({
+        totalProducts: count || 0,
+        totalValue,
+        uniqueFacilities,
+        uniqueRegions
+      });
 
       setTotalCount(count || 0);
     } catch (err) {
       console.error('Error fetching metrics:', err);
+      // Don't show toast for metrics errors, just log them
+      setAllProductsMetrics({
+        totalProducts: 0,
+        totalValue: 0,
+        uniqueFacilities: 0,
+        uniqueRegions: 0
+      });
     }
   };
 
@@ -142,6 +147,7 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
       setProducts(data || []);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch pharmaceutical products';
+      console.error('Error fetching products:', errorMessage);
       setError(errorMessage);
       toast({
         title: "Error",
@@ -158,7 +164,12 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
   }, [filters, pagination?.page, pagination?.pageSize]);
 
   useEffect(() => {
-    fetchMetrics();
+    // Add a small delay to prevent overwhelming the database
+    const timeoutId = setTimeout(() => {
+      fetchMetrics();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   return {
