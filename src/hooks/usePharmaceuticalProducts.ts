@@ -21,6 +21,12 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filterValues, setFilterValues] = useState<{
+    facilities: string[];
+    regions: string[];
+    zones: string[];
+    woredas: string[];
+  }>({ facilities: [], regions: [], zones: [], woredas: [] });
   const { toast } = useToast();
 
   const fetchMetrics = async () => {
@@ -63,6 +69,25 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
         uniqueFacilities: 0,
         uniqueRegions: 0
       });
+    }
+  };
+
+  const fetchFilterValues = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pharmaceutical_products')
+        .select('facility, region, zone, woreda');
+
+      if (error) throw error;
+
+      const facilities = Array.from(new Set((data || []).map(d => d.facility).filter(Boolean)));
+      const regions = Array.from(new Set((data || []).map(d => d.region).filter(Boolean)));
+      const zones = Array.from(new Set((data || []).map(d => d.zone).filter(Boolean)));
+      const woredas = Array.from(new Set((data || []).map(d => d.woreda).filter(Boolean)));
+
+      setFilterValues({ facilities, regions, zones, woredas });
+    } catch (err) {
+      console.error('Error fetching filter values:', err);
     }
   };
 
@@ -169,6 +194,7 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
     // Debounce metrics fetching to prevent overwhelming the database
     const timeoutId = setTimeout(() => {
       fetchMetrics();
+      fetchFilterValues();
     }, 2000);
 
     return () => clearTimeout(timeoutId);
@@ -178,6 +204,7 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
     products,
     totalCount,
     allProductsMetrics,
+    filterValues,
     isLoading,
     error,
     refetch: fetchProducts
