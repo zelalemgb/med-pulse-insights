@@ -17,22 +17,25 @@ const PharmaceuticalProductsTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   
-  const { products, totalCount, allProductsMetrics, isLoading, error, refetch } = usePharmaceuticalProducts(
-    filters, 
+  const { products, totalCount, allProductsMetrics, isLoading, error, refetch, filterValues } = usePharmaceuticalProducts(
+    filters,
     { page: currentPage, pageSize, enablePagination: true }
   );
 
-  // Get unique values for filter dropdowns from current page products
+  // Get unique values for filter dropdowns
   const filterOptions = useMemo(() => {
-    const facilities = [...new Set(products.map(p => p.facility))].filter(Boolean);
-    const regions = [...new Set(products.map(p => p.region))].filter(Boolean);
-    const zones = [...new Set(products.map(p => p.zone))].filter(Boolean);
-    const woredas = [...new Set(products.map(p => p.woreda))].filter(Boolean);
     const categories = [...new Set(products.map(p => p.product_category))].filter(Boolean);
     const sources = [...new Set(products.map(p => p.procurement_source))].filter(Boolean);
-    
-    return { facilities, regions, zones, woredas, categories, sources };
-  }, [products]);
+
+    return { 
+      facilities: filterValues.facilities,
+      regions: filterValues.regions,
+      zones: filterValues.zones,
+      woredas: filterValues.woredas,
+      categories,
+      sources 
+    };
+  }, [products, filterValues]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
