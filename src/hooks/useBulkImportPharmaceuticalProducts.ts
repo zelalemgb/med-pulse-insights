@@ -630,7 +630,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       setProgress(65);
       
       // Process in larger batches for better performance
-      const batchSize = 100; // Increased batch size for better performance
+      const batchSize = 2000; // Increased batch size for better performance
       const totalBatches = Math.ceil(validRows.length / batchSize);
       
       console.log(`Processing ${validRows.length} rows in ${totalBatches} batches of ${batchSize}`);
