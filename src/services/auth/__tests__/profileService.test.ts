@@ -16,7 +16,15 @@ describe('ProfileService.updateProfile', () => {
     const { error, data } = await ProfileService.updateProfile('1', { full_name: 'John', department: 'IT' });
 
     expect(error).toBeNull();
-    expect(data).toEqual({ id: '1', full_name: 'John', department: 'IT' });
+    expect(data).toEqual({
+      id: '1',
+      email: undefined,
+      full_name: 'John',
+      role: 'facility_officer',
+      facility_id: undefined,
+      department: 'IT',
+      is_active: undefined
+    });
     expect(supabase.from).toHaveBeenCalledWith('profiles');
     expect(update).toHaveBeenCalled();
     expect(eq).toHaveBeenCalledWith('id', '1');
