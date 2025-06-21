@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { PharmaceuticalProduct, PharmaceuticalProductFilters } from '@/types/pharmaceuticalProducts';
+import { PharmaceuticalProduct, PharmaceuticalProductFilters, PharmaceuticalFilterLists } from '@/types/pharmaceuticalProducts';
 import { useToast } from '@/hooks/use-toast';
 
 interface PaginationOptions {
@@ -21,12 +21,12 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filterValues, setFilterValues] = useState<{
-    facilities: string[];
-    regions: string[];
-    zones: string[];
-    woredas: string[];
-  }>({ facilities: [], regions: [], zones: [], woredas: [] });
+  const [filterValues, setFilterValues] = useState<PharmaceuticalFilterLists>({
+    facilities: [],
+    regions: [],
+    zones: [],
+    woredas: []
+  });
   const { toast } = useToast();
 
   const fetchMetrics = async () => {
@@ -74,18 +74,13 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
   const fetchFilterValues = async () => {
     try {
-      const { data, error } = await supabase
-        .from('pharmaceutical_products')
-        .select('facility, region, zone, woreda');
+      const { data, error } = await supabase.rpc('get_pharmaceutical_filter_values');
 
       if (error) throw error;
 
-      const facilities = Array.from(new Set((data || []).map(d => d.facility).filter(Boolean)));
-      const regions = Array.from(new Set((data || []).map(d => d.region).filter(Boolean)));
-      const zones = Array.from(new Set((data || []).map(d => d.zone).filter(Boolean)));
-      const woredas = Array.from(new Set((data || []).map(d => d.woreda).filter(Boolean)));
-
-      setFilterValues({ facilities, regions, zones, woredas });
+      if (data && data.length > 0) {
+        setFilterValues(data[0] as PharmaceuticalFilterLists);
+      }
     } catch (err) {
       console.error('Error fetching filter values:', err);
     }

@@ -25,3 +25,10 @@ export interface PharmaceuticalProductFilters {
   procurement_source?: string;
   search?: string;
 }
+
+export interface PharmaceuticalFilterLists {
+  facilities: string[];
+  regions: string[];
+  zones: string[];
+  woredas: string[];
+}
