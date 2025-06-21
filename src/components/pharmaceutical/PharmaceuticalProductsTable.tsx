@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -32,11 +31,10 @@ const PharmaceuticalProductsTable = () => {
     const uniqueFacilities = filterOptions.facilities.length;
     const uniqueRegions = filterOptions.regions.length;
     
-    // Calculate total value using both price and miazia_price, prioritizing miazia_price
+    // Calculate total value using only miazia_price column
     const totalValue = products.reduce((sum, product) => {
-      const value = product.miazia_price || product.price || 0;
-      const quantity = product.quantity || 1;
-      return sum + (value * quantity);
+      const miaziaPriceValue = product.miazia_price || 0;
+      return sum + miaziaPriceValue;
     }, 0);
     
     return {
@@ -230,7 +228,7 @@ const PharmaceuticalProductsTable = () => {
           <div className="bg-orange-50 p-4 rounded-lg">
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-orange-600" />
-              <span className="text-sm font-medium text-orange-600">Total Value</span>
+              <span className="text-sm font-medium text-orange-600">Total Miazia Value</span>
             </div>
             <p className="text-2xl font-bold text-orange-900">
               {formatCurrency(calculatedMetrics.totalValue)}
