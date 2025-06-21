@@ -111,11 +111,14 @@ export type Database = {
           name: string
           operational_status: string | null
           region: string
+          region_id: string | null
           services_offered: string[] | null
           staff_count: number | null
           updated_at: string
           wereda: string | null
+          woreda_id: string | null
           zone: string
+          zone_id: string | null
         }
         Insert: {
           capacity?: number | null
@@ -133,11 +136,14 @@ export type Database = {
           name: string
           operational_status?: string | null
           region: string
+          region_id?: string | null
           services_offered?: string[] | null
           staff_count?: number | null
           updated_at?: string
           wereda?: string | null
+          woreda_id?: string | null
           zone: string
+          zone_id?: string | null
         }
         Update: {
           capacity?: number | null
@@ -155,11 +161,14 @@ export type Database = {
           name?: string
           operational_status?: string | null
           region?: string
+          region_id?: string | null
           services_offered?: string[] | null
           staff_count?: number | null
           updated_at?: string
           wereda?: string | null
+          woreda_id?: string | null
           zone?: string
+          zone_id?: string | null
         }
         Relationships: [
           {
@@ -167,6 +176,27 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_facilities_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_facilities_woreda_id_fkey"
+            columns: ["woreda_id"]
+            isOneToOne: false
+            referencedRelation: "woredas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_facilities_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
             referencedColumns: ["id"]
           },
         ]
@@ -409,10 +439,13 @@ export type Database = {
           product_name: string
           quantity: number | null
           region: string | null
+          region_id: string | null
           unit: string | null
           updated_at: string | null
           woreda: string | null
+          woreda_id: string | null
           zone: string | null
+          zone_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -425,10 +458,13 @@ export type Database = {
           product_name: string
           quantity?: number | null
           region?: string | null
+          region_id?: string | null
           unit?: string | null
           updated_at?: string | null
           woreda?: string | null
+          woreda_id?: string | null
           zone?: string | null
+          zone_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -441,12 +477,37 @@ export type Database = {
           product_name?: string
           quantity?: number | null
           region?: string | null
+          region_id?: string | null
           unit?: string | null
           updated_at?: string | null
           woreda?: string | null
+          woreda_id?: string | null
           zone?: string | null
+          zone_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pharmaceutical_products_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pharmaceutical_products_woreda_id_fkey"
+            columns: ["woreda_id"]
+            isOneToOne: false
+            referencedRelation: "woredas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pharmaceutical_products_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -598,6 +659,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      regions: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       role_audit_log: {
         Row: {
@@ -835,6 +920,76 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      woredas: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          zone_id: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          zone_id: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "woredas_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zones: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          name: string
+          region_id: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          region_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          region_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zones_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

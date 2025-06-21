@@ -74,18 +74,45 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
   const fetchFilterValues = async () => {
     try {
+      // Fetch from both old text fields and new normalized data
       const { data, error } = await supabase
         .from('pharmaceutical_products')
-        .select('facility, region, zone, woreda');
+        .select(`
+          facility, 
+          region, 
+          zone, 
+          woreda,
+          regions!region_id(name),
+          zones!zone_id(name),
+          woredas!woreda_id(name)
+        `);
 
       if (error) throw error;
 
       const facilities = Array.from(new Set((data || []).map(d => d.facility).filter(Boolean)));
-      const regions = Array.from(new Set((data || []).map(d => d.region).filter(Boolean)));
-      const zones = Array.from(new Set((data || []).map(d => d.zone).filter(Boolean)));
-      const woredas = Array.from(new Set((data || []).map(d => d.woreda).filter(Boolean)));
+      
+      // Combine old text fields with new normalized data
+      const regionNames = Array.from(new Set([
+        ...(data || []).map(d => d.region).filter(Boolean),
+        ...(data || []).map(d => d.regions?.name).filter(Boolean)
+      ]));
+      
+      const zoneNames = Array.from(new Set([
+        ...(data || []).map(d => d.zone).filter(Boolean),
+        ...(data || []).map(d => d.zones?.name).filter(Boolean)
+      ]));
+      
+      const woredaNames = Array.from(new Set([
+        ...(data || []).map(d => d.woreda).filter(Boolean),
+        ...(data || []).map(d => d.woredas?.name).filter(Boolean)
+      ]));
 
-      setFilterValues({ facilities, regions, zones, woredas });
+      setFilterValues({ 
+        facilities, 
+        regions: regionNames, 
+        zones: zoneNames, 
+        woredas: woredaNames 
+      });
     } catch (err) {
       console.error('Error fetching filter values:', err);
     }
@@ -98,9 +125,14 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
     try {
       let query = supabase
         .from('pharmaceutical_products')
-        .select('*');
+        .select(`
+          *,
+          regions!region_id(id, name, code),
+          zones!zone_id(id, name, code),
+          woredas!woreda_id(id, name, code)
+        `);
 
-      // Apply filters
+      // Apply filters - support both old text fields and new normalized IDs
       if (filters?.facility) {
         query = query.ilike('facility', `%${filters.facility}%`);
       }
@@ -109,12 +141,24 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
         query = query.eq('region', filters.region);
       }
       
+      if (filters?.region_id) {
+        query = query.eq('region_id', filters.region_id);
+      }
+      
       if (filters?.zone) {
         query = query.eq('zone', filters.zone);
       }
       
+      if (filters?.zone_id) {
+        query = query.eq('zone_id', filters.zone_id);
+      }
+      
       if (filters?.woreda) {
         query = query.eq('woreda', filters.woreda);
+      }
+      
+      if (filters?.woreda_id) {
+        query = query.eq('woreda_id', filters.woreda_id);
       }
       
       if (filters?.product_category) {

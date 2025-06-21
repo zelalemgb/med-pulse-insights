@@ -14,6 +14,10 @@ export interface PharmaceuticalProduct {
   miazia_price?: number;
   created_at: string;
   updated_at: string;
+  // New normalized foreign keys
+  region_id?: string;
+  zone_id?: string;
+  woreda_id?: string;
 }
 
 export interface PharmaceuticalProductFilters {
@@ -24,4 +28,8 @@ export interface PharmaceuticalProductFilters {
   product_category?: string;
   procurement_source?: string;
   search?: string;
+  // New normalized filter options
+  region_id?: string;
+  zone_id?: string;
+  woreda_id?: string;
 }

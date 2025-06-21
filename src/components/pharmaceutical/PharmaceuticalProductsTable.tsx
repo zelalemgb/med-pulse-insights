@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Search, Package, Building, MapPin, DollarSign, ChevronLeft, ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react';
 import { usePharmaceuticalProducts } from '@/hooks/usePharmaceuticalProducts';
 import { PharmaceuticalProductFilters } from '@/types/pharmaceuticalProducts';
+import AdministrativeHierarchySelector from './AdministrativeHierarchySelector';
 import BulkImportDialog from './BulkImportDialog';
 
 const PharmaceuticalProductsTable = () => {
@@ -45,6 +45,16 @@ const PharmaceuticalProductsTable = () => {
       [key]: value === 'all' ? undefined : value
     }));
     setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  const handleAdministrativeChange = (regionId: string, zoneId: string, woredaId: string) => {
+    setFilters(prev => ({
+      ...prev,
+      region_id: regionId === 'all' ? undefined : regionId,
+      zone_id: zoneId === 'all' ? undefined : zoneId,
+      woreda_id: woredaId === 'all' ? undefined : woredaId
+    }));
+    setCurrentPage(1);
   };
 
   const clearFilters = () => {
@@ -157,42 +167,16 @@ const PharmaceuticalProductsTable = () => {
               ))}
             </SelectContent>
           </Select>
-          
-          <Select value={filters.region || 'all'} onValueChange={(value) => handleFilterChange('region', value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="All Regions" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Regions</SelectItem>
-              {filterOptions.regions.map(region => (
-                <SelectItem key={region} value={region}>{region}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Select value={filters.zone || 'all'} onValueChange={(value) => handleFilterChange('zone', value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="All Zones" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Zones</SelectItem>
-              {filterOptions.zones.map(zone => (
-                <SelectItem key={zone} value={zone}>{zone}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Select value={filters.woreda || 'all'} onValueChange={(value) => handleFilterChange('woreda', value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="All Woredas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Woredas</SelectItem>
-              {filterOptions.woredas.map(woreda => (
-                <SelectItem key={woreda} value={woreda}>{woreda}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+          {/* New Administrative Hierarchy Selectors */}
+          <AdministrativeHierarchySelector
+            selectedRegionId={filters.region_id}
+            selectedZoneId={filters.zone_id}
+            selectedWoredaId={filters.woreda_id}
+            onRegionChange={(regionId) => handleAdministrativeChange(regionId, '', '')}
+            onZoneChange={(zoneId) => handleAdministrativeChange(filters.region_id || '', zoneId, '')}
+            onWoredaChange={(woredaId) => handleAdministrativeChange(filters.region_id || '', filters.zone_id || '', woredaId)}
+          />
           
           <Select value={filters.product_category || 'all'} onValueChange={(value) => handleFilterChange('product_category', value)}>
             <SelectTrigger>
@@ -383,22 +367,29 @@ const PharmaceuticalProductsTable = () => {
                 products.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
-                      {product.region ? (
-                        <Badge variant="outline">{product.region}</Badge>
+                      {/* Display normalized region name if available, fallback to old text field */}
+                      {product.regions?.name || product.region ? (
+                        <Badge variant="outline">
+                          {product.regions?.name || product.region}
+                        </Badge>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      {product.zone ? (
-                        <Badge variant="outline">{product.zone}</Badge>
+                      {product.zones?.name || product.zone ? (
+                        <Badge variant="outline">
+                          {product.zones?.name || product.zone}
+                        </Badge>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      {product.woreda ? (
-                        <Badge variant="outline">{product.woreda}</Badge>
+                      {product.woredas?.name || product.woreda ? (
+                        <Badge variant="outline">
+                          {product.woredas?.name || product.woreda}
+                        </Badge>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
