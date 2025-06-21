@@ -31,32 +31,52 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
   const fetchMetrics = async () => {
     try {
-      console.log('Fetching complete dataset metrics...');
+      console.log('Fetching optimized dataset metrics...');
 
-      // Get total record count
+      // Get total record count only - much faster
       const { count, error: countError } = await supabase
         .from('pharmaceutical_products')
         .select('*', { count: 'exact', head: true });
 
       if (countError) throw countError;
 
-      // Fetch all rows for metric aggregation
-      const { data: metricsData, error: metricsError } = await supabase
-        .from('pharmaceutical_products')
-        .select('miazia_price, facility, region');
+      // Use aggregate functions instead of fetching all data
+      const { data: aggregateData, error: aggregateError } = await supabase
+        .rpc('get_pharmaceutical_metrics');
 
-      if (metricsError) throw metricsError;
+      if (aggregateError) {
+        console.log('RPC function not available, using fallback approach');
+        
+        // Fallback: Get aggregated data with a limit to prevent timeout
+        const { data: sampleData, error: sampleError } = await supabase
+          .from('pharmaceutical_products')
+          .select('miazia_price, facility, region')
+          .limit(10000); // Limit to prevent timeout
 
-      if (metricsData) {
-        const totalValue = metricsData.reduce((sum, item) => sum + (item.miazia_price || 0), 0);
-        const uniqueFacilities = new Set(metricsData.map(item => item.facility)).size;
-        const uniqueRegions = new Set(metricsData.map(item => item.region).filter(Boolean)).size;
+        if (sampleError) throw sampleError;
 
+        if (sampleData) {
+          const totalValue = sampleData.reduce((sum, item) => sum + (item.miazia_price || 0), 0);
+          const uniqueFacilities = new Set(sampleData.map(item => item.facility)).size;
+          const uniqueRegions = new Set(sampleData.map(item => item.region).filter(Boolean)).size;
+
+          // Estimate total value based on sample
+          const estimatedTotalValue = (totalValue * (count || 0)) / sampleData.length;
+
+          setAllProductsMetrics({
+            totalProducts: count || 0,
+            totalValue: estimatedTotalValue,
+            uniqueFacilities,
+            uniqueRegions
+          });
+        }
+      } else {
+        // Use RPC results if available
         setAllProductsMetrics({
           totalProducts: count || 0,
-          totalValue,
-          uniqueFacilities,
-          uniqueRegions
+          totalValue: aggregateData?.total_value || 0,
+          uniqueFacilities: aggregateData?.unique_facilities || 0,
+          uniqueRegions: aggregateData?.unique_regions || 0
         });
       }
 
@@ -74,38 +94,29 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
   const fetchFilterValues = async () => {
     try {
-      // Fetch from both old text fields and new normalized data
-      const { data, error } = await supabase
-        .from('pharmaceutical_products')
-        .select(`
-          facility, 
-          region, 
-          zone, 
-          woreda,
-          regions!region_id(name),
-          zones!zone_id(name),
-          woredas!woreda_id(name)
-        `);
+      // Fetch distinct values with limits to prevent timeout
+      const [facilitiesResult, regionsResult, zonesResult, woredasResult] = await Promise.all([
+        supabase.from('pharmaceutical_products').select('facility').limit(1000),
+        supabase.from('pharmaceutical_products').select('region').limit(1000),
+        supabase.from('pharmaceutical_products').select('zone').limit(1000),
+        supabase.from('pharmaceutical_products').select('woreda').limit(1000)
+      ]);
 
-      if (error) throw error;
-
-      const facilities = Array.from(new Set((data || []).map(d => d.facility).filter(Boolean)));
+      const facilities = Array.from(new Set(
+        (facilitiesResult.data || []).map(d => d.facility).filter(Boolean)
+      ));
       
-      // Combine old text fields with new normalized data
-      const regionNames = Array.from(new Set([
-        ...(data || []).map(d => d.region).filter(Boolean),
-        ...(data || []).map(d => d.regions?.name).filter(Boolean)
-      ]));
+      const regionNames = Array.from(new Set(
+        (regionsResult.data || []).map(d => d.region).filter(Boolean)
+      ));
       
-      const zoneNames = Array.from(new Set([
-        ...(data || []).map(d => d.zone).filter(Boolean),
-        ...(data || []).map(d => d.zones?.name).filter(Boolean)
-      ]));
+      const zoneNames = Array.from(new Set(
+        (zonesResult.data || []).map(d => d.zone).filter(Boolean)
+      ));
       
-      const woredaNames = Array.from(new Set([
-        ...(data || []).map(d => d.woreda).filter(Boolean),
-        ...(data || []).map(d => d.woredas?.name).filter(Boolean)
-      ]));
+      const woredaNames = Array.from(new Set(
+        (woredasResult.data || []).map(d => d.woreda).filter(Boolean)
+      ));
 
       setFilterValues({ 
         facilities, 
@@ -235,14 +246,14 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
   }, [filters, pagination?.page, pagination?.pageSize]);
 
   useEffect(() => {
-    // Debounce metrics fetching to prevent overwhelming the database
+    // Only fetch metrics and filter values on component mount, not on every filter change
     const timeoutId = setTimeout(() => {
       fetchMetrics();
       fetchFilterValues();
-    }, 2000);
+    }, 1000); // Reduced delay
 
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, []); // Empty dependency array - only run once
 
   return {
     products,
