@@ -34,7 +34,14 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
       if (countError) {
         console.error('Error fetching count:', countError);
-        throw countError;
+        // Don't throw, just use fallback
+        setAllProductsMetrics({
+          totalProducts: 0,
+          totalValue: 0,
+          uniqueFacilities: 0,
+          uniqueRegions: 0
+        });
+        return;
       }
       
       // Get aggregated metrics from ALL data using simpler queries
@@ -53,13 +60,10 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
           .not('region', 'is', null)
       ]);
 
-      if (miaziaResult.error) throw miaziaResult.error;
-      if (facilitiesResult.error) throw facilitiesResult.error;
-      if (regionsResult.error) throw regionsResult.error;
-
-      const totalValue = miaziaResult.data?.reduce((sum, item) => sum + (item.miazia_price || 0), 0) || 0;
-      const uniqueFacilities = new Set(facilitiesResult.data?.map(item => item.facility)).size;
-      const uniqueRegions = new Set(regionsResult.data?.map(item => item.region).filter(Boolean)).size;
+      // Handle potential errors in individual queries
+      const totalValue = miaziaResult.error ? 0 : (miaziaResult.data?.reduce((sum, item) => sum + (item.miazia_price || 0), 0) || 0);
+      const uniqueFacilities = facilitiesResult.error ? 0 : new Set(facilitiesResult.data?.map(item => item.facility)).size;
+      const uniqueRegions = regionsResult.error ? 0 : new Set(regionsResult.data?.map(item => item.region).filter(Boolean)).size;
 
       console.log('Complete dataset metrics:', {
         totalProducts: count || 0,
@@ -78,7 +82,7 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
       setTotalCount(count || 0);
     } catch (err) {
       console.error('Error fetching metrics:', err);
-      // Don't show toast for metrics errors, just log them
+      // Provide fallback metrics instead of throwing
       setAllProductsMetrics({
         totalProducts: 0,
         totalValue: 0,
@@ -141,7 +145,15 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
       const { data, error } = await query;
 
       if (error) {
-        throw new Error(`Failed to fetch pharmaceutical products: ${error.message}`);
+        console.error('Database error:', error);
+        // Handle specific authentication/authorization errors
+        if (error.code === '42501' || error.message.includes('policy')) {
+          setError('Unable to access pharmaceutical data. Please check your permissions or try logging in again.');
+        } else {
+          setError(`Failed to fetch pharmaceutical products: ${error.message}`);
+        }
+        setProducts([]);
+        return;
       }
 
       setProducts(data || []);
@@ -149,6 +161,7 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch pharmaceutical products';
       console.error('Error fetching products:', errorMessage);
       setError(errorMessage);
+      setProducts([]);
       toast({
         title: "Error",
         description: errorMessage,
@@ -164,10 +177,10 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
   }, [filters, pagination?.page, pagination?.pageSize]);
 
   useEffect(() => {
-    // Add a small delay to prevent overwhelming the database
+    // Add a delay to prevent overwhelming the database and handle auth issues
     const timeoutId = setTimeout(() => {
       fetchMetrics();
-    }, 500);
+    }, 1000);
 
     return () => clearTimeout(timeoutId);
   }, []);
