@@ -14,7 +14,7 @@ const PharmaceuticalProductsTable = () => {
   const [filters, setFilters] = useState<PharmaceuticalProductFilters>({});
   const { products, isLoading, error, refetch } = usePharmaceuticalProducts(filters);
 
-  // Get unique values for filter dropdowns
+  // Get unique values for filter dropdowns and calculate real metrics
   const filterOptions = useMemo(() => {
     const facilities = [...new Set(products.map(p => p.facility))].filter(Boolean);
     const regions = [...new Set(products.map(p => p.region))].filter(Boolean);
@@ -25,6 +25,27 @@ const PharmaceuticalProductsTable = () => {
     
     return { facilities, regions, zones, woredas, categories, sources };
   }, [products]);
+
+  // Calculate real metrics from the data
+  const calculatedMetrics = useMemo(() => {
+    const totalProducts = products.length;
+    const uniqueFacilities = filterOptions.facilities.length;
+    const uniqueRegions = filterOptions.regions.length;
+    
+    // Calculate total value using both price and miazia_price, prioritizing miazia_price
+    const totalValue = products.reduce((sum, product) => {
+      const value = product.miazia_price || product.price || 0;
+      const quantity = product.quantity || 1;
+      return sum + (value * quantity);
+    }, 0);
+    
+    return {
+      totalProducts,
+      uniqueFacilities,
+      uniqueRegions,
+      totalValue
+    };
+  }, [products, filterOptions]);
 
   const handleFilterChange = (key: keyof PharmaceuticalProductFilters, value: string) => {
     setFilters(prev => ({
@@ -42,7 +63,8 @@ const PharmaceuticalProductsTable = () => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'ETB',
-      minimumFractionDigits: 2
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
   };
 
@@ -179,14 +201,14 @@ const PharmaceuticalProductsTable = () => {
           </div>
         )}
 
-        {/* Summary Stats */}
+        {/* Updated Summary Stats with Real Calculations */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-blue-50 p-4 rounded-lg">
             <div className="flex items-center gap-2">
               <Package className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-medium text-blue-600">Total Products</span>
             </div>
-            <p className="text-2xl font-bold text-blue-900">{products.length}</p>
+            <p className="text-2xl font-bold text-blue-900">{calculatedMetrics.totalProducts.toLocaleString()}</p>
           </div>
           
           <div className="bg-green-50 p-4 rounded-lg">
@@ -194,7 +216,7 @@ const PharmaceuticalProductsTable = () => {
               <Building className="h-4 w-4 text-green-600" />
               <span className="text-sm font-medium text-green-600">Facilities</span>
             </div>
-            <p className="text-2xl font-bold text-green-900">{filterOptions.facilities.length}</p>
+            <p className="text-2xl font-bold text-green-900">{calculatedMetrics.uniqueFacilities.toLocaleString()}</p>
           </div>
           
           <div className="bg-purple-50 p-4 rounded-lg">
@@ -202,7 +224,7 @@ const PharmaceuticalProductsTable = () => {
               <MapPin className="h-4 w-4 text-purple-600" />
               <span className="text-sm font-medium text-purple-600">Regions</span>
             </div>
-            <p className="text-2xl font-bold text-purple-900">{filterOptions.regions.length}</p>
+            <p className="text-2xl font-bold text-purple-900">{calculatedMetrics.uniqueRegions.toLocaleString()}</p>
           </div>
           
           <div className="bg-orange-50 p-4 rounded-lg">
@@ -211,7 +233,7 @@ const PharmaceuticalProductsTable = () => {
               <span className="text-sm font-medium text-orange-600">Total Value</span>
             </div>
             <p className="text-2xl font-bold text-orange-900">
-              {formatCurrency(products.reduce((sum, p) => sum + (p.miazia_price || 0), 0))}
+              {formatCurrency(calculatedMetrics.totalValue)}
             </p>
           </div>
         </div>
