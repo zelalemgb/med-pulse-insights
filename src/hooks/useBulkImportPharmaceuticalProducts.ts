@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -485,7 +486,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
     console.log(`Processing ${newRecords.length} new records (${result.skippedRows} duplicates skipped)`);
 
     // Process in optimized batches with concurrent inserts
-    const batchSize = 500; // Optimized batch size for Supabase
+    const batchSize = 1000; // Updated batch size to 1000
     const maxConcurrent = 3; // Limit concurrent requests
     const batches: ParsedRow[][] = [];
     
