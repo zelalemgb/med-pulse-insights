@@ -1,19 +1,27 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Package, Building, MapPin, DollarSign } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Search, Package, Building, MapPin, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePharmaceuticalProducts } from '@/hooks/usePharmaceuticalProducts';
 import { PharmaceuticalProductFilters } from '@/types/pharmaceuticalProducts';
 import BulkImportDialog from './BulkImportDialog';
 
 const PharmaceuticalProductsTable = () => {
   const [filters, setFilters] = useState<PharmaceuticalProductFilters>({});
-  const { products, isLoading, error, refetch } = usePharmaceuticalProducts(filters);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  
+  const { products, totalCount, allProductsMetrics, isLoading, error, refetch } = usePharmaceuticalProducts(
+    filters, 
+    { page: currentPage, pageSize, enablePagination: true }
+  );
 
-  // Get unique values for filter dropdowns and calculate real metrics
+  // Get unique values for filter dropdowns from current page products
   const filterOptions = useMemo(() => {
     const facilities = [...new Set(products.map(p => p.facility))].filter(Boolean);
     const regions = [...new Set(products.map(p => p.region))].filter(Boolean);
@@ -25,35 +33,28 @@ const PharmaceuticalProductsTable = () => {
     return { facilities, regions, zones, woredas, categories, sources };
   }, [products]);
 
-  // Calculate real metrics from the data
-  const calculatedMetrics = useMemo(() => {
-    const totalProducts = products.length;
-    const uniqueFacilities = filterOptions.facilities.length;
-    const uniqueRegions = filterOptions.regions.length;
-    
-    // Calculate total value using only miazia_price column
-    const totalValue = products.reduce((sum, product) => {
-      const miaziaPriceValue = product.miazia_price || 0;
-      return sum + miaziaPriceValue;
-    }, 0);
-    
-    return {
-      totalProducts,
-      uniqueFacilities,
-      uniqueRegions,
-      totalValue
-    };
-  }, [products, filterOptions]);
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const handleFilterChange = (key: keyof PharmaceuticalProductFilters, value: string) => {
     setFilters(prev => ({
       ...prev,
       [key]: value === 'all' ? undefined : value
     }));
+    setCurrentPage(1); // Reset to first page when filtering
   };
 
   const clearFilters = () => {
     setFilters({});
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: string) => {
+    setPageSize(Number(newPageSize));
+    setCurrentPage(1);
   };
 
   const formatCurrency = (amount?: number) => {
@@ -95,7 +96,7 @@ const PharmaceuticalProductsTable = () => {
               Pharmaceutical Products
             </CardTitle>
             <CardDescription>
-              Comprehensive pharmaceutical product inventory with pricing and availability data
+              Comprehensive pharmaceutical product inventory with pricing and availability data ({totalCount.toLocaleString()} total records)
             </CardDescription>
           </div>
           <BulkImportDialog onImportComplete={handleImportComplete} />
@@ -199,14 +200,16 @@ const PharmaceuticalProductsTable = () => {
           </div>
         )}
 
-        {/* Updated Summary Stats with Real Calculations */}
+        {/* Updated Summary Stats with All Data Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-blue-50 p-4 rounded-lg">
             <div className="flex items-center gap-2">
               <Package className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-medium text-blue-600">Total Products</span>
             </div>
-            <p className="text-2xl font-bold text-blue-900">{calculatedMetrics.totalProducts.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-blue-900">
+              {allProductsMetrics?.totalProducts.toLocaleString() || '0'}
+            </p>
           </div>
           
           <div className="bg-green-50 p-4 rounded-lg">
@@ -214,7 +217,9 @@ const PharmaceuticalProductsTable = () => {
               <Building className="h-4 w-4 text-green-600" />
               <span className="text-sm font-medium text-green-600">Facilities</span>
             </div>
-            <p className="text-2xl font-bold text-green-900">{calculatedMetrics.uniqueFacilities.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-green-900">
+              {allProductsMetrics?.uniqueFacilities.toLocaleString() || '0'}
+            </p>
           </div>
           
           <div className="bg-purple-50 p-4 rounded-lg">
@@ -222,7 +227,9 @@ const PharmaceuticalProductsTable = () => {
               <MapPin className="h-4 w-4 text-purple-600" />
               <span className="text-sm font-medium text-purple-600">Regions</span>
             </div>
-            <p className="text-2xl font-bold text-purple-900">{calculatedMetrics.uniqueRegions.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-purple-900">
+              {allProductsMetrics?.uniqueRegions.toLocaleString() || '0'}
+            </p>
           </div>
           
           <div className="bg-orange-50 p-4 rounded-lg">
@@ -231,8 +238,78 @@ const PharmaceuticalProductsTable = () => {
               <span className="text-sm font-medium text-orange-600">Total Miazia Value</span>
             </div>
             <p className="text-2xl font-bold text-orange-900">
-              {formatCurrency(calculatedMetrics.totalValue)}
+              {formatCurrency(allProductsMetrics?.totalValue || 0)}
             </p>
+          </div>
+        </div>
+
+        {/* Pagination Controls - Top */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">
+              Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalCount)} of {totalCount.toLocaleString()}
+            </span>
+            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-gray-600">per page</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(pageNum)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
@@ -336,6 +413,53 @@ const PharmaceuticalProductsTable = () => {
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Pagination Controls - Bottom */}
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages.toLocaleString()}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(1)}
+              disabled={currentPage <= 1}
+            >
+              First
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <span className="text-sm px-3 py-1 bg-gray-100 rounded">
+              {currentPage} / {totalPages.toLocaleString()}
+            </span>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(totalPages)}
+              disabled={currentPage >= totalPages}
+            >
+              Last
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

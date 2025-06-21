@@ -9,28 +9,28 @@ import { usePharmaceuticalProducts } from '@/hooks/usePharmaceuticalProducts';
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
 
 const PharmaceuticalDashboard = () => {
-  const { products, isLoading, error } = usePharmaceuticalProducts();
+  const { products, allProductsMetrics, isLoading, error } = usePharmaceuticalProducts({}, { enablePagination: false });
 
   const dashboardMetrics = useMemo(() => {
     if (!products.length) return null;
 
-    // Basic counts
-    const totalProducts = products.length;
-    const uniqueFacilities = [...new Set(products.map(p => p.facility))].length;
-    const uniqueRegions = [...new Set(products.map(p => p.region))].filter(Boolean).length;
-    const uniqueZones = [...new Set(products.map(p => p.zone))].filter(Boolean).length;
+    // Use sample of data for charts to avoid performance issues
+    const sampleSize = Math.min(products.length, 10000);
+    const sampledProducts = products.slice(0, sampleSize);
 
-    // Financial metrics
-    const totalMiaziaValue = products.reduce((sum, p) => sum + (p.miazia_price || 0), 0);
-    const totalRegularValue = products.reduce((sum, p) => sum + (p.price || 0), 0);
-    const totalQuantity = products.reduce((sum, p) => sum + (p.quantity || 0), 0);
+    // Basic counts from sampled data for charts
+    const uniqueFacilities = [...new Set(sampledProducts.map(p => p.facility))].length;
+    const uniqueRegions = [...new Set(sampledProducts.map(p => p.region))].filter(Boolean).length;
+    const uniqueZones = [...new Set(sampledProducts.map(p => p.zone))].filter(Boolean).length;
 
-    // Average prices
-    const avgMiaziaPrice = totalMiaziaValue / products.filter(p => p.miazia_price).length || 0;
-    const avgRegularPrice = totalRegularValue / products.filter(p => p.price).length || 0;
+    // Financial metrics from sampled data
+    const totalQuantity = sampledProducts.reduce((sum, p) => sum + (p.quantity || 0), 0);
+    const avgMiaziaPrice = sampledProducts.reduce((sum, p) => sum + (p.miazia_price || 0), 0) / sampledProducts.filter(p => p.miazia_price).length || 0;
+    const avgRegularPrice = sampledProducts.reduce((sum, p) => sum + (p.price || 0), 0) / sampledProducts.filter(p => p.price).length || 0;
+    const totalRegularValue = sampledProducts.reduce((sum, p) => sum + (p.price || 0), 0);
 
-    // Category breakdown
-    const categoryBreakdown = products.reduce((acc, product) => {
+    // Category breakdown from sampled data
+    const categoryBreakdown = sampledProducts.reduce((acc, product) => {
       const category = product.product_category || 'Uncategorized';
       if (!acc[category]) acc[category] = { count: 0, value: 0 };
       acc[category].count++;
@@ -38,8 +38,8 @@ const PharmaceuticalDashboard = () => {
       return acc;
     }, {} as Record<string, { count: number; value: number }>);
 
-    // Source breakdown
-    const sourceBreakdown = products.reduce((acc, product) => {
+    // Source breakdown from sampled data
+    const sourceBreakdown = sampledProducts.reduce((acc, product) => {
       const source = product.procurement_source || 'Unknown';
       if (!acc[source]) acc[source] = { count: 0, value: 0 };
       acc[source].count++;
@@ -47,8 +47,8 @@ const PharmaceuticalDashboard = () => {
       return acc;
     }, {} as Record<string, { count: number; value: number }>);
 
-    // Regional breakdown
-    const regionalBreakdown = products.reduce((acc, product) => {
+    // Regional breakdown from sampled data
+    const regionalBreakdown = sampledProducts.reduce((acc, product) => {
       const region = product.region || 'Unknown';
       if (!acc[region]) acc[region] = { count: 0, value: 0, facilities: new Set() };
       acc[region].count++;
@@ -57,32 +57,30 @@ const PharmaceuticalDashboard = () => {
       return acc;
     }, {} as Record<string, { count: number; value: number; facilities: Set<string> }>);
 
-    // Top facilities by product count
-    const facilityBreakdown = products.reduce((acc, product) => {
+    // Top facilities by product count from sampled data
+    const facilityBreakdown = sampledProducts.reduce((acc, product) => {
       if (!acc[product.facility]) acc[product.facility] = { count: 0, value: 0 };
       acc[product.facility].count++;
       acc[product.facility].value += product.miazia_price || 0;
       return acc;
     }, {} as Record<string, { count: number; value: number }>);
 
-    // Price distribution analysis
+    // Price distribution analysis from sampled data
     const priceRanges = {
-      'Under 100': products.filter(p => (p.miazia_price || 0) < 100).length,
-      '100-500': products.filter(p => (p.miazia_price || 0) >= 100 && (p.miazia_price || 0) < 500).length,
-      '500-1000': products.filter(p => (p.miazia_price || 0) >= 500 && (p.miazia_price || 0) < 1000).length,
-      '1000+': products.filter(p => (p.miazia_price || 0) >= 1000).length,
+      'Under 100': sampledProducts.filter(p => (p.miazia_price || 0) < 100).length,
+      '100-500': sampledProducts.filter(p => (p.miazia_price || 0) >= 100 && (p.miazia_price || 0) < 500).length,
+      '500-1000': sampledProducts.filter(p => (p.miazia_price || 0) >= 500 && (p.miazia_price || 0) < 1000).length,
+      '1000+': sampledProducts.filter(p => (p.miazia_price || 0) >= 1000).length,
     };
 
     return {
-      totalProducts,
       uniqueFacilities,
       uniqueRegions,
       uniqueZones,
-      totalMiaziaValue,
-      totalRegularValue,
       totalQuantity,
       avgMiaziaPrice,
       avgRegularPrice,
+      totalRegularValue,
       categoryBreakdown,
       sourceBreakdown,
       regionalBreakdown,
@@ -111,7 +109,7 @@ const PharmaceuticalDashboard = () => {
     );
   }
 
-  if (error || !dashboardMetrics) {
+  if (error || !dashboardMetrics || !allProductsMetrics) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -159,14 +157,14 @@ const PharmaceuticalDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Key Performance Indicators */}
+      {/* Key Performance Indicators - Using Complete Dataset Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Products</p>
-                <p className="text-3xl font-bold text-blue-900">{dashboardMetrics.totalProducts.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-blue-900">{allProductsMetrics.totalProducts.toLocaleString()}</p>
               </div>
               <Package className="h-8 w-8 text-blue-600" />
             </div>
@@ -178,7 +176,7 @@ const PharmaceuticalDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Miazia Value</p>
-                <p className="text-3xl font-bold text-green-900">{formatCurrency(dashboardMetrics.totalMiaziaValue)}</p>
+                <p className="text-3xl font-bold text-green-900">{formatCurrency(allProductsMetrics.totalValue)}</p>
               </div>
               <DollarSign className="h-8 w-8 text-green-600" />
             </div>
@@ -190,7 +188,7 @@ const PharmaceuticalDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Health Facilities</p>
-                <p className="text-3xl font-bold text-purple-900">{dashboardMetrics.uniqueFacilities}</p>
+                <p className="text-3xl font-bold text-purple-900">{allProductsMetrics.uniqueFacilities}</p>
               </div>
               <Building className="h-8 w-8 text-purple-600" />
             </div>
@@ -202,7 +200,7 @@ const PharmaceuticalDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Regions Covered</p>
-                <p className="text-3xl font-bold text-orange-900">{dashboardMetrics.uniqueRegions}</p>
+                <p className="text-3xl font-bold text-orange-900">{allProductsMetrics.uniqueRegions}</p>
               </div>
               <MapPin className="h-8 w-8 text-orange-600" />
             </div>
@@ -267,7 +265,7 @@ const PharmaceuticalDashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle>Products by Category</CardTitle>
-            <CardDescription>Distribution of pharmaceutical products across categories</CardDescription>
+            <CardDescription>Distribution of pharmaceutical products across categories (sample data)</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -295,7 +293,7 @@ const PharmaceuticalDashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle>Procurement Sources</CardTitle>
-            <CardDescription>Products by procurement source</CardDescription>
+            <CardDescription>Products by procurement source (sample data)</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -315,7 +313,7 @@ const PharmaceuticalDashboard = () => {
       <Card>
         <CardHeader>
           <CardTitle>Regional Distribution</CardTitle>
-          <CardDescription>Products and facilities across different regions</CardDescription>
+          <CardDescription>Products and facilities across different regions (sample data)</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={400}>
@@ -338,7 +336,7 @@ const PharmaceuticalDashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle>Top 10 Facilities by Product Count</CardTitle>
-            <CardDescription>Facilities with the most pharmaceutical products</CardDescription>
+            <CardDescription>Facilities with the most pharmaceutical products (sample data)</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={400}>
@@ -357,7 +355,7 @@ const PharmaceuticalDashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle>Price Range Distribution</CardTitle>
-            <CardDescription>Distribution of products by Miazia price ranges</CardDescription>
+            <CardDescription>Distribution of products by Miazia price ranges (sample data)</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={400}>
