@@ -37,9 +37,9 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <NavigationProvider>
-            <BrowserRouter>
+        <BrowserRouter>
+          <AuthProvider>
+            <NavigationProvider>
               <div className="min-h-screen bg-gray-50">
                 <Toaster />
                 <Routes>
@@ -95,9 +95,9 @@ function App() {
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </div>
-            </BrowserRouter>
-          </NavigationProvider>
-        </AuthProvider>
+            </NavigationProvider>
+          </AuthProvider>
+        </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
   );
