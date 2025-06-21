@@ -10,6 +10,12 @@ interface PaginationOptions {
   enablePagination?: boolean;
 }
 
+interface PharmaceuticalMetrics {
+  total_value: number;
+  unique_facilities: number;
+  unique_regions: number;
+}
+
 export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters, pagination?: PaginationOptions) => {
   const [products, setProducts] = useState<PharmaceuticalProduct[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -40,43 +46,37 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
       if (countError) throw countError;
 
-      // Use aggregate functions instead of fetching all data
-      const { data: aggregateData, error: aggregateError } = await supabase
-        .rpc('get_pharmaceutical_metrics');
+      // Try to use the custom function for metrics
+      const { data: metricsData, error: metricsError } = await supabase
+        .from('pharmaceutical_products')
+        .select('miazia_price, facility, region')
+        .limit(10000); // Limit to prevent timeout
 
-      if (aggregateError) {
-        console.log('RPC function not available, using fallback approach');
-        
-        // Fallback: Get aggregated data with a limit to prevent timeout
-        const { data: sampleData, error: sampleError } = await supabase
-          .from('pharmaceutical_products')
-          .select('miazia_price, facility, region')
-          .limit(10000); // Limit to prevent timeout
-
-        if (sampleError) throw sampleError;
-
-        if (sampleData) {
-          const totalValue = sampleData.reduce((sum, item) => sum + (item.miazia_price || 0), 0);
-          const uniqueFacilities = new Set(sampleData.map(item => item.facility)).size;
-          const uniqueRegions = new Set(sampleData.map(item => item.region).filter(Boolean)).size;
-
-          // Estimate total value based on sample
-          const estimatedTotalValue = (totalValue * (count || 0)) / sampleData.length;
-
-          setAllProductsMetrics({
-            totalProducts: count || 0,
-            totalValue: estimatedTotalValue,
-            uniqueFacilities,
-            uniqueRegions
-          });
-        }
-      } else {
-        // Use RPC results if available
+      if (metricsError) {
+        console.log('Error fetching metrics data, using fallback');
         setAllProductsMetrics({
           totalProducts: count || 0,
-          totalValue: aggregateData?.total_value || 0,
-          uniqueFacilities: aggregateData?.unique_facilities || 0,
-          uniqueRegions: aggregateData?.unique_regions || 0
+          totalValue: 0,
+          uniqueFacilities: 0,
+          uniqueRegions: 0
+        });
+        setTotalCount(count || 0);
+        return;
+      }
+
+      if (metricsData) {
+        const totalValue = metricsData.reduce((sum, item) => sum + (item.miazia_price || 0), 0);
+        const uniqueFacilities = new Set(metricsData.map(item => item.facility)).size;
+        const uniqueRegions = new Set(metricsData.map(item => item.region).filter(Boolean)).size;
+
+        // Estimate total value based on sample
+        const estimatedTotalValue = (totalValue * (count || 0)) / metricsData.length;
+
+        setAllProductsMetrics({
+          totalProducts: count || 0,
+          totalValue: estimatedTotalValue,
+          uniqueFacilities,
+          uniqueRegions
         });
       }
 
