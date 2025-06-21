@@ -1,7 +1,9 @@
 
 import React from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/layout/PageHeader';
 import PharmaceuticalDashboard from '@/components/pharmaceutical/PharmaceuticalDashboard';
+import PharmaceuticalForecast from '@/components/pharmaceutical/PharmaceuticalForecast';
 
 const PharmaceuticalDashboardPage = () => {
   const breadcrumbItems = [
@@ -19,7 +21,20 @@ const PharmaceuticalDashboardPage = () => {
         />
         
         <div className="mt-8">
-          <PharmaceuticalDashboard />
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="forecast">2025/26 Forecast</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="overview">
+              <PharmaceuticalDashboard />
+            </TabsContent>
+            
+            <TabsContent value="forecast">
+              <PharmaceuticalForecast />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
