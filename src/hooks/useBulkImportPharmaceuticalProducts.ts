@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -356,67 +355,82 @@ export const useBulkImportPharmaceuticalProducts = () => {
     return errors;
   };
 
-  const checkExistingRecords = async (batch: ParsedRow[], batchIndex: number, totalBatches: number): Promise<{ existingKeys: Set<string>; error?: string }> => {
+  const checkExistingRecordsOptimized = async (batch: ParsedRow[], batchIndex: number, totalBatches: number): Promise<{ existingKeys: Set<string>; error?: string }> => {
     try {
       const existingKeys = new Set<string>();
       
-      // Process records one by one with detailed progress tracking
-      for (let i = 0; i < batch.length; i++) {
-        const row = batch[i];
-        const checkProgress = ((i + 1) / batch.length) * 100;
-        
-        setImportProgress({
-          phase: 'Checking for duplicates',
-          details: `Batch ${batchIndex + 1}/${totalBatches}: Checking record ${i + 1}/${batch.length}`,
-          currentBatch: batchIndex + 1,
-          totalBatches: totalBatches,
-          currentRecord: i + 1,
-          totalRecords: batch.length,
-          processingItem: `${row.facility} - ${row.product_name}`
-        });
+      setImportProgress({
+        phase: 'Checking for duplicates',
+        details: `Batch ${batchIndex + 1}/${totalBatches}: Preparing batch query for ${batch.length} records`,
+        currentBatch: batchIndex + 1,
+        totalBatches: totalBatches,
+        totalRecords: batch.length
+      });
 
-        try {
-          const { data: existingRecords, error } = await supabase
-            .from('pharmaceutical_products')
-            .select('facility, product_name')
-            .eq('facility', row.facility)
-            .eq('product_name', row.product_name)
-            .limit(1);
+      // Create arrays of unique facilities and products for batch query
+      const facilities = [...new Set(batch.map(row => row.facility))];
+      const products = [...new Set(batch.map(row => row.product_name))];
 
-          if (error) {
-            console.warn('Error checking existing record:', error);
-            continue; // Skip this check but don't fail the entire process
-          }
+      // Single database query to get all potentially matching records
+      const { data: existingRecords, error } = await supabase
+        .from('pharmaceutical_products')
+        .select('facility, product_name')
+        .in('facility', facilities)
+        .in('product_name', products);
 
-          if (existingRecords && existingRecords.length > 0) {
-            const key = `${row.facility.toLowerCase().trim()}|${row.product_name.toLowerCase().trim()}`;
-            existingKeys.add(key);
-          }
-        } catch (recordError) {
-          console.warn(`Error checking record ${i + 1}:`, recordError);
-          continue;
-        }
-        
-        // Update progress within the 65-70% range for duplicate checking
-        const baseProgress = 65;
-        const duplicateCheckRange = 5; // 65% to 70%
-        const batchProgressPercent = ((batchIndex) / totalBatches) * duplicateCheckRange;
-        const recordProgressPercent = ((i + 1) / batch.length) * (duplicateCheckRange / totalBatches);
-        const currentProgress = Math.min(baseProgress + batchProgressPercent + recordProgressPercent, 70);
-        setProgress(Math.round(currentProgress));
-        
-        // Small delay to prevent overwhelming the database and show progress
-        if (i < batch.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 5));
-        }
+      if (error) {
+        console.error('Error in batch duplicate check:', error);
+        return { 
+          existingKeys: new Set(), 
+          error: `Database error during duplicate check: ${error.message}` 
+        };
       }
 
+      // Create a hash map from existing records for O(1) lookup
+      const existingRecordsMap = new Set<string>();
+      if (existingRecords) {
+        existingRecords.forEach(record => {
+          const key = `${record.facility.toLowerCase().trim()}|${record.product_name.toLowerCase().trim()}`;
+          existingRecordsMap.add(key);
+        });
+      }
+
+      // Check each batch record against the hash map
+      batch.forEach((row, index) => {
+        const key = `${row.facility.toLowerCase().trim()}|${row.product_name.toLowerCase().trim()}`;
+        if (existingRecordsMap.has(key)) {
+          existingKeys.add(key);
+        }
+
+        // Update progress periodically
+        if (index % 100 === 0 || index === batch.length - 1) {
+          setImportProgress({
+            phase: 'Checking for duplicates',
+            details: `Batch ${batchIndex + 1}/${totalBatches}: Processed ${index + 1}/${batch.length} records`,
+            currentBatch: batchIndex + 1,
+            totalBatches: totalBatches,
+            currentRecord: index + 1,
+            totalRecords: batch.length
+          });
+
+          // Update progress within the 65-70% range for duplicate checking
+          const baseProgress = 65;
+          const duplicateCheckRange = 5; // 65% to 70%
+          const batchProgressPercent = ((batchIndex) / totalBatches) * duplicateCheckRange;
+          const recordProgressPercent = ((index + 1) / batch.length) * (duplicateCheckRange / totalBatches);
+          const currentProgress = Math.min(baseProgress + batchProgressPercent + recordProgressPercent, 70);
+          setProgress(Math.round(currentProgress));
+        }
+      });
+
+      console.log(`Batch ${batchIndex + 1} duplicate check complete. Found ${existingKeys.size} duplicates out of ${batch.length} records`);
+      
       return { existingKeys };
     } catch (error) {
-      console.error('Error in checkExistingRecords:', error);
+      console.error('Error in optimized duplicate checking:', error);
       return { 
         existingKeys: new Set(), 
-        error: error instanceof Error ? error.message : 'Unknown error checking existing records' 
+        error: error instanceof Error ? error.message : 'Unknown error during duplicate checking' 
       };
     }
   };
@@ -430,8 +444,8 @@ export const useBulkImportPharmaceuticalProducts = () => {
         totalBatches: totalBatches
       });
 
-      // Check for existing records with detailed progress tracking
-      const { existingKeys, error: checkError } = await checkExistingRecords(batch, batchIndex, totalBatches);
+      // Use optimized duplicate checking
+      const { existingKeys, error: checkError } = await checkExistingRecordsOptimized(batch, batchIndex, totalBatches);
       
       if (checkError) {
         return {
@@ -471,43 +485,63 @@ export const useBulkImportPharmaceuticalProducts = () => {
         totalBatches: totalBatches
       });
 
-      // Insert only new records
-      const { data, error } = await supabase
-        .from('pharmaceutical_products')
-        .insert(newRecords.map(row => ({
-          region: row.region || null,
-          zone: row.zone || null,
-          woreda: row.woreda || null,
-          facility: row.facility,
-          product_name: row.product_name,
-          unit: row.unit || null,
-          product_category: row.product_category || null,
-          price: row.price || null,
-          procurement_source: row.procurement_source || null,
-          quantity: row.quantity || null,
-          miazia_price: row.miazia_price || null
-        })));
-      
-      if (error) {
-        console.error('Batch insert error:', error);
-        return {
-          success: 0,
-          skipped: skippedCount,
-          errors: [`Database error: ${error.message}`]
-        };
+      // Insert only new records in smaller sub-batches for better performance
+      const subBatchSize = 25;
+      let totalInserted = 0;
+      const insertErrors: string[] = [];
+
+      for (let i = 0; i < newRecords.length; i += subBatchSize) {
+        const subBatch = newRecords.slice(i, i + subBatchSize);
+        
+        try {
+          const { error } = await supabase
+            .from('pharmaceutical_products')
+            .insert(subBatch.map(row => ({
+              region: row.region || null,
+              zone: row.zone || null,
+              woreda: row.woreda || null,
+              facility: row.facility,
+              product_name: row.product_name,
+              unit: row.unit || null,
+              product_category: row.product_category || null,
+              price: row.price || null,
+              procurement_source: row.procurement_source || null,
+              quantity: row.quantity || null,
+              miazia_price: row.miazia_price || null
+            })));
+          
+          if (error) {
+            console.error(`Sub-batch insert error (${i}-${i + subBatch.length}):`, error);
+            insertErrors.push(`Sub-batch ${Math.floor(i/subBatchSize) + 1}: ${error.message}`);
+          } else {
+            totalInserted += subBatch.length;
+          }
+        } catch (error) {
+          console.error(`Sub-batch processing error:`, error);
+          insertErrors.push(`Sub-batch ${Math.floor(i/subBatchSize) + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+
+        // Update progress for insertion
+        const insertProgress = ((i + subBatch.length) / newRecords.length) * 100;
+        setImportProgress({
+          phase: 'Inserting data',
+          details: `Batch ${batchIndex + 1}: Inserted ${Math.min(i + subBatch.length, newRecords.length)}/${newRecords.length} records`,
+          currentBatch: batchIndex + 1,
+          totalBatches: totalBatches
+        });
       }
       
       setImportProgress({
         phase: 'Batch completed',
-        details: `Batch ${batchIndex + 1}: Successfully inserted ${newRecords.length} records`,
+        details: `Batch ${batchIndex + 1}: Successfully inserted ${totalInserted} records${insertErrors.length > 0 ? ` with ${insertErrors.length} errors` : ''}`,
         currentBatch: batchIndex + 1,
         totalBatches: totalBatches
       });
       
       return {
-        success: newRecords.length,
+        success: totalInserted,
         skipped: skippedCount,
-        errors: []
+        errors: insertErrors
       };
     } catch (error) {
       console.error('Batch processing error:', error);
@@ -538,7 +572,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
     };
     
     try {
-      console.log('Starting file import for:', file.name, 'Size:', file.size);
+      console.log('Starting optimized file import for:', file.name, 'Size:', file.size);
       
       setImportProgress({
         phase: 'Reading file',
@@ -595,8 +629,8 @@ export const useBulkImportPharmaceuticalProducts = () => {
       console.log('Validation complete, valid rows:', validRows.length);
       setProgress(65);
       
-      // Process in batches
-      const batchSize = 50;
+      // Process in larger batches for better performance
+      const batchSize = 100; // Increased batch size for better performance
       const totalBatches = Math.ceil(validRows.length / batchSize);
       
       console.log(`Processing ${validRows.length} rows in ${totalBatches} batches of ${batchSize}`);
@@ -618,9 +652,9 @@ export const useBulkImportPharmaceuticalProducts = () => {
           const processingProgress = 70 + ((i + 1) / totalBatches) * 30;
           setProgress(Math.round(processingProgress));
           
-          // Short delay between batches
+          // Shorter delay between batches for faster processing
           if (i < totalBatches - 1) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 50));
           }
         } catch (error) {
           console.error(`Batch ${i + 1} failed:`, error);
@@ -643,7 +677,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       }
       
       if (file.size > 100 * 1024 * 1024) {
-        result.warnings.push('Large file processed successfully with streaming approach');
+        result.warnings.push('Large file processed successfully with optimized streaming approach');
       }
       
       setProgress(100);
