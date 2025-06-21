@@ -1,4 +1,6 @@
 
+import { Region, Zone, Woreda } from './administrativeHierarchy';
+
 export interface PharmaceuticalProduct {
   id: string;
   region?: string;
@@ -18,6 +20,10 @@ export interface PharmaceuticalProduct {
   region_id?: string;
   zone_id?: string;
   woreda_id?: string;
+  // Joined objects from Supabase relations
+  regions?: Region;
+  zones?: Zone;
+  woredas?: Woreda;
 }
 
 export interface PharmaceuticalProductFilters {
