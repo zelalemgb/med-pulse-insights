@@ -8,6 +8,7 @@ import { NavigationProvider } from '@/contexts/NavigationContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import RoleGuard from '@/components/auth/RoleGuard';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import AppLayout from '@/components/layout/AppLayout';
 
 // Pages
 import Index from '@/pages/Index';
@@ -47,49 +48,67 @@ function App() {
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
-                      <Dashboard />
+                      <AppLayout>
+                        <Dashboard />
+                      </AppLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/pharmaceutical-products" element={
                     <ProtectedRoute>
-                      <PharmaceuticalProducts />
+                      <AppLayout>
+                        <PharmaceuticalProducts />
+                      </AppLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/pharmaceutical-dashboard" element={
                     <ProtectedRoute>
-                      <PharmaceuticalDashboardPage />
+                      <AppLayout>
+                        <PharmaceuticalDashboardPage />
+                      </AppLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/data-management" element={
                     <ProtectedRoute>
-                      <DataManagement />
+                      <AppLayout>
+                        <DataManagement />
+                      </AppLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/data-entry" element={
                     <ProtectedRoute>
-                      <DataEntry />
+                      <AppLayout>
+                        <DataEntry />
+                      </AppLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/analytics" element={
                     <ProtectedRoute>
-                      <Analytics />
+                      <AppLayout>
+                        <Analytics />
+                      </AppLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/facilities" element={
                     <ProtectedRoute>
-                      <Facilities />
+                      <AppLayout>
+                        <Facilities />
+                      </AppLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/user-management" element={
                     <ProtectedRoute>
-                      <RoleGuard allowedRoles={['national', 'regional', 'zonal']}>
-                        <UserManagement />
-                      </RoleGuard>
+                      <AppLayout>
+                        <RoleGuard allowedRoles={['national', 'regional', 'zonal']}>
+                          <UserManagement />
+                        </RoleGuard>
+                      </AppLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/profile" element={
                     <ProtectedRoute>
-                      <Profile />
+                      <AppLayout>
+                        <Profile />
+                      </AppLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="*" element={<NotFound />} />
