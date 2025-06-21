@@ -147,7 +147,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
     let columnMap = new Map<string, number>();
     let buffer = '';
     let lineCount = 0;
-    const chunkSize = 2 * 1024 * 1024; // 2MB chunks for better performance
+    const chunkSize = 5 * 1024 * 1024; // 5MB chunks for better performance
     let position = 0;
     let lastProgressUpdate = 0;
     
@@ -511,13 +511,13 @@ export const useBulkImportPharmaceuticalProducts = () => {
       try {
         const batchResults = await Promise.allSettled(batchPromises);
         
-        batchResults.forEach((result, index) => {
-          if (result.status === 'fulfilled') {
-            result.value.success += result.value.success;
-            result.errors.push(...result.value.errors);
+        batchResults.forEach((promiseResult, index) => {
+          if (promiseResult.status === 'fulfilled') {
+            result.successfulRows += promiseResult.value.success;
+            result.errors.push(...promiseResult.value.errors);
           } else {
             const batchNum = i + index + 1;
-            result.errors.push(`Batch ${batchNum} failed: ${result.reason}`);
+            result.errors.push(`Batch ${batchNum} failed: ${promiseResult.reason}`);
             result.errorRows += currentBatches[index].length;
           }
         });
@@ -645,3 +645,4 @@ export const useBulkImportPharmaceuticalProducts = () => {
     reset
   };
 };
+
