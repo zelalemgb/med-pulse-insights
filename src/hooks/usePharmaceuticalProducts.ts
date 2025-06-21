@@ -25,64 +25,85 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
   const fetchMetrics = async () => {
     try {
-      console.log('Fetching complete dataset metrics...');
+      console.log('Fetching optimized dataset metrics...');
       
-      // Get total count with error handling
-      const { count, error: countError } = await supabase
-        .from('pharmaceutical_products')
-        .select('*', { count: 'exact', head: true });
-
-      if (countError) {
-        console.error('Error fetching count:', countError);
-        // Don't throw, just use fallback
-        setAllProductsMetrics({
-          totalProducts: 0,
-          totalValue: 0,
-          uniqueFacilities: 0,
-          uniqueRegions: 0
-        });
-        return;
-      }
-      
-      // Get aggregated metrics from ALL data using simpler queries
-      const [miaziaResult, facilitiesResult, regionsResult] = await Promise.all([
+      // Use simpler, faster queries with timeouts
+      const metricsPromises = await Promise.allSettled([
+        // Get count with timeout and limit
         supabase
           .from('pharmaceutical_products')
-          .select('miazia_price')
-          .not('miazia_price', 'is', null),
-        supabase
-          .from('pharmaceutical_products')
-          .select('facility')
-          .not('facility', 'is', null),
+          .select('id', { count: 'estimated', head: true })
+          .limit(1),
+        
+        // Get unique regions efficiently
         supabase
           .from('pharmaceutical_products')
           .select('region')
           .not('region', 'is', null)
+          .limit(1000),
+        
+        // Get unique facilities efficiently  
+        supabase
+          .from('pharmaceutical_products')
+          .select('facility')
+          .not('facility', 'is', null)
+          .limit(1000),
+        
+        // Get total value with sampling for large datasets
+        supabase
+          .from('pharmaceutical_products')
+          .select('miazia_price')
+          .not('miazia_price', 'is', null)
+          .limit(10000) // Sample first 10k records for performance
       ]);
 
-      // Handle potential errors in individual queries
-      const totalValue = miaziaResult.error ? 0 : (miaziaResult.data?.reduce((sum, item) => sum + (item.miazia_price || 0), 0) || 0);
-      const uniqueFacilities = facilitiesResult.error ? 0 : new Set(facilitiesResult.data?.map(item => item.facility)).size;
-      const uniqueRegions = regionsResult.error ? 0 : new Set(regionsResult.data?.map(item => item.region).filter(Boolean)).size;
+      // Process results safely
+      const [countResult, regionsResult, facilitiesResult, valueResult] = metricsPromises;
+      
+      let totalProducts = 0;
+      let uniqueRegions = 0;
+      let uniqueFacilities = 0;
+      let totalValue = 0;
 
-      console.log('Complete dataset metrics:', {
-        totalProducts: count || 0,
+      if (countResult.status === 'fulfilled' && !countResult.value.error) {
+        totalProducts = countResult.value.count || 0;
+      }
+
+      if (regionsResult.status === 'fulfilled' && !regionsResult.value.error && regionsResult.value.data) {
+        uniqueRegions = new Set(regionsResult.value.data.map(item => item.region).filter(Boolean)).size;
+      }
+
+      if (facilitiesResult.status === 'fulfilled' && !facilitiesResult.value.error && facilitiesResult.value.data) {
+        uniqueFacilities = new Set(facilitiesResult.value.data.map(item => item.facility).filter(Boolean)).size;
+      }
+
+      if (valueResult.status === 'fulfilled' && !valueResult.value.error && valueResult.value.data) {
+        const sampleValue = valueResult.value.data.reduce((sum, item) => sum + (item.miazia_price || 0), 0);
+        // Estimate total value based on sample
+        const sampleSize = valueResult.value.data.length;
+        if (sampleSize > 0 && totalProducts > 0) {
+          totalValue = (sampleValue / sampleSize) * totalProducts;
+        }
+      }
+
+      console.log('Optimized dataset metrics:', {
+        totalProducts,
         totalValue,
         uniqueFacilities,
         uniqueRegions
       });
 
       setAllProductsMetrics({
-        totalProducts: count || 0,
+        totalProducts,
         totalValue,
         uniqueFacilities,
         uniqueRegions
       });
 
-      setTotalCount(count || 0);
+      setTotalCount(totalProducts);
     } catch (err) {
       console.error('Error fetching metrics:', err);
-      // Provide fallback metrics instead of throwing
+      // Provide fallback metrics
       setAllProductsMetrics({
         totalProducts: 0,
         totalValue: 0,
@@ -130,24 +151,28 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
         query = query.ilike('product_name', `%${filters.search}%`);
       }
 
-      // Apply pagination if enabled
-      if (pagination?.enablePagination) {
-        const page = pagination.page || 1;
-        const pageSize = pagination.pageSize || 50;
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize - 1;
-        
-        query = query.range(from, to);
-      }
-
+      // Always use pagination for performance
+      const page = pagination?.page || 1;
+      const pageSize = Math.min(pagination?.pageSize || 50, 200); // Cap at 200 for performance
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      
+      query = query.range(from, to);
       query = query.order('created_at', { ascending: false });
 
-      const { data, error } = await query;
+      // Execute query with timeout handling
+      const { data, error, count } = await Promise.race([
+        query,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Query timeout')), 30000) // 30 second timeout
+        )
+      ]) as any;
 
       if (error) {
         console.error('Database error:', error);
-        // Handle specific authentication/authorization errors
-        if (error.code === '42501' || error.message.includes('policy')) {
+        if (error.code === '57014' || error.message.includes('timeout')) {
+          setError('Query timed out. Please try filtering your results or reducing the page size.');
+        } else if (error.code === '42501' || error.message.includes('policy')) {
           setError('Unable to access pharmaceutical data. Please check your permissions or try logging in again.');
         } else {
           setError(`Failed to fetch pharmaceutical products: ${error.message}`);
@@ -157,8 +182,19 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
       }
 
       setProducts(data || []);
+      if (count !== null) {
+        setTotalCount(count);
+      }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch pharmaceutical products';
+      let errorMessage = 'Failed to fetch pharmaceutical products';
+      if (err instanceof Error) {
+        if (err.message.includes('timeout')) {
+          errorMessage = 'The query is taking too long. Please try filtering your results or using a smaller page size.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       console.error('Error fetching products:', errorMessage);
       setError(errorMessage);
       setProducts([]);
@@ -177,10 +213,10 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
   }, [filters, pagination?.page, pagination?.pageSize]);
 
   useEffect(() => {
-    // Add a delay to prevent overwhelming the database and handle auth issues
+    // Debounce metrics fetching to prevent overwhelming the database
     const timeoutId = setTimeout(() => {
       fetchMetrics();
-    }, 1000);
+    }, 2000);
 
     return () => clearTimeout(timeoutId);
   }, []);

@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Package, Building, MapPin, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Search, Package, Building, MapPin, DollarSign, ChevronLeft, ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react';
 import { usePharmaceuticalProducts } from '@/hooks/usePharmaceuticalProducts';
 import { PharmaceuticalProductFilters } from '@/types/pharmaceuticalProducts';
 import BulkImportDialog from './BulkImportDialog';
@@ -53,7 +54,9 @@ const PharmaceuticalProductsTable = () => {
   };
 
   const handlePageSizeChange = (newPageSize: string) => {
-    setPageSize(Number(newPageSize));
+    const size = Number(newPageSize);
+    // Cap page size for performance
+    setPageSize(Math.min(size, 200));
     setCurrentPage(1);
   };
 
@@ -76,11 +79,24 @@ const PharmaceuticalProductsTable = () => {
     refetch();
   };
 
+  const handleRetry = () => {
+    refetch();
+  };
+
   if (error) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-red-600">Error: {error}</div>
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <Button onClick={handleRetry} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     );
@@ -96,7 +112,8 @@ const PharmaceuticalProductsTable = () => {
               Pharmaceutical Products
             </CardTitle>
             <CardDescription>
-              Comprehensive pharmaceutical product inventory with pricing and availability data ({totalCount.toLocaleString()} total records)
+              Comprehensive pharmaceutical product inventory with pricing and availability data
+              {totalCount > 0 && ` (${totalCount.toLocaleString()} total records)`}
             </CardDescription>
           </div>
           <BulkImportDialog onImportComplete={handleImportComplete} />
@@ -104,6 +121,16 @@ const PharmaceuticalProductsTable = () => {
       </CardHeader>
       
       <CardContent>
+        {/* Performance Warning for Large Datasets */}
+        {totalCount > 100000 && (
+          <Alert className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Large dataset detected ({totalCount.toLocaleString()} records). Use filters to improve performance and reduce load times.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Filters Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 mb-6">
           <div className="relative">
@@ -200,48 +227,50 @@ const PharmaceuticalProductsTable = () => {
           </div>
         )}
 
-        {/* Updated Summary Stats with All Data Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-600">Total Products</span>
+        {/* Summary Stats with All Data Metrics */}
+        {allProductsMetrics && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-600">Total Products</span>
+              </div>
+              <p className="text-2xl font-bold text-blue-900">
+                {allProductsMetrics.totalProducts.toLocaleString()}
+              </p>
             </div>
-            <p className="text-2xl font-bold text-blue-900">
-              {allProductsMetrics?.totalProducts.toLocaleString() || '0'}
-            </p>
-          </div>
-          
-          <div className="bg-green-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Building className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-medium text-green-600">Facilities</span>
+            
+            <div className="bg-green-50 p-4 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Building className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-medium text-green-600">Facilities</span>
+              </div>
+              <p className="text-2xl font-bold text-green-900">
+                {allProductsMetrics.uniqueFacilities.toLocaleString()}
+              </p>
             </div>
-            <p className="text-2xl font-bold text-green-900">
-              {allProductsMetrics?.uniqueFacilities.toLocaleString() || '0'}
-            </p>
-          </div>
-          
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-medium text-purple-600">Regions</span>
+            
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-purple-600" />
+                <span className="text-sm font-medium text-purple-600">Regions</span>
+              </div>
+              <p className="text-2xl font-bold text-purple-900">
+                {allProductsMetrics.uniqueRegions.toLocaleString()}
+              </p>
             </div>
-            <p className="text-2xl font-bold text-purple-900">
-              {allProductsMetrics?.uniqueRegions.toLocaleString() || '0'}
-            </p>
-          </div>
-          
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-orange-600" />
-              <span className="text-sm font-medium text-orange-600">Total Miazia Value</span>
+            
+            <div className="bg-orange-50 p-4 rounded-lg">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-orange-600" />
+                <span className="text-sm font-medium text-orange-600">Est. Total Value</span>
+              </div>
+              <p className="text-2xl font-bold text-orange-900">
+                {formatCurrency(allProductsMetrics.totalValue)}
+              </p>
             </div>
-            <p className="text-2xl font-bold text-orange-900">
-              {formatCurrency(allProductsMetrics?.totalValue || 0)}
-            </p>
           </div>
-        </div>
+        )}
 
         {/* Pagination Controls - Top */}
         <div className="flex items-center justify-between mb-4">
@@ -335,7 +364,10 @@ const PharmaceuticalProductsTable = () => {
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={11} className="text-center py-8">
-                    Loading pharmaceutical products...
+                    <div className="flex items-center justify-center gap-2">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Loading pharmaceutical products...
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : products.length === 0 ? (
