@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +44,19 @@ export const useBulkImportPharmaceuticalProducts = () => {
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const { toast } = useToast();
 
+  // Throttled progress update using requestAnimationFrame
+  let progressUpdateQueued = false;
+  const throttledProgressUpdate = (newProgress: number, phase: string, details: string) => {
+    if (!progressUpdateQueued) {
+      progressUpdateQueued = true;
+      requestAnimationFrame(() => {
+        setProgress(Math.round(newProgress));
+        setImportProgress({ phase, details });
+        progressUpdateQueued = false;
+      });
+    }
+  };
+
   const parseCSVLine = (line: string): string[] => {
     const result: string[] = [];
     let current = '';
@@ -65,12 +79,38 @@ export const useBulkImportPharmaceuticalProducts = () => {
     return result;
   };
 
+  const validateRow = (row: ParsedRow): string[] => {
+    const errors: string[] = [];
+    
+    if (!row.facility || row.facility.trim() === '') {
+      errors.push('Facility is required');
+    }
+    
+    if (!row.product_name || row.product_name.trim() === '') {
+      errors.push('Product name is required');
+    }
+    
+    if (row.price !== undefined && (isNaN(row.price) || row.price < 0)) {
+      errors.push('Price must be a valid positive number');
+    }
+    
+    if (row.quantity !== undefined && (isNaN(row.quantity) || row.quantity < 0)) {
+      errors.push('Quantity must be a valid positive number');
+    }
+    
+    if (row.miazia_price !== undefined && (isNaN(row.miazia_price) || row.miazia_price < 0)) {
+      errors.push('Miazia price must be a valid positive number');
+    }
+    
+    return errors;
+  };
+
   const parseFileStream = async (file: File): Promise<ParsedRow[]> => {
-    console.log('Starting streaming parse for:', file.name, 'Size:', file.size);
+    console.log('Starting optimized streaming parse for:', file.name, 'Size:', file.size);
     
     // For very large files, use streaming approach
     if (file.size > 50 * 1024 * 1024) { // 50MB threshold
-      return parseCSVStream(file);
+      return parseCSVStreamOptimized(file);
     }
     
     // For smaller files, use standard text reading
@@ -85,7 +125,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
             return;
           }
           
-          const parsedRows = parseCSVText(text);
+          const parsedRows = parseCSVTextOptimized(text);
           resolve(parsedRows);
         } catch (error) {
           console.error('File parsing error:', error);
@@ -101,14 +141,15 @@ export const useBulkImportPharmaceuticalProducts = () => {
     });
   };
 
-  const parseCSVStream = async (file: File): Promise<ParsedRow[]> => {
+  const parseCSVStreamOptimized = async (file: File): Promise<ParsedRow[]> => {
     const parsedRows: ParsedRow[] = [];
     let headers: string[] = [];
     let columnMap = new Map<string, number>();
     let buffer = '';
     let lineCount = 0;
-    const chunkSize = 1024 * 1024; // 1MB chunks
+    const chunkSize = 2 * 1024 * 1024; // 2MB chunks for better performance
     let position = 0;
+    let lastProgressUpdate = 0;
     
     const setupColumnMapping = (headerRow: string[]) => {
       headers = headerRow;
@@ -149,7 +190,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       }
     };
     
-    const parseRowData = (values: string[]): ParsedRow | null => {
+    const parseAndValidateRow = (values: string[]): ParsedRow | null => {
       const parsedRow: ParsedRow = {
         facility: '',
         product_name: ''
@@ -169,7 +210,13 @@ export const useBulkImportPharmaceuticalProducts = () => {
         }
       });
       
-      return parsedRow.facility && parsedRow.product_name ? parsedRow : null;
+      // Validate during parsing to eliminate separate validation step
+      if (!parsedRow.facility || !parsedRow.product_name) {
+        return null;
+      }
+      
+      const errors = validateRow(parsedRow);
+      return errors.length === 0 ? parsedRow : null;
     };
 
     return new Promise((resolve, reject) => {
@@ -182,7 +229,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
               processLine(line);
             }
           }
-          console.log('Streaming parse complete. Total valid rows:', parsedRows.length);
+          console.log('Optimized streaming parse complete. Total valid rows:', parsedRows.length);
           resolve(parsedRows);
           return;
         }
@@ -204,14 +251,17 @@ export const useBulkImportPharmaceuticalProducts = () => {
             }
           }
           
-          // Update progress
-          const progressPercent = Math.min((position / file.size) * 50, 50);
-          setProgress(Math.round(progressPercent));
+          // Throttled progress updates - only update every 5000 rows or significant file progress
+          const currentProgress = Math.min((position / file.size) * 50, 50);
+          if (parsedRows.length - lastProgressUpdate >= 5000 || currentProgress - progress >= 5) {
+            throttledProgressUpdate(currentProgress, 'Reading file', `Processed ${lineCount} lines, found ${parsedRows.length} valid rows`);
+            lastProgressUpdate = parsedRows.length;
+          }
           
           position += chunkSize;
           
           // Continue processing next chunk
-          setTimeout(processNextChunk, 10);
+          setTimeout(processNextChunk, 1);
         };
         
         reader.onerror = () => {
@@ -231,15 +281,11 @@ export const useBulkImportPharmaceuticalProducts = () => {
           return;
         }
         
-        if (lineCount % 10000 === 0) {
-          console.log(`Processed ${lineCount} lines, found ${parsedRows.length} valid rows`);
-        }
-        
         try {
           const values = parseCSVLine(line);
-          const parsedRow = parseRowData(values);
+          const parsedRow = parseAndValidateRow(values);
           
-          if (parsedRow && parsedRow.facility && parsedRow.product_name) {
+          if (parsedRow) {
             parsedRows.push(parsedRow);
           }
         } catch (error) {
@@ -251,7 +297,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
     });
   };
 
-  const parseCSVText = (text: string): ParsedRow[] => {
+  const parseCSVTextOptimized = (text: string): ParsedRow[] => {
     const lines = text.split('\n').filter(line => line.trim());
     if (lines.length === 0) return [];
     
@@ -295,7 +341,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
     
     const parsedRows: ParsedRow[] = [];
     
-    // Process data rows
+    // Process data rows with validation during parsing
     for (let i = 1; i < lines.length; i++) {
       try {
         const values = parseCSVLine(lines[i]);
@@ -318,8 +364,12 @@ export const useBulkImportPharmaceuticalProducts = () => {
           }
         });
         
+        // Validate and add only valid rows
         if (parsedRow.facility && parsedRow.product_name) {
-          parsedRows.push(parsedRow);
+          const errors = validateRow(parsedRow);
+          if (errors.length === 0) {
+            parsedRows.push(parsedRow);
+          }
         }
       } catch (error) {
         console.warn(`Error parsing line ${i + 1}:`, error);
@@ -329,49 +379,28 @@ export const useBulkImportPharmaceuticalProducts = () => {
     return parsedRows;
   };
 
-  const validateRow = (row: ParsedRow, rowIndex: number): string[] => {
-    const errors: string[] = [];
-    
-    if (!row.facility || row.facility.trim() === '') {
-      errors.push(`Row ${rowIndex + 1}: Facility is required`);
-    }
-    
-    if (!row.product_name || row.product_name.trim() === '') {
-      errors.push(`Row ${rowIndex + 1}: Product name is required`);
-    }
-    
-    if (row.price !== undefined && (isNaN(row.price) || row.price < 0)) {
-      errors.push(`Row ${rowIndex + 1}: Price must be a valid positive number`);
-    }
-    
-    if (row.quantity !== undefined && (isNaN(row.quantity) || row.quantity < 0)) {
-      errors.push(`Row ${rowIndex + 1}: Quantity must be a valid positive number`);
-    }
-    
-    if (row.miazia_price !== undefined && (isNaN(row.miazia_price) || row.miazia_price < 0)) {
-      errors.push(`Row ${rowIndex + 1}: Miazia price must be a valid positive number`);
-    }
-    
-    return errors;
-  };
-
-  const checkExistingRecordsOptimized = async (batch: ParsedRow[], batchIndex: number, totalBatches: number): Promise<{ existingKeys: Set<string>; error?: string }> => {
+  // Optimized bulk duplicate detection with single query
+  const checkAllDuplicatesOptimized = async (rows: ParsedRow[]): Promise<Set<string>> => {
     try {
-      const existingKeys = new Set<string>();
-      
-      setImportProgress({
-        phase: 'Checking for duplicates',
-        details: `Batch ${batchIndex + 1}/${totalBatches}: Preparing batch query for ${batch.length} records`,
-        currentBatch: batchIndex + 1,
-        totalBatches: totalBatches,
-        totalRecords: batch.length
+      throttledProgressUpdate(65, 'Checking for duplicates', 'Preparing optimized duplicate detection...');
+
+      // Collect all unique facility/product combinations
+      const uniqueCombinations = new Set<string>();
+      const facilities: string[] = [];
+      const products: string[] = [];
+
+      rows.forEach(row => {
+        const key = `${row.facility.toLowerCase().trim()}|${row.product_name.toLowerCase().trim()}`;
+        if (!uniqueCombinations.has(key)) {
+          uniqueCombinations.add(key);
+          facilities.push(row.facility);
+          products.push(row.product_name);
+        }
       });
 
-      // Create arrays of unique facilities and products for batch query
-      const facilities = [...new Set(batch.map(row => row.facility))];
-      const products = [...new Set(batch.map(row => row.product_name))];
+      console.log(`Checking ${uniqueCombinations.size} unique facility/product combinations for duplicates`);
 
-      // Single database query to get all potentially matching records
+      // Single optimized query for all combinations
       const { data: existingRecords, error } = await supabase
         .from('pharmaceutical_products')
         .select('facility, product_name')
@@ -379,178 +408,135 @@ export const useBulkImportPharmaceuticalProducts = () => {
         .in('product_name', products);
 
       if (error) {
-        console.error('Error in batch duplicate check:', error);
-        return { 
-          existingKeys: new Set(), 
-          error: `Database error during duplicate check: ${error.message}` 
-        };
+        console.error('Error in optimized duplicate check:', error);
+        throw new Error(`Database error during duplicate check: ${error.message}`);
       }
 
-      // Create a hash map from existing records for O(1) lookup
-      const existingRecordsMap = new Set<string>();
+      // Create hash set for O(1) lookups
+      const existingKeys = new Set<string>();
       if (existingRecords) {
         existingRecords.forEach(record => {
           const key = `${record.facility.toLowerCase().trim()}|${record.product_name.toLowerCase().trim()}`;
-          existingRecordsMap.add(key);
+          existingKeys.add(key);
         });
       }
 
-      // Check each batch record against the hash map
-      batch.forEach((row, index) => {
-        const key = `${row.facility.toLowerCase().trim()}|${row.product_name.toLowerCase().trim()}`;
-        if (existingRecordsMap.has(key)) {
-          existingKeys.add(key);
-        }
-
-        // Update progress periodically
-        if (index % 100 === 0 || index === batch.length - 1) {
-          setImportProgress({
-            phase: 'Checking for duplicates',
-            details: `Batch ${batchIndex + 1}/${totalBatches}: Processed ${index + 1}/${batch.length} records`,
-            currentBatch: batchIndex + 1,
-            totalBatches: totalBatches,
-            currentRecord: index + 1,
-            totalRecords: batch.length
-          });
-
-          // Update progress within the 65-70% range for duplicate checking
-          const baseProgress = 65;
-          const duplicateCheckRange = 5; // 65% to 70%
-          const batchProgressPercent = ((batchIndex) / totalBatches) * duplicateCheckRange;
-          const recordProgressPercent = ((index + 1) / batch.length) * (duplicateCheckRange / totalBatches);
-          const currentProgress = Math.min(baseProgress + batchProgressPercent + recordProgressPercent, 70);
-          setProgress(Math.round(currentProgress));
-        }
-      });
-
-      console.log(`Batch ${batchIndex + 1} duplicate check complete. Found ${existingKeys.size} duplicates out of ${batch.length} records`);
+      console.log(`Found ${existingKeys.size} existing duplicates out of ${uniqueCombinations.size} unique combinations`);
+      throttledProgressUpdate(70, 'Duplicates checked', `Found ${existingKeys.size} existing records to skip`);
       
-      return { existingKeys };
+      return existingKeys;
     } catch (error) {
       console.error('Error in optimized duplicate checking:', error);
-      return { 
-        existingKeys: new Set(), 
-        error: error instanceof Error ? error.message : 'Unknown error during duplicate checking' 
-      };
+      throw error;
     }
   };
 
-  const processBatch = async (batch: ParsedRow[], batchIndex: number, totalBatches: number): Promise<{ success: number; skipped: number; errors: string[] }> => {
-    try {
-      setImportProgress({
-        phase: 'Processing batch',
-        details: `Preparing batch ${batchIndex + 1} of ${totalBatches}`,
-        currentBatch: batchIndex + 1,
-        totalBatches: totalBatches
-      });
+  // Optimized batch processing with concurrent inserts
+  const processBatchesConcurrently = async (validRows: ParsedRow[], existingKeys: Set<string>): Promise<ImportResult> => {
+    const result: ImportResult = {
+      totalRows: validRows.length,
+      successfulRows: 0,
+      errorRows: 0,
+      skippedRows: 0,
+      errors: [],
+      warnings: []
+    };
 
-      // Use optimized duplicate checking
-      const { existingKeys, error: checkError } = await checkExistingRecordsOptimized(batch, batchIndex, totalBatches);
-      
-      if (checkError) {
-        return {
-          success: 0,
-          skipped: 0,
-          errors: [`Error checking existing records: ${checkError}`]
-        };
+    // Filter out existing records upfront
+    const newRecords = validRows.filter(row => {
+      const key = `${row.facility.toLowerCase().trim()}|${row.product_name.toLowerCase().trim()}`;
+      const isDuplicate = existingKeys.has(key);
+      if (isDuplicate) {
+        result.skippedRows++;
       }
+      return !isDuplicate;
+    });
 
-      // Filter out existing records
-      const newRecords = batch.filter(row => {
-        const key = `${row.facility.toLowerCase().trim()}|${row.product_name.toLowerCase().trim()}`;
-        return !existingKeys.has(key);
-      });
-
-      const skippedCount = batch.length - newRecords.length;
-
-      if (newRecords.length === 0) {
-        setImportProgress({
-          phase: 'Batch completed',
-          details: `Batch ${batchIndex + 1}: All ${batch.length} records already exist (skipped)`,
-          currentBatch: batchIndex + 1,
-          totalBatches: totalBatches
-        });
-        
-        return {
-          success: 0,
-          skipped: skippedCount,
-          errors: []
-        };
-      }
-
-      setImportProgress({
-        phase: 'Inserting data',
-        details: `Batch ${batchIndex + 1}: Inserting ${newRecords.length} new records (skipping ${skippedCount} duplicates)`,
-        currentBatch: batchIndex + 1,
-        totalBatches: totalBatches
-      });
-
-      // Insert only new records in smaller sub-batches for better performance
-      const subBatchSize = 25;
-      let totalInserted = 0;
-      const insertErrors: string[] = [];
-
-      for (let i = 0; i < newRecords.length; i += subBatchSize) {
-        const subBatch = newRecords.slice(i, i + subBatchSize);
-        
-        try {
-          const { error } = await supabase
-            .from('pharmaceutical_products')
-            .insert(subBatch.map(row => ({
-              region: row.region || null,
-              zone: row.zone || null,
-              woreda: row.woreda || null,
-              facility: row.facility,
-              product_name: row.product_name,
-              unit: row.unit || null,
-              product_category: row.product_category || null,
-              price: row.price || null,
-              procurement_source: row.procurement_source || null,
-              quantity: row.quantity || null,
-              miazia_price: row.miazia_price || null
-            })));
-          
-          if (error) {
-            console.error(`Sub-batch insert error (${i}-${i + subBatch.length}):`, error);
-            insertErrors.push(`Sub-batch ${Math.floor(i/subBatchSize) + 1}: ${error.message}`);
-          } else {
-            totalInserted += subBatch.length;
-          }
-        } catch (error) {
-          console.error(`Sub-batch processing error:`, error);
-          insertErrors.push(`Sub-batch ${Math.floor(i/subBatchSize) + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-
-        // Update progress for insertion
-        const insertProgress = ((i + subBatch.length) / newRecords.length) * 100;
-        setImportProgress({
-          phase: 'Inserting data',
-          details: `Batch ${batchIndex + 1}: Inserted ${Math.min(i + subBatch.length, newRecords.length)}/${newRecords.length} records`,
-          currentBatch: batchIndex + 1,
-          totalBatches: totalBatches
-        });
-      }
-      
-      setImportProgress({
-        phase: 'Batch completed',
-        details: `Batch ${batchIndex + 1}: Successfully inserted ${totalInserted} records${insertErrors.length > 0 ? ` with ${insertErrors.length} errors` : ''}`,
-        currentBatch: batchIndex + 1,
-        totalBatches: totalBatches
-      });
-      
-      return {
-        success: totalInserted,
-        skipped: skippedCount,
-        errors: insertErrors
-      };
-    } catch (error) {
-      console.error('Batch processing error:', error);
-      return {
-        success: 0,
-        skipped: 0,
-        errors: [`Batch processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`]
-      };
+    if (newRecords.length === 0) {
+      throttledProgressUpdate(100, 'Import completed', 'All records were duplicates - no new data to import');
+      return result;
     }
+
+    console.log(`Processing ${newRecords.length} new records (${result.skippedRows} duplicates skipped)`);
+
+    // Process in optimized batches with concurrent inserts
+    const batchSize = 500; // Optimized batch size for Supabase
+    const maxConcurrent = 3; // Limit concurrent requests
+    const batches: ParsedRow[][] = [];
+    
+    for (let i = 0; i < newRecords.length; i += batchSize) {
+      batches.push(newRecords.slice(i, i + batchSize));
+    }
+
+    console.log(`Created ${batches.length} batches of up to ${batchSize} records each`);
+
+    // Process batches concurrently
+    const processBatch = async (batch: ParsedRow[], batchIndex: number): Promise<{ success: number; errors: string[] }> => {
+      try {
+        const { error } = await supabase
+          .from('pharmaceutical_products')
+          .insert(batch.map(row => ({
+            region: row.region || null,
+            zone: row.zone || null,
+            woreda: row.woreda || null,
+            facility: row.facility,
+            product_name: row.product_name,
+            unit: row.unit || null,
+            product_category: row.product_category || null,
+            price: row.price || null,
+            procurement_source: row.procurement_source || null,
+            quantity: row.quantity || null,
+            miazia_price: row.miazia_price || null
+          })));
+        
+        if (error) {
+          console.error(`Batch ${batchIndex + 1} insert error:`, error);
+          return { success: 0, errors: [`Batch ${batchIndex + 1}: ${error.message}`] };
+        }
+        
+        return { success: batch.length, errors: [] };
+      } catch (error) {
+        console.error(`Batch ${batchIndex + 1} processing error:`, error);
+        return { success: 0, errors: [`Batch ${batchIndex + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`] };
+      }
+    };
+
+    // Process batches with controlled concurrency
+    for (let i = 0; i < batches.length; i += maxConcurrent) {
+      const currentBatches = batches.slice(i, i + maxConcurrent);
+      const batchPromises = currentBatches.map((batch, index) => 
+        processBatch(batch, i + index)
+      );
+
+      try {
+        const batchResults = await Promise.allSettled(batchPromises);
+        
+        batchResults.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            result.value.success += result.value.success;
+            result.errors.push(...result.value.errors);
+          } else {
+            const batchNum = i + index + 1;
+            result.errors.push(`Batch ${batchNum} failed: ${result.reason}`);
+            result.errorRows += currentBatches[index].length;
+          }
+        });
+
+        // Update progress every few batches
+        const progressPercent = 70 + ((i + maxConcurrent) / batches.length) * 30;
+        throttledProgressUpdate(
+          Math.min(progressPercent, 100), 
+          'Inserting data', 
+          `Processed ${Math.min(i + maxConcurrent, batches.length)}/${batches.length} batches`
+        );
+
+      } catch (error) {
+        console.error('Error in concurrent batch processing:', error);
+        result.errors.push(`Concurrent processing error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    return result;
   };
 
   const importData = async (file: File) => {
@@ -559,7 +545,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
     setImportResult(null);
     setImportProgress({
       phase: 'Starting import',
-      details: 'Initializing file processing...'
+      details: 'Initializing optimized file processing...'
     });
     
     const result: ImportResult = {
@@ -572,100 +558,33 @@ export const useBulkImportPharmaceuticalProducts = () => {
     };
     
     try {
-      console.log('Starting optimized file import for:', file.name, 'Size:', file.size);
+      console.log('Starting optimized bulk import for:', file.name, 'Size:', file.size);
       
-      setImportProgress({
-        phase: 'Reading file',
-        details: `Processing ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)...`
-      });
+      throttledProgressUpdate(5, 'Reading file', `Processing ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)...`);
 
-      // Parse file with streaming approach for large files
-      const parsedRows = await parseFileStream(file);
-      result.totalRows = parsedRows.length;
+      // Parse and validate file in one pass
+      const validRows = await parseFileStream(file);
+      result.totalRows = validRows.length;
       
-      if (parsedRows.length === 0) {
+      if (validRows.length === 0) {
         throw new Error('No valid data rows found in the file');
       }
       
-      console.log('File parsed successfully, rows:', parsedRows.length);
-      setProgress(50);
+      console.log('File parsed and validated successfully, valid rows:', validRows.length);
+      throttledProgressUpdate(60, 'File processed', `Found ${validRows.length} valid rows`);
       
-      setImportProgress({
-        phase: 'Validating data',
-        details: `Validating ${parsedRows.length} rows...`
-      });
-
-      // Validate data in chunks
-      const validRows: ParsedRow[] = [];
-      const chunkSize = 5000;
+      // Optimized duplicate detection with single query
+      const existingKeys = await checkAllDuplicatesOptimized(validRows);
       
-      for (let i = 0; i < parsedRows.length; i += chunkSize) {
-        const chunk = parsedRows.slice(i, i + chunkSize);
-        
-        chunk.forEach((row, index) => {
-          const rowErrors = validateRow(row, i + index);
-          if (rowErrors.length > 0) {
-            result.errors.push(...rowErrors);
-            result.errorRows++;
-          } else {
-            validRows.push(row);
-          }
-        });
-        
-        // Update progress for validation phase (50% to 65%)
-        const validationProgress = 50 + ((i + chunkSize) / parsedRows.length) * 15;
-        setProgress(Math.min(Math.round(validationProgress), 65));
-        
-        // Small delay for large datasets
-        if (i + chunkSize < parsedRows.length) {
-          await new Promise(resolve => setTimeout(resolve, 1));
-        }
-      }
+      // Process all batches concurrently
+      const importResults = await processBatchesConcurrently(validRows, existingKeys);
       
-      if (validRows.length === 0) {
-        throw new Error('No valid rows found after validation');
-      }
+      // Merge results
+      Object.assign(result, importResults);
       
-      console.log('Validation complete, valid rows:', validRows.length);
-      setProgress(65);
-      
-      // Process in larger batches for better performance
-      const batchSize = 2000; // Increased batch size for better performance
-      const totalBatches = Math.ceil(validRows.length / batchSize);
-      
-      console.log(`Processing ${validRows.length} rows in ${totalBatches} batches of ${batchSize}`);
-      
-      // Processing phase (70% to 100%)
-      for (let i = 0; i < totalBatches; i++) {
-        const start = i * batchSize;
-        const end = Math.min(start + batchSize, validRows.length);
-        const batch = validRows.slice(start, end);
-        
-        try {
-          console.log(`Processing batch ${i + 1}/${totalBatches}, rows: ${start}-${end}`);
-          const batchResult = await processBatch(batch, i, totalBatches);
-          result.successfulRows += batchResult.success;
-          result.skippedRows += batchResult.skipped;
-          result.errors.push(...batchResult.errors);
-          
-          // Update progress from 70% to 100%
-          const processingProgress = 70 + ((i + 1) / totalBatches) * 30;
-          setProgress(Math.round(processingProgress));
-          
-          // Shorter delay between batches for faster processing
-          if (i < totalBatches - 1) {
-            await new Promise(resolve => setTimeout(resolve, 50));
-          }
-        } catch (error) {
-          console.error(`Batch ${i + 1} failed:`, error);
-          result.errors.push(`Batch ${i + 1} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          result.errorRows += batch.length;
-        }
-      }
-      
-      // Add warnings for common issues
+      // Add summary warnings
       if (result.errorRows > 0) {
-        result.warnings.push(`${result.errorRows} rows were skipped due to validation errors`);
+        result.warnings.push(`${result.errorRows} rows failed to import due to errors`);
       }
       
       if (result.skippedRows > 0) {
@@ -677,7 +596,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       }
       
       if (file.size > 100 * 1024 * 1024) {
-        result.warnings.push('Large file processed successfully with optimized streaming approach');
+        result.warnings.push('Large file processed successfully with optimized algorithms');
       }
       
       setProgress(100);
@@ -690,7 +609,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       });
       
     } catch (error) {
-      console.error('Import failed:', error);
+      console.error('Optimized import failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Import failed';
       result.errors.push(errorMessage);
       setImportResult(result);
