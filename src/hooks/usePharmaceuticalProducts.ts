@@ -25,85 +25,38 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
   const fetchMetrics = async () => {
     try {
-      console.log('Fetching optimized dataset metrics...');
-      
-      // Use simpler, faster queries with timeouts
-      const metricsPromises = await Promise.allSettled([
-        // Get count with timeout and limit
-        supabase
-          .from('pharmaceutical_products')
-          .select('id', { count: 'estimated', head: true })
-          .limit(1),
-        
-        // Get unique regions efficiently
-        supabase
-          .from('pharmaceutical_products')
-          .select('region')
-          .not('region', 'is', null)
-          .limit(1000),
-        
-        // Get unique facilities efficiently  
-        supabase
-          .from('pharmaceutical_products')
-          .select('facility')
-          .not('facility', 'is', null)
-          .limit(1000),
-        
-        // Get total value with sampling for large datasets
-        supabase
-          .from('pharmaceutical_products')
-          .select('miazia_price')
-          .not('miazia_price', 'is', null)
-          .limit(10000) // Sample first 10k records for performance
-      ]);
+      console.log('Fetching complete dataset metrics...');
 
-      // Process results safely
-      const [countResult, regionsResult, facilitiesResult, valueResult] = metricsPromises;
-      
-      let totalProducts = 0;
-      let uniqueRegions = 0;
-      let uniqueFacilities = 0;
-      let totalValue = 0;
+      // Get total record count
+      const { count, error: countError } = await supabase
+        .from('pharmaceutical_products')
+        .select('*', { count: 'exact', head: true });
 
-      if (countResult.status === 'fulfilled' && !countResult.value.error) {
-        totalProducts = countResult.value.count || 0;
+      if (countError) throw countError;
+
+      // Fetch all rows for metric aggregation
+      const { data: metricsData, error: metricsError } = await supabase
+        .from('pharmaceutical_products')
+        .select('miazia_price, facility, region');
+
+      if (metricsError) throw metricsError;
+
+      if (metricsData) {
+        const totalValue = metricsData.reduce((sum, item) => sum + (item.miazia_price || 0), 0);
+        const uniqueFacilities = new Set(metricsData.map(item => item.facility)).size;
+        const uniqueRegions = new Set(metricsData.map(item => item.region).filter(Boolean)).size;
+
+        setAllProductsMetrics({
+          totalProducts: count || 0,
+          totalValue,
+          uniqueFacilities,
+          uniqueRegions
+        });
       }
 
-      if (regionsResult.status === 'fulfilled' && !regionsResult.value.error && regionsResult.value.data) {
-        uniqueRegions = new Set(regionsResult.value.data.map(item => item.region).filter(Boolean)).size;
-      }
-
-      if (facilitiesResult.status === 'fulfilled' && !facilitiesResult.value.error && facilitiesResult.value.data) {
-        uniqueFacilities = new Set(facilitiesResult.value.data.map(item => item.facility).filter(Boolean)).size;
-      }
-
-      if (valueResult.status === 'fulfilled' && !valueResult.value.error && valueResult.value.data) {
-        const sampleValue = valueResult.value.data.reduce((sum, item) => sum + (item.miazia_price || 0), 0);
-        // Estimate total value based on sample
-        const sampleSize = valueResult.value.data.length;
-        if (sampleSize > 0 && totalProducts > 0) {
-          totalValue = (sampleValue / sampleSize) * totalProducts;
-        }
-      }
-
-      console.log('Optimized dataset metrics:', {
-        totalProducts,
-        totalValue,
-        uniqueFacilities,
-        uniqueRegions
-      });
-
-      setAllProductsMetrics({
-        totalProducts,
-        totalValue,
-        uniqueFacilities,
-        uniqueRegions
-      });
-
-      setTotalCount(totalProducts);
+      setTotalCount(count || 0);
     } catch (err) {
       console.error('Error fetching metrics:', err);
-      // Provide fallback metrics
       setAllProductsMetrics({
         totalProducts: 0,
         totalValue: 0,
