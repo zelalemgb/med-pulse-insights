@@ -25,6 +25,8 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
   const fetchMetrics = async () => {
     try {
+      console.log('Fetching complete dataset metrics...');
+      
       // Get total count
       let countQuery = supabase
         .from('pharmaceutical_products')
@@ -32,17 +34,40 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
       const { count } = await countQuery;
       
-      // Get aggregated metrics from all data
-      const { data: metricsData, error: metricsError } = await supabase
+      // Get aggregated metrics from ALL data using aggregation queries
+      // This is more efficient than fetching all records
+      const { data: miaziaData, error: miaziaError } = await supabase
         .from('pharmaceutical_products')
-        .select('miazia_price, facility, region');
+        .select('miazia_price')
+        .not('miazia_price', 'is', null);
 
-      if (metricsError) throw metricsError;
+      if (miaziaError) throw miaziaError;
 
-      if (metricsData) {
-        const totalValue = metricsData.reduce((sum, item) => sum + (item.miazia_price || 0), 0);
-        const uniqueFacilities = new Set(metricsData.map(item => item.facility)).size;
-        const uniqueRegions = new Set(metricsData.map(item => item.region).filter(Boolean)).size;
+      const { data: facilitiesData, error: facilitiesError } = await supabase
+        .from('pharmaceutical_products')
+        .select('facility')
+        .not('facility', 'is', null);
+
+      if (facilitiesError) throw facilitiesError;
+
+      const { data: regionsData, error: regionsError } = await supabase
+        .from('pharmaceutical_products')
+        .select('region')
+        .not('region', 'is', null);
+
+      if (regionsError) throw regionsError;
+
+      if (miaziaData && facilitiesData && regionsData) {
+        const totalValue = miaziaData.reduce((sum, item) => sum + (item.miazia_price || 0), 0);
+        const uniqueFacilities = new Set(facilitiesData.map(item => item.facility)).size;
+        const uniqueRegions = new Set(regionsData.map(item => item.region).filter(Boolean)).size;
+
+        console.log('Complete dataset metrics:', {
+          totalProducts: count || 0,
+          totalValue,
+          uniqueFacilities,
+          uniqueRegions
+        });
 
         setAllProductsMetrics({
           totalProducts: count || 0,

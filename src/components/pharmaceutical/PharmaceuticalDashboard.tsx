@@ -18,12 +18,8 @@ const PharmaceuticalDashboard = () => {
     const sampleSize = Math.min(products.length, 10000);
     const sampledProducts = products.slice(0, sampleSize);
 
-    // Basic counts from sampled data for charts
-    const uniqueFacilities = [...new Set(sampledProducts.map(p => p.facility))].length;
-    const uniqueRegions = [...new Set(sampledProducts.map(p => p.region))].filter(Boolean).length;
+    // Chart-specific metrics from sampled data
     const uniqueZones = [...new Set(sampledProducts.map(p => p.zone))].filter(Boolean).length;
-
-    // Financial metrics from sampled data
     const totalQuantity = sampledProducts.reduce((sum, p) => sum + (p.quantity || 0), 0);
     const avgMiaziaPrice = sampledProducts.reduce((sum, p) => sum + (p.miazia_price || 0), 0) / sampledProducts.filter(p => p.miazia_price).length || 0;
     const avgRegularPrice = sampledProducts.reduce((sum, p) => sum + (p.price || 0), 0) / sampledProducts.filter(p => p.price).length || 0;
@@ -74,8 +70,6 @@ const PharmaceuticalDashboard = () => {
     };
 
     return {
-      uniqueFacilities,
-      uniqueRegions,
       uniqueZones,
       totalQuantity,
       avgMiaziaPrice,
@@ -188,7 +182,7 @@ const PharmaceuticalDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Health Facilities</p>
-                <p className="text-3xl font-bold text-purple-900">{allProductsMetrics.uniqueFacilities}</p>
+                <p className="text-3xl font-bold text-purple-900">{allProductsMetrics.uniqueFacilities.toLocaleString()}</p>
               </div>
               <Building className="h-8 w-8 text-purple-600" />
             </div>
@@ -200,7 +194,7 @@ const PharmaceuticalDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Regions Covered</p>
-                <p className="text-3xl font-bold text-orange-900">{allProductsMetrics.uniqueRegions}</p>
+                <p className="text-3xl font-bold text-orange-900">{allProductsMetrics.uniqueRegions.toLocaleString()}</p>
               </div>
               <MapPin className="h-8 w-8 text-orange-600" />
             </div>
@@ -208,13 +202,13 @@ const PharmaceuticalDashboard = () => {
         </Card>
       </div>
 
-      {/* Secondary Metrics */}
+      {/* Secondary Metrics - Using Sampled Data */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Quantity</p>
+                <p className="text-sm font-medium text-gray-600">Total Quantity (Sample)</p>
                 <p className="text-2xl font-bold text-teal-900">{dashboardMetrics.totalQuantity.toLocaleString()}</p>
               </div>
               <Pill className="h-8 w-8 text-teal-600" />
@@ -226,7 +220,7 @@ const PharmaceuticalDashboard = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Avg Miazia Price</p>
+                <p className="text-sm font-medium text-gray-600">Avg Miazia Price (Sample)</p>
                 <p className="text-2xl font-bold text-indigo-900">{formatCurrency(dashboardMetrics.avgMiaziaPrice)}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-indigo-600" />
@@ -238,7 +232,7 @@ const PharmaceuticalDashboard = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Zones Covered</p>
+                <p className="text-sm font-medium text-gray-600">Zones Covered (Sample)</p>
                 <p className="text-2xl font-bold text-rose-900">{dashboardMetrics.uniqueZones}</p>
               </div>
               <MapPin className="h-8 w-8 text-rose-600" />
@@ -250,7 +244,7 @@ const PharmaceuticalDashboard = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Regular Price Value</p>
+                <p className="text-sm font-medium text-gray-600">Regular Price Value (Sample)</p>
                 <p className="text-2xl font-bold text-amber-900">{formatCurrency(dashboardMetrics.totalRegularValue)}</p>
               </div>
               <ShoppingCart className="h-8 w-8 text-amber-600" />
