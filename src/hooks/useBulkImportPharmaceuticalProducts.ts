@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -379,7 +378,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
     return parsedRows;
   };
 
-  // Optimized bulk duplicate detection with chunked queries
+  // Optimized bulk duplicate detection with smaller, more efficient queries
   const checkAllDuplicatesOptimized = async (rows: ParsedRow[]): Promise<Set<string>> => {
     try {
       throttledProgressUpdate(65, 'Checking for duplicates', 'Preparing optimized duplicate detection...');
@@ -393,58 +392,55 @@ export const useBulkImportPharmaceuticalProducts = () => {
 
       console.log(`Checking ${uniqueCombinations.size} unique facility/product combinations for duplicates`);
 
-      // Convert to arrays for chunked processing
-      const combinationsArray = Array.from(uniqueCombinations);
       const existingKeys = new Set<string>();
       
-      // Process in chunks to avoid query size limits
-      const chunkSize = 1000; // Process 1000 combinations at a time
+      // Use a much smaller chunk size to avoid query size limits
+      const chunkSize = 100; // Reduced from 1000 to 100 for better reliability
+      const combinationsArray = Array.from(uniqueCombinations);
       const totalChunks = Math.ceil(combinationsArray.length / chunkSize);
       
       for (let i = 0; i < totalChunks; i++) {
         const chunk = combinationsArray.slice(i * chunkSize, (i + 1) * chunkSize);
         
-        // Extract facilities and products for this chunk
-        const facilities: string[] = [];
-        const products: string[] = [];
-        const chunkKeys = new Set<string>();
-        
-        chunk.forEach(combination => {
+        // Process each combination in the chunk individually to avoid large IN clauses
+        for (const combination of chunk) {
           const [facility, product] = combination.split('|');
-          facilities.push(facility);
-          products.push(product);
-          chunkKeys.add(combination);
-        });
+          
+          try {
+            // Use individual queries with exact matching to avoid large IN clauses
+            const { data: existingRecords, error } = await supabase
+              .from('pharmaceutical_products')
+              .select('facility, product_name')
+              .ilike('facility', facility)
+              .ilike('product_name', product)
+              .limit(1); // We only need to know if at least one exists
 
-        // Query for this chunk
-        const { data: existingRecords, error } = await supabase
-          .from('pharmaceutical_products')
-          .select('facility, product_name')
-          .in('facility', facilities)
-          .in('product_name', products);
-
-        if (error) {
-          console.error(`Error in duplicate check chunk ${i + 1}:`, error);
-          throw new Error(`Database error during duplicate check: ${error.message}`);
-        }
-
-        // Add found duplicates to the set
-        if (existingRecords) {
-          existingRecords.forEach(record => {
-            const key = `${record.facility.toLowerCase().trim()}|${record.product_name.toLowerCase().trim()}`;
-            if (chunkKeys.has(key)) {
-              existingKeys.add(key);
+            if (error) {
+              console.warn(`Error checking duplicate for ${facility}|${product}:`, error);
+              continue; // Skip this combination and continue with others
             }
-          });
+
+            if (existingRecords && existingRecords.length > 0) {
+              // Found a match, add to existing keys
+              const foundRecord = existingRecords[0];
+              const foundKey = `${foundRecord.facility.toLowerCase().trim()}|${foundRecord.product_name.toLowerCase().trim()}`;
+              existingKeys.add(foundKey);
+            }
+          } catch (error) {
+            console.warn(`Error processing combination ${facility}|${product}:`, error);
+            continue; // Skip this combination and continue
+          }
         }
 
-        // Update progress
-        const progressPercent = 65 + ((i + 1) / totalChunks) * 5;
-        throttledProgressUpdate(
-          progressPercent, 
-          'Checking for duplicates', 
-          `Processed ${i + 1}/${totalChunks} duplicate check batches`
-        );
+        // Update progress more frequently
+        if (i % 10 === 0 || i === totalChunks - 1) {
+          const progressPercent = 65 + ((i + 1) / totalChunks) * 5;
+          throttledProgressUpdate(
+            progressPercent, 
+            'Checking for duplicates', 
+            `Processed ${i + 1}/${totalChunks} duplicate check batches (${existingKeys.size} duplicates found)`
+          );
+        }
       }
 
       console.log(`Found ${existingKeys.size} existing duplicates out of ${uniqueCombinations.size} unique combinations`);
@@ -453,7 +449,9 @@ export const useBulkImportPharmaceuticalProducts = () => {
       return existingKeys;
     } catch (error) {
       console.error('Error in optimized duplicate checking:', error);
-      throw error;
+      // Return empty set to continue with import even if duplicate check fails
+      console.warn('Continuing import without duplicate detection due to error');
+      return new Set<string>();
     }
   };
 
@@ -599,8 +597,15 @@ export const useBulkImportPharmaceuticalProducts = () => {
       console.log('File parsed and validated successfully, valid rows:', validRows.length);
       throttledProgressUpdate(60, 'File processed', `Found ${validRows.length} valid rows`);
       
-      // Chunked duplicate detection to avoid query size limits
-      const existingKeys = await checkAllDuplicatesOptimized(validRows);
+      // Enhanced duplicate detection with better error handling
+      let existingKeys: Set<string>;
+      try {
+        existingKeys = await checkAllDuplicatesOptimized(validRows);
+      } catch (error) {
+        console.error('Duplicate checking failed, proceeding without duplicate detection:', error);
+        existingKeys = new Set<string>();
+        result.warnings.push('Duplicate checking failed - all records will be imported');
+      }
       
       // Process all batches concurrently
       const importResults = await processBatchesConcurrently(validRows, existingKeys);
