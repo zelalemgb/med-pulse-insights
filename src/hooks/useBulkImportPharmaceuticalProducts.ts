@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -379,46 +378,72 @@ export const useBulkImportPharmaceuticalProducts = () => {
     return parsedRows;
   };
 
-  // Optimized bulk duplicate detection with single query
+  // Optimized bulk duplicate detection with chunked queries
   const checkAllDuplicatesOptimized = async (rows: ParsedRow[]): Promise<Set<string>> => {
     try {
       throttledProgressUpdate(65, 'Checking for duplicates', 'Preparing optimized duplicate detection...');
 
       // Collect all unique facility/product combinations
       const uniqueCombinations = new Set<string>();
-      const facilities: string[] = [];
-      const products: string[] = [];
-
       rows.forEach(row => {
         const key = `${row.facility.toLowerCase().trim()}|${row.product_name.toLowerCase().trim()}`;
-        if (!uniqueCombinations.has(key)) {
-          uniqueCombinations.add(key);
-          facilities.push(row.facility);
-          products.push(row.product_name);
-        }
+        uniqueCombinations.add(key);
       });
 
       console.log(`Checking ${uniqueCombinations.size} unique facility/product combinations for duplicates`);
 
-      // Single optimized query for all combinations
-      const { data: existingRecords, error } = await supabase
-        .from('pharmaceutical_products')
-        .select('facility, product_name')
-        .in('facility', facilities)
-        .in('product_name', products);
-
-      if (error) {
-        console.error('Error in optimized duplicate check:', error);
-        throw new Error(`Database error during duplicate check: ${error.message}`);
-      }
-
-      // Create hash set for O(1) lookups
+      // Convert to arrays for chunked processing
+      const combinationsArray = Array.from(uniqueCombinations);
       const existingKeys = new Set<string>();
-      if (existingRecords) {
-        existingRecords.forEach(record => {
-          const key = `${record.facility.toLowerCase().trim()}|${record.product_name.toLowerCase().trim()}`;
-          existingKeys.add(key);
+      
+      // Process in chunks to avoid query size limits
+      const chunkSize = 1000; // Process 1000 combinations at a time
+      const totalChunks = Math.ceil(combinationsArray.length / chunkSize);
+      
+      for (let i = 0; i < totalChunks; i++) {
+        const chunk = combinationsArray.slice(i * chunkSize, (i + 1) * chunkSize);
+        
+        // Extract facilities and products for this chunk
+        const facilities: string[] = [];
+        const products: string[] = [];
+        const chunkKeys = new Set<string>();
+        
+        chunk.forEach(combination => {
+          const [facility, product] = combination.split('|');
+          facilities.push(facility);
+          products.push(product);
+          chunkKeys.add(combination);
         });
+
+        // Query for this chunk
+        const { data: existingRecords, error } = await supabase
+          .from('pharmaceutical_products')
+          .select('facility, product_name')
+          .in('facility', facilities)
+          .in('product_name', products);
+
+        if (error) {
+          console.error(`Error in duplicate check chunk ${i + 1}:`, error);
+          throw new Error(`Database error during duplicate check: ${error.message}`);
+        }
+
+        // Add found duplicates to the set
+        if (existingRecords) {
+          existingRecords.forEach(record => {
+            const key = `${record.facility.toLowerCase().trim()}|${record.product_name.toLowerCase().trim()}`;
+            if (chunkKeys.has(key)) {
+              existingKeys.add(key);
+            }
+          });
+        }
+
+        // Update progress
+        const progressPercent = 65 + ((i + 1) / totalChunks) * 5;
+        throttledProgressUpdate(
+          progressPercent, 
+          'Checking for duplicates', 
+          `Processed ${i + 1}/${totalChunks} duplicate check batches`
+        );
       }
 
       console.log(`Found ${existingKeys.size} existing duplicates out of ${uniqueCombinations.size} unique combinations`);
@@ -573,7 +598,7 @@ export const useBulkImportPharmaceuticalProducts = () => {
       console.log('File parsed and validated successfully, valid rows:', validRows.length);
       throttledProgressUpdate(60, 'File processed', `Found ${validRows.length} valid rows`);
       
-      // Optimized duplicate detection with single query
+      // Chunked duplicate detection to avoid query size limits
       const existingKeys = await checkAllDuplicatesOptimized(validRows);
       
       // Process all batches concurrently
@@ -645,4 +670,3 @@ export const useBulkImportPharmaceuticalProducts = () => {
     reset
   };
 };
-
