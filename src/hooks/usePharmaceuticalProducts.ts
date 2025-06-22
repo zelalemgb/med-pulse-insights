@@ -37,23 +37,41 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
   const fetchMetrics = async () => {
     try {
-      console.log('Fetching optimized dataset metrics...');
+      console.log('Fetching minimal metrics for performance...');
 
-      // Get total record count only - much faster
-      const { count, error: countError } = await supabase
+      // Ultra-lightweight count query with timeout
+      const countPromise = supabase
         .from('pharmaceutical_products')
         .select('*', { count: 'exact', head: true });
 
-      if (countError) throw countError;
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Count query timeout')), 10000)
+      );
 
-      // Try to use the custom function for metrics
-      const { data: metricsData, error: metricsError } = await supabase
+      const { count, error: countError } = await Promise.race([
+        countPromise,
+        timeoutPromise
+      ]) as any;
+
+      if (countError) {
+        console.log('Count query failed, using fallback');
+        setAllProductsMetrics({
+          totalProducts: 0,
+          totalValue: 0,
+          uniqueFacilities: 0,
+          uniqueRegions: 0
+        });
+        return;
+      }
+
+      // Very small sample for metrics estimation - just 100 records
+      const { data: sampleData, error: sampleError } = await supabase
         .from('pharmaceutical_products')
         .select('miazia_price, facility, region')
-        .limit(10000); // Limit to prevent timeout
+        .limit(100);
 
-      if (metricsError) {
-        console.log('Error fetching metrics data, using fallback');
+      if (sampleError || !sampleData) {
+        console.log('Sample query failed, using count only');
         setAllProductsMetrics({
           totalProducts: count || 0,
           totalValue: 0,
@@ -64,25 +82,22 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
         return;
       }
 
-      if (metricsData) {
-        const totalValue = metricsData.reduce((sum, item) => sum + (item.miazia_price || 0), 0);
-        const uniqueFacilities = new Set(metricsData.map(item => item.facility)).size;
-        const uniqueRegions = new Set(metricsData.map(item => item.region).filter(Boolean)).size;
+      // Calculate estimates from tiny sample
+      const avgValue = sampleData.reduce((sum, item) => sum + (item.miazia_price || 0), 0) / sampleData.length;
+      const estimatedTotalValue = avgValue * (count || 0);
+      const uniqueFacilities = new Set(sampleData.map(item => item.facility)).size;
+      const uniqueRegions = new Set(sampleData.map(item => item.region).filter(Boolean)).size;
 
-        // Estimate total value based on sample
-        const estimatedTotalValue = (totalValue * (count || 0)) / metricsData.length;
-
-        setAllProductsMetrics({
-          totalProducts: count || 0,
-          totalValue: estimatedTotalValue,
-          uniqueFacilities,
-          uniqueRegions
-        });
-      }
+      setAllProductsMetrics({
+        totalProducts: count || 0,
+        totalValue: estimatedTotalValue,
+        uniqueFacilities: Math.ceil(uniqueFacilities * (count || 0) / sampleData.length),
+        uniqueRegions: Math.ceil(uniqueRegions * (count || 0) / sampleData.length)
+      });
 
       setTotalCount(count || 0);
     } catch (err) {
-      console.error('Error fetching metrics:', err);
+      console.error('Metrics fetch failed completely:', err);
       setAllProductsMetrics({
         totalProducts: 0,
         totalValue: 0,
@@ -94,38 +109,24 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
 
   const fetchFilterValues = async () => {
     try {
-      // Fetch distinct values with limits to prevent timeout
-      const [facilitiesResult, regionsResult, zonesResult, woredasResult] = await Promise.all([
-        supabase.from('pharmaceutical_products').select('facility').limit(1000),
-        supabase.from('pharmaceutical_products').select('region').limit(1000),
-        supabase.from('pharmaceutical_products').select('zone').limit(1000),
-        supabase.from('pharmaceutical_products').select('woreda').limit(1000)
+      // Very limited filter value fetching
+      const [facilitiesResult] = await Promise.all([
+        supabase.from('pharmaceutical_products').select('facility').limit(50)
       ]);
 
       const facilities = Array.from(new Set(
         (facilitiesResult.data || []).map(d => d.facility).filter(Boolean)
-      ));
-      
-      const regionNames = Array.from(new Set(
-        (regionsResult.data || []).map(d => d.region).filter(Boolean)
-      ));
-      
-      const zoneNames = Array.from(new Set(
-        (zonesResult.data || []).map(d => d.zone).filter(Boolean)
-      ));
-      
-      const woredaNames = Array.from(new Set(
-        (woredasResult.data || []).map(d => d.woreda).filter(Boolean)
-      ));
+      )).slice(0, 20); // Limit to 20 facilities
 
       setFilterValues({ 
         facilities, 
-        regions: regionNames, 
-        zones: zoneNames, 
-        woredas: woredaNames 
+        regions: [], // Skip regions for performance
+        zones: [], // Skip zones for performance
+        woredas: [] // Skip woredas for performance
       });
     } catch (err) {
-      console.error('Error fetching filter values:', err);
+      console.error('Filter values fetch failed:', err);
+      setFilterValues({ facilities: [], regions: [], zones: [], woredas: [] });
     }
   };
 
@@ -143,7 +144,7 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
           woredas!woreda_id(id, name, code)
         `);
 
-      // Apply filters - support both old text fields and new normalized IDs
+      // Apply filters
       if (filters?.facility) {
         query = query.ilike('facility', `%${filters.facility}%`);
       }
@@ -184,31 +185,34 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
         query = query.ilike('product_name', `%${filters.search}%`);
       }
 
-      // Always use pagination for performance
+      // Very small page sizes for performance
       const page = pagination?.page || 1;
-      const pageSize = Math.min(pagination?.pageSize || 50, 200); // Cap at 200 for performance
+      const pageSize = Math.min(pagination?.pageSize || 25, 50); // Max 50 records
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
       
       query = query.range(from, to);
       query = query.order('created_at', { ascending: false });
 
-      // Execute query with timeout handling
+      // Short timeout for product queries
+      const queryPromise = query;
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Query timeout')), 15000)
+      );
+
       const { data, error, count } = await Promise.race([
-        query,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Query timeout')), 30000) // 30 second timeout
-        )
+        queryPromise,
+        timeoutPromise
       ]) as any;
 
       if (error) {
-        console.error('Database error:', error);
+        console.error('Product query error:', error);
         if (error.code === '57014' || error.message.includes('timeout')) {
-          setError('Query timed out. Please try filtering your results or reducing the page size.');
+          setError('The query is taking too long. Please use filters to narrow your search or try again later.');
         } else if (error.code === '42501' || error.message.includes('policy')) {
-          setError('Unable to access pharmaceutical data. Please check your permissions or try logging in again.');
+          setError('Access denied. Please check your permissions.');
         } else {
-          setError(`Failed to fetch pharmaceutical products: ${error.message}`);
+          setError(`Unable to load data: ${error.message}`);
         }
         setProducts([]);
         return;
@@ -219,20 +223,20 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
         setTotalCount(count);
       }
     } catch (err) {
-      let errorMessage = 'Failed to fetch pharmaceutical products';
+      let errorMessage = 'Unable to load pharmaceutical data';
       if (err instanceof Error) {
         if (err.message.includes('timeout')) {
-          errorMessage = 'The query is taking too long. Please try filtering your results or using a smaller page size.';
+          errorMessage = 'The request timed out. Please try using filters to reduce the data load or refresh the page.';
         } else {
           errorMessage = err.message;
         }
       }
       
-      console.error('Error fetching products:', errorMessage);
+      console.error('Products fetch error:', errorMessage);
       setError(errorMessage);
       setProducts([]);
       toast({
-        title: "Error",
+        title: "Loading Error",
         description: errorMessage,
         variant: "destructive",
       });
@@ -246,14 +250,16 @@ export const usePharmaceuticalProducts = (filters?: PharmaceuticalProductFilters
   }, [filters, pagination?.page, pagination?.pageSize]);
 
   useEffect(() => {
-    // Only fetch metrics and filter values on component mount, not on every filter change
+    // Load metrics and filters separately with delay
     const timeoutId = setTimeout(() => {
-      fetchMetrics();
-      fetchFilterValues();
-    }, 1000); // Reduced delay
+      Promise.all([
+        fetchMetrics(),
+        fetchFilterValues()
+      ]).catch(console.error);
+    }, 500); // Small delay to prioritize product loading
 
     return () => clearTimeout(timeoutId);
-  }, []); // Empty dependency array - only run once
+  }, []); // Only run once
 
   return {
     products,
