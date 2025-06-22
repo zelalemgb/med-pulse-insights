@@ -4,12 +4,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/layout/PageHeader';
 import PharmaceuticalDashboard from '@/components/pharmaceutical/PharmaceuticalDashboard';
 import PharmaceuticalForecast from '@/components/pharmaceutical/PharmaceuticalForecast';
+import { usePharmaceuticalProducts } from '@/hooks/usePharmaceuticalProducts';
 
 const PharmaceuticalDashboardPage = () => {
   const breadcrumbItems = [
     { label: 'Home', path: '/' },
     { label: 'Pharmaceutical Dashboard' }
   ];
+
+  const {
+    products,
+    allProductsMetrics,
+    isLoading,
+    error,
+    refetch
+  } = usePharmaceuticalProducts({}, { page: 1, pageSize: 50, enablePagination: true });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -28,11 +37,23 @@ const PharmaceuticalDashboardPage = () => {
             </TabsList>
             
             <TabsContent value="overview">
-              <PharmaceuticalDashboard />
+              <PharmaceuticalDashboard
+                products={products}
+                allProductsMetrics={allProductsMetrics}
+                isLoading={isLoading}
+                error={error}
+                refetch={refetch}
+              />
             </TabsContent>
-            
+
             <TabsContent value="forecast">
-              <PharmaceuticalForecast />
+              <PharmaceuticalForecast
+                products={products}
+                allProductsMetrics={allProductsMetrics}
+                isLoading={isLoading}
+                error={error}
+                refetch={refetch}
+              />
             </TabsContent>
           </Tabs>
         </div>
