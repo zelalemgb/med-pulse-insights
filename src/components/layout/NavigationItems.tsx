@@ -54,6 +54,13 @@ const NavigationItems = ({ className, onClick }: NavigationItemsProps) => {
       icon: BarChart3,
       requiresAuth: true,
       description: 'Insights and forecasting'
+    },
+    {
+      href: '/ethiopia-2025-26',
+      label: 'Ethiopia 2025/26',
+      icon: Map,
+      requiresAuth: true,
+      description: 'Annual summary dashboard'
     }
   ];
 

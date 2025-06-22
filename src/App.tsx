@@ -16,6 +16,7 @@ import Auth from '@/pages/Auth';
 import Dashboard from '@/pages/Dashboard';
 import PharmaceuticalProducts from '@/pages/PharmaceuticalProducts';
 import PharmaceuticalDashboardPage from '@/pages/PharmaceuticalDashboard';
+import Ethiopia2025_26 from '@/pages/Ethiopia2025_26';
 import DataManagement from '@/pages/DataManagement';
 import DataEntry from '@/pages/DataEntry';
 import Analytics from '@/pages/Analytics';
@@ -64,6 +65,13 @@ function App() {
                     <ProtectedRoute>
                       <AppLayout>
                         <PharmaceuticalDashboardPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/ethiopia-2025-26" element={
+                    <ProtectedRoute>
+                      <AppLayout>
+                        <Ethiopia2025_26 />
                       </AppLayout>
                     </ProtectedRoute>
                   } />
