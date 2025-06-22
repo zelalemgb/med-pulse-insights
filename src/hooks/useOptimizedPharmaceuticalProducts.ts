@@ -53,6 +53,7 @@ export const useOptimizedPharmaceuticalProducts = (
           zone,
           woreda,
           created_at,
+          updated_at,
           regions!region_id(id, name, code),
           zones!zone_id(id, name, code),
           woredas!woreda_id(id, name, code)

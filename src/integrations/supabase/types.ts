@@ -993,7 +993,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      pharmaceutical_metrics_summary: {
+        Row: {
+          avg_miazia_price: number | null
+          avg_regular_price: number | null
+          last_updated: string | null
+          total_products: number | null
+          total_value: number | null
+          unique_categories: number | null
+          unique_facilities: number | null
+          unique_regions: number | null
+          unique_zones: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       approve_user: {
@@ -1067,6 +1080,24 @@ export type Database = {
         Args: { _user_id: string; _facility_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_pharmaceutical_category_breakdown: {
+        Args: { limit_count?: number }
+        Returns: {
+          category: string
+          product_count: number
+          total_value: number
+          avg_price: number
+        }[]
+      }
+      get_pharmaceutical_source_breakdown: {
+        Args: { limit_count?: number }
+        Returns: {
+          source: string
+          product_count: number
+          total_value: number
+          avg_price: number
+        }[]
+      }
       get_role_audit_analytics: {
         Args: { _start_date?: string; _end_date?: string }
         Returns: Json
@@ -1129,6 +1160,10 @@ export type Database = {
           _metadata?: Json
         }
         Returns: string
+      }
+      refresh_pharmaceutical_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       reject_user: {
         Args: { _user_id: string; _rejected_by: string; _reason?: string }

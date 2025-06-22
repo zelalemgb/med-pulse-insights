@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -180,7 +181,7 @@ const PharmaceuticalProductsTable = () => {
             </SelectContent>
           </Select>
 
-          {/* New Administrative Hierarchy Selectors */}
+          {/* Administrative Hierarchy Selectors */}
           <AdministrativeHierarchySelector
             selectedRegionId={filters.region_id}
             selectedZoneId={filters.zone_id}
@@ -235,7 +236,7 @@ const PharmaceuticalProductsTable = () => {
                 <span className="text-sm font-medium text-blue-600">Total Products</span>
               </div>
               <p className="text-2xl font-bold text-blue-900">
-                {metrics.totalProducts.toLocaleString()}
+                {metrics.total_products.toLocaleString()}
               </p>
             </div>
             
@@ -245,7 +246,7 @@ const PharmaceuticalProductsTable = () => {
                 <span className="text-sm font-medium text-green-600">Facilities</span>
               </div>
               <p className="text-2xl font-bold text-green-900">
-                {metrics.uniqueFacilities.toLocaleString()}
+                {metrics.unique_facilities.toLocaleString()}
               </p>
             </div>
             
@@ -255,17 +256,17 @@ const PharmaceuticalProductsTable = () => {
                 <span className="text-sm font-medium text-purple-600">Regions</span>
               </div>
               <p className="text-2xl font-bold text-purple-900">
-                {metrics.uniqueRegions.toLocaleString()}
+                {metrics.unique_regions.toLocaleString()}
               </p>
             </div>
             
             <div className="bg-orange-50 p-4 rounded-lg">
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-orange-600" />
-                <span className="text-sm font-medium text-orange-600">Est. Total Value</span>
+                <span className="text-sm font-medium text-orange-600">Total Value</span>
               </div>
               <p className="text-2xl font-bold text-orange-900">
-                {formatCurrency(metrics.totalValue)}
+                {formatCurrency(metrics.total_value)}
               </p>
             </div>
           </div>
