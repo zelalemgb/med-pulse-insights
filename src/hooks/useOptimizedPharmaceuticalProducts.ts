@@ -55,8 +55,8 @@ export const useOptimizedPharmaceuticalProducts = (
           created_at,
           updated_at,
           regions!region_id(id, name, code, created_at, updated_at),
-          zones!zone_id(id, name, code, created_at, updated_at),
-          woredas!woreda_id(id, name, code, created_at, updated_at)
+          zones!zone_id(id, name, code, region_id, created_at, updated_at),
+          woredas!woreda_id(id, name, code, zone_id, created_at, updated_at)
         `, { count: 'exact' });
 
       // Apply filters efficiently
