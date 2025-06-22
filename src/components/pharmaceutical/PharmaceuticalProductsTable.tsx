@@ -6,8 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Search, Package, Building, MapPin, DollarSign, ChevronLeft, ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react';
-import { usePharmaceuticalProducts } from '@/hooks/usePharmaceuticalProducts';
+import { Search, Package, Building, MapPin, DollarSign, ChevronLeft, ChevronRight, AlertTriangle, RefreshCw, Zap } from 'lucide-react';
+import { useOptimizedPharmaceuticalProducts } from '@/hooks/useOptimizedPharmaceuticalProducts';
+import { usePharmaceuticalMetrics } from '@/hooks/usePharmaceuticalMetrics';
 import { PharmaceuticalProductFilters } from '@/types/pharmaceuticalProducts';
 import AdministrativeHierarchySelector from './AdministrativeHierarchySelector';
 import BulkImportDialog from './BulkImportDialog';
@@ -17,10 +18,21 @@ const PharmaceuticalProductsTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   
-  const { products, totalCount, allProductsMetrics, isLoading, error, refetch, filterValues } = usePharmaceuticalProducts(
+  const { 
+    products, 
+    totalCount, 
+    hasMore,
+    filterValues, 
+    isLoading, 
+    error, 
+    refetch,
+    isFetching 
+  } = useOptimizedPharmaceuticalProducts(
     filters,
-    { page: currentPage, pageSize, enablePagination: true }
+    { page: currentPage, pageSize }
   );
+
+  const { metrics } = usePharmaceuticalMetrics();
 
   // Get unique values for filter dropdowns
   const filterOptions = useMemo(() => {
@@ -215,7 +227,7 @@ const PharmaceuticalProductsTable = () => {
         )}
 
         {/* Summary Stats with All Data Metrics */}
-        {allProductsMetrics && (
+        {metrics && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-blue-50 p-4 rounded-lg">
               <div className="flex items-center gap-2">
@@ -223,7 +235,7 @@ const PharmaceuticalProductsTable = () => {
                 <span className="text-sm font-medium text-blue-600">Total Products</span>
               </div>
               <p className="text-2xl font-bold text-blue-900">
-                {allProductsMetrics.totalProducts.toLocaleString()}
+                {metrics.totalProducts.toLocaleString()}
               </p>
             </div>
             
@@ -233,7 +245,7 @@ const PharmaceuticalProductsTable = () => {
                 <span className="text-sm font-medium text-green-600">Facilities</span>
               </div>
               <p className="text-2xl font-bold text-green-900">
-                {allProductsMetrics.uniqueFacilities.toLocaleString()}
+                {metrics.uniqueFacilities.toLocaleString()}
               </p>
             </div>
             
@@ -243,7 +255,7 @@ const PharmaceuticalProductsTable = () => {
                 <span className="text-sm font-medium text-purple-600">Regions</span>
               </div>
               <p className="text-2xl font-bold text-purple-900">
-                {allProductsMetrics.uniqueRegions.toLocaleString()}
+                {metrics.uniqueRegions.toLocaleString()}
               </p>
             </div>
             
@@ -253,7 +265,7 @@ const PharmaceuticalProductsTable = () => {
                 <span className="text-sm font-medium text-orange-600">Est. Total Value</span>
               </div>
               <p className="text-2xl font-bold text-orange-900">
-                {formatCurrency(allProductsMetrics.totalValue)}
+                {formatCurrency(metrics.totalValue)}
               </p>
             </div>
           </div>

@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/layout/PageHeader';
-import PharmaceuticalDashboard from '@/components/pharmaceutical/PharmaceuticalDashboard';
+import OptimizedPharmaceuticalDashboard from '@/components/pharmaceutical/OptimizedPharmaceuticalDashboard';
 import PharmaceuticalForecast from '@/components/pharmaceutical/PharmaceuticalForecast';
-import { usePharmaceuticalProducts } from '@/hooks/usePharmaceuticalProducts';
+import { useOptimizedPharmaceuticalProducts } from '@/hooks/useOptimizedPharmaceuticalProducts';
 
 const Ethiopia2025_26 = () => {
   const breadcrumbItems = [
@@ -13,18 +14,25 @@ const Ethiopia2025_26 = () => {
 
   const {
     products,
-    allProductsMetrics,
+    totalCount,
     isLoading,
     error,
     refetch
-  } = usePharmaceuticalProducts({}, { page: 1, pageSize: 50, enablePagination: true });
+  } = useOptimizedPharmaceuticalProducts({}, { page: 1, pageSize: 25 });
+
+  const allProductsMetrics = {
+    totalProducts: totalCount,
+    totalValue: 0,
+    uniqueFacilities: 0,
+    uniqueRegions: 0
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageHeader
           title="Ethiopia 2025/26"
-          description="Summary of pharmaceutical products for the 2025/26 fiscal year"
+          description="Optimized pharmaceutical products summary for the 2025/26 fiscal year"
           breadcrumbItems={breadcrumbItems}
         />
 
@@ -36,13 +44,7 @@ const Ethiopia2025_26 = () => {
             </TabsList>
 
             <TabsContent value="summary">
-              <PharmaceuticalDashboard
-                products={products}
-                allProductsMetrics={allProductsMetrics}
-                isLoading={isLoading}
-                error={error}
-                refetch={refetch}
-              />
+              <OptimizedPharmaceuticalDashboard />
             </TabsContent>
 
             <TabsContent value="dashboard">
