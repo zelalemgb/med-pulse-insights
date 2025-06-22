@@ -3,18 +3,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, ScatterChart, Scatter } from 'recharts';
 import { TrendingUp, AlertTriangle, Pill, Building, MapPin, DollarSign, Target, Activity, Package, RefreshCw } from 'lucide-react';
-import { usePharmaceuticalProducts } from '@/hooks/usePharmaceuticalProducts';
 import { Button } from '@/components/ui/button';
+import { PharmaceuticalProduct } from '@/types/pharmaceuticalProducts';
+
+interface PharmaceuticalMetricsSummary {
+  totalProducts: number;
+  totalValue: number;
+  uniqueFacilities: number;
+  uniqueRegions: number;
+}
+
+interface PharmaceuticalForecastProps {
+  products: PharmaceuticalProduct[];
+  allProductsMetrics: PharmaceuticalMetricsSummary | null;
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => void;
+}
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
 
-const PharmaceuticalForecast = () => {
-  // Use optimized hook with smaller sample for forecast analysis
-  const { products, allProductsMetrics, isLoading, error, refetch } = usePharmaceuticalProducts({}, { 
-    page: 1, 
-    pageSize: 50, // Larger sample for better forecast accuracy
-    enablePagination: true 
-  });
+const PharmaceuticalForecast = ({
+  products,
+  allProductsMetrics,
+  isLoading,
+  error,
+  refetch
+}: PharmaceuticalForecastProps) => {
 
   const forecastAnalysis = useMemo(() => {
     if (!products.length) return null;
