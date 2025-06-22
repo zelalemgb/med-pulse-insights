@@ -32,42 +32,35 @@ export const usePharmaceuticalMetrics = () => {
   const metricsQuery = useQuery({
     queryKey: ['pharmaceutical-metrics'],
     queryFn: async (): Promise<PharmaceuticalMetrics> => {
-      // Use RPC call to get metrics since materialized view might not be in types yet
-      const { data, error } = await supabase.rpc('get_pharmaceutical_metrics');
+      console.log('Fetching pharmaceutical metrics...');
       
-      if (error) throw error;
+      // Direct query since RPC functions might not be available in types yet
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('pharmaceutical_products')
+        .select('miazia_price, price, facility, region, zone, product_category, procurement_source', { count: 'exact' });
       
-      // If no RPC function available, fallback to direct query
-      if (!data) {
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('pharmaceutical_products')
-          .select('miazia_price, price, facility, region, zone, product_category, procurement_source', { count: 'exact' });
-        
-        if (fallbackError) throw fallbackError;
-        
-        const totalProducts = fallbackData?.length || 0;
-        const totalValue = fallbackData?.reduce((sum, item) => sum + (item.miazia_price || 0), 0) || 0;
-        const uniqueFacilities = new Set(fallbackData?.map(item => item.facility)).size;
-        const uniqueRegions = new Set(fallbackData?.map(item => item.region).filter(Boolean)).size;
-        const uniqueZones = new Set(fallbackData?.map(item => item.zone).filter(Boolean)).size;
-        const uniqueCategories = new Set(fallbackData?.map(item => item.product_category).filter(Boolean)).size;
-        const avgMiaziaPrice = fallbackData?.filter(item => item.miazia_price).reduce((sum, item) => sum + (item.miazia_price || 0), 0) / fallbackData?.filter(item => item.miazia_price).length || 0;
-        const avgRegularPrice = fallbackData?.filter(item => item.price).reduce((sum, item) => sum + (item.price || 0), 0) / fallbackData?.filter(item => item.price).length || 0;
-        
-        return {
-          total_products: totalProducts,
-          total_value: totalValue,
-          unique_facilities: uniqueFacilities,
-          unique_regions: uniqueRegions,
-          unique_zones: uniqueZones,
-          unique_categories: uniqueCategories,
-          avg_miazia_price: avgMiaziaPrice,
-          avg_regular_price: avgRegularPrice,
-          last_updated: new Date().toISOString()
-        };
-      }
+      if (fallbackError) throw fallbackError;
       
-      return data as PharmaceuticalMetrics;
+      const totalProducts = fallbackData?.length || 0;
+      const totalValue = fallbackData?.reduce((sum, item) => sum + (item.miazia_price || 0), 0) || 0;
+      const uniqueFacilities = new Set(fallbackData?.map(item => item.facility)).size;
+      const uniqueRegions = new Set(fallbackData?.map(item => item.region).filter(Boolean)).size;
+      const uniqueZones = new Set(fallbackData?.map(item => item.zone).filter(Boolean)).size;
+      const uniqueCategories = new Set(fallbackData?.map(item => item.product_category).filter(Boolean)).size;
+      const avgMiaziaPrice = fallbackData?.filter(item => item.miazia_price).reduce((sum, item) => sum + (item.miazia_price || 0), 0) / fallbackData?.filter(item => item.miazia_price).length || 0;
+      const avgRegularPrice = fallbackData?.filter(item => item.price).reduce((sum, item) => sum + (item.price || 0), 0) / fallbackData?.filter(item => item.price).length || 0;
+      
+      return {
+        total_products: totalProducts,
+        total_value: totalValue,
+        unique_facilities: uniqueFacilities,
+        unique_regions: uniqueRegions,
+        unique_zones: uniqueZones,
+        unique_categories: uniqueCategories,
+        avg_miazia_price: avgMiaziaPrice,
+        avg_regular_price: avgRegularPrice,
+        last_updated: new Date().toISOString()
+      };
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
